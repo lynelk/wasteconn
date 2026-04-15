@@ -1,0 +1,82 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Linked User entity id"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "customer_type": {
+      "type": "string",
+      "enum": [
+        "residential",
+        "commercial",
+        "industrial"
+      ],
+      "default": "residential"
+    },
+    "address": {
+      "type": "string"
+    },
+    "district": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string",
+      "description": "Assigned service zone"
+    },
+    "account_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "suspended"
+      ],
+      "default": "active"
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": [
+        "english",
+        "luganda",
+        "swahili"
+      ],
+      "default": "english"
+    },
+    "mobile_money_number": {
+      "type": "string"
+    },
+    "mobile_money_provider": {
+      "type": "string",
+      "enum": [
+        "mtn",
+        "airtel",
+        "none"
+      ],
+      "default": "none"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "full_name",
+    "phone"
+  ]
+}

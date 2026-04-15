@@ -1,0 +1,86 @@
+{
+  "name": "PickupRequest",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "request_type": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "on_demand",
+        "bulk"
+      ],
+      "default": "on_demand"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "assigned",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "scheduled_time": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assigned_driver_id": {
+      "type": "string"
+    },
+    "assigned_vehicle_id": {
+      "type": "string"
+    },
+    "waste_type": {
+      "type": "string",
+      "enum": [
+        "general",
+        "recyclable",
+        "organic",
+        "hazardous",
+        "bulky"
+      ],
+      "default": "general"
+    },
+    "estimated_weight_kg": {
+      "type": "number"
+    },
+    "actual_weight_kg": {
+      "type": "number"
+    },
+    "address": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "driver_notes": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "request_type"
+  ]
+}

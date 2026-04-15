@@ -1,0 +1,70 @@
+{
+  "name": "ServiceZone",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "zone_name": {
+      "type": "string"
+    },
+    "district": {
+      "type": "string"
+    },
+    "sub_county": {
+      "type": "string"
+    },
+    "parish": {
+      "type": "string"
+    },
+    "village": {
+      "type": "string"
+    },
+    "zone_code": {
+      "type": "string",
+      "description": "Short code e.g. KLA-N-01"
+    },
+    "collection_days": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ]
+      }
+    },
+    "collection_time": {
+      "type": "string",
+      "description": "e.g. 07:00 - 10:00"
+    },
+    "assigned_vehicle_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "max_customers": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "zone_name",
+    "district"
+  ]
+}

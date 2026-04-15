@@ -1,0 +1,73 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "registration_number": {
+      "type": "string"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "enum": [
+        "truck",
+        "tipper",
+        "compactor",
+        "pickup",
+        "tricycle"
+      ],
+      "default": "truck"
+    },
+    "capacity_tonnes": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "on_route",
+        "maintenance",
+        "retired"
+      ],
+      "default": "available"
+    },
+    "assigned_zone_id": {
+      "type": "string"
+    },
+    "assigned_driver_id": {
+      "type": "string"
+    },
+    "make_model": {
+      "type": "string"
+    },
+    "year": {
+      "type": "number"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "petrol",
+        "diesel",
+        "electric"
+      ],
+      "default": "diesel"
+    },
+    "last_service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "registration_number",
+    "vehicle_type"
+  ]
+}

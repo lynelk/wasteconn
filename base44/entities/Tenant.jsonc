@@ -1,0 +1,76 @@
+{
+  "name": "Tenant",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Waste management company name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Unique URL-friendly identifier"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Company logo URL"
+    },
+    "primary_color": {
+      "type": "string",
+      "description": "Brand color hex"
+    },
+    "contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "district": {
+      "type": "string",
+      "description": "Primary district of operation"
+    },
+    "districts_served": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "All districts served"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "subscription_plan": {
+      "type": "string",
+      "enum": [
+        "basic",
+        "standard",
+        "premium"
+      ],
+      "default": "basic"
+    },
+    "admin_email": {
+      "type": "string",
+      "description": "Tenant admin email"
+    },
+    "registration_number": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "company_name",
+    "contact_email",
+    "district"
+  ]
+}
