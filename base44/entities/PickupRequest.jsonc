@@ -74,8 +74,12 @@
     "driver_notes": {
       "type": "string"
     },
-    "photo_url": {
-      "type": "string"
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple proof-of-service photo URLs"
     }
   },
   "required": [

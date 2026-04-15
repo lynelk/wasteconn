@@ -1,0 +1,67 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User who performed the action"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "job_completion",
+        "invoice_issued",
+        "payment_settlement",
+        "permission_change",
+        "customer_created",
+        "customer_updated",
+        "ticket_closed",
+        "login",
+        "bulk_export",
+        "data_delete"
+      ]
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "e.g., Customer, Invoice, User"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "old_value": {
+      "type": "string",
+      "description": "JSON string of old value"
+    },
+    "new_value": {
+      "type": "string",
+      "description": "JSON string of new value"
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "AI anomaly risk score 0-100"
+    },
+    "flagged": {
+      "type": "boolean",
+      "default": false
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "user_id",
+    "event_type",
+    "entity_type",
+    "entity_id"
+  ]
+}

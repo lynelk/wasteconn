@@ -1,0 +1,50 @@
+{
+  "name": "ServicePoint",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Customer associated with this service point"
+    },
+    "zone_id": {
+      "type": "string",
+      "description": "Service zone for this point"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name or identifier for the service point"
+    },
+    "address": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "landmark": {
+      "type": "string",
+      "description": "Nearby landmark for easy identification"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "address"
+  ]
+}

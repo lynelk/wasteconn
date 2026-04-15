@@ -1,0 +1,75 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "subscription_id": {
+      "type": "string"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "amount_ugx": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "paid",
+        "partially_paid",
+        "overdue",
+        "cancelled"
+      ],
+      "default": "issued"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price_ugx": {
+            "type": "number"
+          },
+          "total_ugx": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "invoice_number",
+    "amount_ugx",
+    "issue_date",
+    "due_date"
+  ]
+}
