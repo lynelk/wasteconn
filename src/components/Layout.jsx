@@ -5,7 +5,8 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
   MessageSquare, Settings, Menu, X, LogOut,
-  Building2, ClipboardList, BarChart3, Bell, User, ChevronLeft
+  Building2, ClipboardList, BarChart3, Bell, User, ChevronLeft,
+  Radio, Shield, Wrench, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,10 @@ const navItems = [
   { label: 'Payments', icon: CreditCard, path: '/payments', roles: ['admin', 'super_admin'] },
   { label: 'Complaints', icon: MessageSquare, path: '/complaints', roles: ['admin', 'super_admin', 'dispatcher'] },
   { label: 'Analytics', icon: BarChart3, path: '/analytics', roles: ['admin', 'super_admin'] },
+  { label: 'Dispatch', icon: Radio, path: '/dispatch', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Fleet Maintenance', icon: Wrench, path: '/fleet-maintenance', roles: ['admin', 'super_admin'] },
+  { label: 'Communications', icon: Send, path: '/communications', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Audit Log', icon: Shield, path: '/audit-logs', roles: ['admin', 'super_admin'] },
   { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
   { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
   { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },

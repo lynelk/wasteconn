@@ -1,0 +1,77 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "recipient_email": {
+      "type": "string"
+    },
+    "recipient_phone": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "sms",
+        "whatsapp",
+        "in_app"
+      ],
+      "default": "email"
+    },
+    "template_type": {
+      "type": "string",
+      "enum": [
+        "pickup_reminder",
+        "pickup_completed",
+        "pickup_missed",
+        "invoice_issued",
+        "invoice_overdue",
+        "payment_received",
+        "welcome",
+        "custom"
+      ],
+      "default": "custom"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "delivered",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "related_entity_type": {
+      "type": "string"
+    },
+    "related_entity_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "channel",
+    "template_type",
+    "body"
+  ]
+}

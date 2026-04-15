@@ -1,0 +1,81 @@
+{
+  "name": "Route",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "route_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "route_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "job_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ordered list of PickupRequest IDs"
+    },
+    "estimated_distance_km": {
+      "type": "number"
+    },
+    "actual_distance_km": {
+      "type": "number"
+    },
+    "estimated_duration_mins": {
+      "type": "number"
+    },
+    "actual_duration_mins": {
+      "type": "number"
+    },
+    "fuel_cost_ugx": {
+      "type": "number"
+    },
+    "ai_optimised": {
+      "type": "boolean",
+      "default": false
+    },
+    "ai_optimisation_notes": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "zone_id",
+    "route_date"
+  ]
+}

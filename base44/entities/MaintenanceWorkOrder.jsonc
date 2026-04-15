@@ -1,0 +1,84 @@
+{
+  "name": "MaintenanceWorkOrder",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": [
+        "preventive",
+        "corrective",
+        "predictive",
+        "emergency"
+      ],
+      "default": "corrective"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "open"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "fault_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assigned_technician": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cost_ugx": {
+      "type": "number"
+    },
+    "parts_used": {
+      "type": "string"
+    },
+    "ai_prediction_score": {
+      "type": "number",
+      "description": "AI failure probability 0-100"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "title",
+    "order_type"
+  ]
+}

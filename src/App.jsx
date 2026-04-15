@@ -19,6 +19,10 @@ import Complaints from '@/pages/Complaints';
 import Analytics from '@/pages/Analytics';
 import DriverApp from '@/pages/DriverApp';
 import CustomerApp from '@/pages/CustomerApp';
+import Dispatch from '@/pages/Dispatch';
+import AuditLogs from '@/pages/AuditLogs';
+import FleetMaintenance from '@/pages/FleetMaintenance';
+import Communications from '@/pages/Communications';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +60,10 @@ const AuthenticatedApp = () => {
         <Route path="/payments" element={<Payments />} />
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/dispatch" element={<Dispatch />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
+        <Route path="/fleet-maintenance" element={<FleetMaintenance />} />
+        <Route path="/communications" element={<Communications />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/customer-app" element={<CustomerApp />} />

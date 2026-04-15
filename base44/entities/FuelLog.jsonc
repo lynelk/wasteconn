@@ -1,0 +1,54 @@
+{
+  "name": "FuelLog",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "fuel_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "litres": {
+      "type": "number"
+    },
+    "cost_ugx": {
+      "type": "number"
+    },
+    "odometer_km": {
+      "type": "number"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "petrol",
+        "diesel",
+        "electric"
+      ],
+      "default": "diesel"
+    },
+    "station_name": {
+      "type": "string"
+    },
+    "efficiency_km_per_litre": {
+      "type": "number",
+      "description": "Calculated fuel efficiency"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "fuel_date",
+    "litres",
+    "cost_ugx"
+  ]
+}
