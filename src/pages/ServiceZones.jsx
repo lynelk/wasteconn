@@ -1,157 +1,113 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, MapPin, Edit2, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, MapPin, Edit, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ZoneForm from '@/components/zones/ZoneForm';
 
-const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-const empty = { tenant_id: '', zone_name: '', district: '', sub_county: '', parish: '', zone_code: '', collection_days: [], collection_time: '', status: 'active', max_customers: 100 };
+const DAY_LABELS = { monday:'Mon', tuesday:'Tue', wednesday:'Wed', thursday:'Thu', friday:'Fri', saturday:'Sat', sunday:'Sun' };
 
 export default function ServiceZones() {
-  const [zones, setZones] = useState([]);
-  const [tenants, setTenants] = useState([]);
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    const [z, t] = await Promise.all([base44.entities.ServiceZone.list('-created_date'), base44.entities.Tenant.list()]);
-    setZones(z); setTenants(t);
-  };
-  useEffect(() => { load(); }, []);
+  const { data: zones = [], isLoading } = useQuery({
+    queryKey: ['zones'],
+    queryFn: () => base44.entities.ServiceZone.list(),
+  });
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+
+  const deleteMutation = useMutation({
+    mutationFn: id => base44.entities.ServiceZone.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['zones'] }),
+  });
 
   const filtered = zones.filter(z =>
     z.zone_name?.toLowerCase().includes(search.toLowerCase()) ||
-    z.district?.toLowerCase().includes(search.toLowerCase())
+    z.district?.toLowerCase().includes(search.toLowerCase()) ||
+    z.zone_code?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const tenantName = (id) => tenants.find(t => t.id === id)?.company_name || id;
-
-  const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
-  const openEdit = (z) => { setForm({ ...z }); setEditing(z.id); setOpen(true); };
-
-  const toggleDay = (day) => {
-    const days = form.collection_days || [];
-    setForm({ ...form, collection_days: days.includes(day) ? days.filter(d => d !== day) : [...days, day] });
-  };
-
-  const save = async () => {
-    setLoading(true);
-    if (editing) await base44.entities.ServiceZone.update(editing, form);
-    else await base44.entities.ServiceZone.create(form);
-    await load(); setOpen(false); setLoading(false);
-  };
-
-  const remove = async (id) => {
-    if (!confirm('Delete this zone?')) return;
-    await base44.entities.ServiceZone.delete(id); await load();
-  };
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Service Zones</h1>
-          <p className="text-sm text-muted-foreground">Define collection zones per district and tenant</p>
+          <p className="text-muted-foreground text-sm mt-1">Define collection zones and schedules</p>
         </div>
-        <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" />Add Zone</Button>
+        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Zone
+        </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search zones..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search zones..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(z => (
-          <Card key={z.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-primary" />
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{[1,2,3].map(i=><div key={i} className="h-36 rounded-xl bg-muted animate-pulse"/>)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <MapPin className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No service zones yet</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(z => {
+            const zoneCustomers = customers.filter(c => c.zone_id === z.id).length;
+            return (
+              <Card key={z.id} className="border-border/60 hover:shadow-md transition-shadow">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold font-jakarta text-sm">{z.zone_name}</p>
+                      {z.zone_code && <p className="text-xs text-muted-foreground font-mono">{z.zone_code}</p>}
+                    </div>
+                    <Badge variant="secondary" className={z.status === 'active' ? 'bg-green-100 text-green-700 text-xs' : 'bg-gray-100 text-gray-600 text-xs'}>
+                      {z.status}
+                    </Badge>
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{z.zone_name}</CardTitle>
-                    <p className="text-xs text-muted-foreground">{z.zone_code} · {z.district}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+                    <MapPin className="w-3 h-3" />{z.district}{z.sub_county ? ` · ${z.sub_county}` : ''}
                   </div>
-                </div>
-                <Badge className={z.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}>{z.status}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Tenant</span><span className="font-medium text-foreground truncate max-w-[150px]">{tenantName(z.tenant_id)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Time</span><span className="font-medium text-foreground">{z.collection_time || '—'}</span>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Collection days</p>
-                <div className="flex flex-wrap gap-1">
-                  {(z.collection_days || []).map(d => (
-                    <span key={d} className="text-[10px] bg-secondary text-secondary-foreground rounded px-1.5 py-0.5 capitalize">{d.slice(0,3)}</span>
-                  ))}
-                  {(!z.collection_days?.length) && <span className="text-xs text-muted-foreground">Not set</span>}
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(z)}><Edit className="w-3 h-3" />Edit</Button>
-                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => remove(z.id)}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {filtered.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">No zones found</div>}
-      </div>
+                  {z.collection_days?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {z.collection_days.map(d => (
+                        <span key={d} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{DAY_LABELS[d]}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{zoneCustomers} customers</span>
+                    <div className="flex gap-1">
+                      <button onClick={() => { setEditing(z); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => deleteMutation.mutate(z.id)} className="text-muted-foreground hover:text-destructive p-1.5">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Zone' : 'Add Service Zone'}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div>
-              <Label>Tenant</Label>
-              <Select value={form.tenant_id} onValueChange={v => setForm({...form,tenant_id:v})}>
-                <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
-                <SelectContent>{tenants.map(t => <SelectItem key={t.id} value={t.id}>{t.company_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            {[['zone_name','Zone Name'],['zone_code','Zone Code'],['district','District'],['sub_county','Sub-County'],['parish','Parish'],['collection_time','Collection Time (e.g. 07:00-10:00)'],['max_customers','Max Customers']].map(([k,l]) => (
-              <div key={k}>
-                <Label>{l}</Label>
-                <Input type={k === 'max_customers' ? 'number' : 'text'} value={form[k] || ''} onChange={e => setForm({...form,[k]:e.target.value})} />
-              </div>
-            ))}
-            <div>
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm({...form,status:v})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{['active','inactive'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <Label>Collection Days</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {days.map(d => (
-                  <button key={d} onClick={() => toggleDay(d)}
-                    className={`text-xs px-3 py-1 rounded-full border capitalize transition-colors ${(form.collection_days||[]).includes(d) ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}>
-                    {d.slice(0,3)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-          </DialogFooter>
+      <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-jakarta">{editing ? 'Edit Zone' : 'Add Service Zone'}</DialogTitle>
+          </DialogHeader>
+          <ZoneForm zone={editing} onClose={() => { setOpen(false); setEditing(null); }} />
         </DialogContent>
       </Dialog>
     </div>

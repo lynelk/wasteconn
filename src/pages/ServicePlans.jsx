@@ -1,154 +1,99 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, ClipboardList, Edit2, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ServicePlanForm from '@/components/plans/ServicePlanForm';
 
-const empty = { tenant_id: '', plan_name: '', description: '', customer_type: 'all', frequency: 'weekly', price_ugx: '', billing_cycle: 'monthly', includes_recycling: false, max_bins: 1, status: 'active', sort_order: 0 };
+const freqLabel = { daily:'Daily', twice_weekly:'2x/Week', weekly:'Weekly', biweekly:'Every 2 Weeks', monthly:'Monthly' };
 
 export default function ServicePlans() {
-  const [plans, setPlans] = useState([]);
-  const [tenants, setTenants] = useState([]);
-  const [filterTenant, setFilterTenant] = useState('all');
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    const [p, t] = await Promise.all([base44.entities.ServicePlan.list('sort_order'), base44.entities.Tenant.list()]);
-    setPlans(p); setTenants(t);
-  };
-  useEffect(() => { load(); }, []);
+  const { data: plans = [], isLoading } = useQuery({
+    queryKey: ['plans'],
+    queryFn: () => base44.entities.ServicePlan.list(),
+  });
 
-  const filtered = plans.filter(p => filterTenant === 'all' || p.tenant_id === filterTenant);
-  const tenantName = (id) => tenants.find(t => t.id === id)?.company_name || '—';
-  const openEdit = (p) => { setForm({...p}); setEditing(p.id); setOpen(true); };
-  const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
+  const deleteMutation = useMutation({
+    mutationFn: id => base44.entities.ServicePlan.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
 
-  const save = async () => {
-    setLoading(true);
-    const payload = { ...form, price_ugx: Number(form.price_ugx), max_bins: Number(form.max_bins) };
-    if (editing) await base44.entities.ServicePlan.update(editing, payload);
-    else await base44.entities.ServicePlan.create(payload);
-    await load(); setOpen(false); setLoading(false);
-  };
-
-  const remove = async (id) => {
-    if (!confirm('Delete this plan?')) return;
-    await base44.entities.ServicePlan.delete(id); await load();
-  };
-
-  const freqLabel = { daily: 'Daily', twice_weekly: '2x/week', weekly: 'Weekly', biweekly: 'Bi-weekly', monthly: 'Monthly' };
+  const active = plans.filter(p => p.status === 'active');
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Service Plans</h1>
-          <p className="text-sm text-muted-foreground">Define pricing tiers for each tenant</p>
+          <p className="text-muted-foreground text-sm mt-1">{active.length} active plans</p>
         </div>
-        <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" />Add Plan</Button>
+        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Plan
+        </Button>
       </div>
 
-      <Select value={filterTenant} onValueChange={setFilterTenant}>
-        <SelectTrigger className="w-52"><SelectValue placeholder="All Tenants" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Tenants</SelectItem>
-          {tenants.map(t => <SelectItem key={t.id} value={t.id}>{t.company_name}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{[1,2,3].map(i=><div key={i} className="h-44 rounded-xl bg-muted animate-pulse"/>)}</div>
+      ) : plans.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No service plans yet</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {plans.map(p => (
+            <Card key={p.id} className={`border-border/60 hover:shadow-md transition-shadow ${p.status === 'inactive' ? 'opacity-60' : ''}`}>
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="font-bold font-jakarta text-base">{p.plan_name}</p>
+                  <Badge variant="secondary" className={p.status === 'active' ? 'bg-green-100 text-green-700 text-xs' : 'bg-gray-100 text-gray-600 text-xs'}>{p.status}</Badge>
+                </div>
+                {p.description && <p className="text-xs text-muted-foreground mb-3">{p.description}</p>}
+                <div className="flex items-end gap-1 mb-4">
+                  <span className="text-2xl font-bold text-primary font-jakarta">{(p.price_ugx || 0).toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground pb-0.5">UGX/{p.billing_cycle === 'monthly' ? 'mo' : p.billing_cycle}</span>
+                </div>
+                <div className="space-y-1.5 mb-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3.5 h-3.5 text-primary" />
+                    {freqLabel[p.frequency]} collection
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3.5 h-3.5 text-primary" />
+                    {p.max_bins || 1} bin{(p.max_bins||1) > 1 ? 's' : ''} included
+                  </div>
+                  {p.includes_recycling && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle className="w-3.5 h-3.5 text-primary" />Recycling included
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-xs capitalize">{p.customer_type}</Badge>
+                  <div className="flex gap-1">
+                    <button onClick={() => { setEditing(p); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5"><Edit2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => deleteMutation.mutate(p.id)} className="text-muted-foreground hover:text-destructive p-1.5"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(p => (
-          <Card key={p.id} className={`hover:shadow-md transition-shadow ${p.status !== 'active' ? 'opacity-60' : ''}`}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-base">{p.plan_name}</CardTitle>
-                <Badge className={p.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}>{p.status}</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">{tenantName(p.tenant_id)}</p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-2xl font-bold text-primary font-jakarta">
-                {(p.price_ugx || 0).toLocaleString()} <span className="text-sm font-normal text-muted-foreground">UGX / {p.billing_cycle}</span>
-              </div>
-              {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Frequency</span><span>{freqLabel[p.frequency]}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Customer type</span><span className="capitalize">{p.customer_type}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Max bins</span><span>{p.max_bins}</span></div>
-                {p.includes_recycling && (
-                  <div className="flex items-center gap-1 text-primary text-xs mt-2"><CheckCircle2 className="w-3 h-3" /> Includes recycling</div>
-                )}
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(p)}><Edit className="w-3 h-3" />Edit</Button>
-                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => remove(p.id)}><Trash2 className="w-3 h-3" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {filtered.length === 0 && <div className="col-span-3 text-center py-12 text-muted-foreground">No plans found</div>}
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Plan' : 'Add Service Plan'}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div>
-              <Label>Tenant</Label>
-              <Select value={form.tenant_id} onValueChange={v => setForm({...form,tenant_id:v})}>
-                <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
-                <SelectContent>{tenants.map(t => <SelectItem key={t.id} value={t.id}>{t.company_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Plan Name</Label>
-              <Input value={form.plan_name||''} onChange={e => setForm({...form,plan_name:e.target.value})} />
-            </div>
-            <div className="col-span-2">
-              <Label>Description</Label>
-              <Textarea value={form.description||''} onChange={e => setForm({...form,description:e.target.value})} rows={2} />
-            </div>
-            <div>
-              <Label>Price (UGX)</Label>
-              <Input type="number" value={form.price_ugx||''} onChange={e => setForm({...form,price_ugx:e.target.value})} />
-            </div>
-            <div>
-              <Label>Max Bins</Label>
-              <Input type="number" value={form.max_bins||1} onChange={e => setForm({...form,max_bins:e.target.value})} />
-            </div>
-            {[
-              ['customer_type','Customer Type',['all','residential','commercial','industrial']],
-              ['frequency','Frequency',['daily','twice_weekly','weekly','biweekly','monthly']],
-              ['billing_cycle','Billing Cycle',['monthly','quarterly','annually']],
-              ['status','Status',['active','inactive']],
-            ].map(([k,l,opts]) => (
-              <div key={k}>
-                <Label>{l}</Label>
-                <Select value={form[k]} onValueChange={v => setForm({...form,[k]:v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{opts.map(o => <SelectItem key={o} value={o} className="capitalize">{o.replace('_',' ')}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            ))}
-            <div className="col-span-2 flex items-center gap-3">
-              <Switch checked={form.includes_recycling} onCheckedChange={v => setForm({...form,includes_recycling:v})} />
-              <Label>Includes recycling collection</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-          </DialogFooter>
+      <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-jakarta">{editing ? 'Edit Plan' : 'Create Service Plan'}</DialogTitle>
+          </DialogHeader>
+          <ServicePlanForm plan={editing} onClose={() => { setOpen(false); setEditing(null); }} />
         </DialogContent>
       </Dialog>
     </div>

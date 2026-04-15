@@ -1,121 +1,127 @@
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Users, MapPin, Calendar, CreditCard, MessageSquare, Truck, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Users, ClipboardList, CreditCard, MessageSquare, Truck, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { format } from 'date-fns';
+
+function StatCard({ title, value, icon: IconComponent, color, sub }) {
+  return (
+    <Card className="border-border/60">
+      <CardContent className="pt-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground font-medium">{title}</p>
+            <p className="text-3xl font-bold font-jakarta mt-1">{value ?? '—'}</p>
+            {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+          </div>
+          <div className={`p-2.5 rounded-xl ${color}`}>
+            <IconComponent className="w-5 h-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ customers: 0, pickups: 0, payments: 0, complaints: 0, tenants: 0, vehicles: 0 });
-  const [recentPickups, setRecentPickups] = useState([]);
-  const [recentComplaints, setRecentComplaints] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const role = user?.role || 'user';
 
-  useEffect(() => {
-    async function load() {
-      const [customers, pickups, payments, complaints, tenants, vehicles] = await Promise.all([
-        base44.entities.Customer.list(),
-        base44.entities.PickupRequest.list('-created_date', 5),
-        base44.entities.Payment.list(),
-        base44.entities.Complaint.list('-created_date', 5),
-        base44.entities.Tenant.list(),
-        base44.entities.Vehicle.list(),
-      ]);
-      setStats({
-        customers: customers.length,
-        pickups: pickups.length,
-        payments: payments.reduce((s, p) => s + (p.amount_ugx || 0), 0),
-        complaints: complaints.filter(c => c.status === 'open').length,
-        tenants: tenants.length,
-        vehicles: vehicles.length,
-      });
-      setRecentPickups(pickups.slice(0, 5));
-      setRecentComplaints(complaints.filter(c => c.status === 'open').slice(0, 5));
-      setLoading(false);
-    }
-    load();
-  }, []);
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list() });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list() });
+  const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list() });
+  const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list(), enabled: role === 'super_admin' });
 
-  const statCards = [
-    { label: 'Total Customers', value: stats.customers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', link: '/customers' },
-    { label: 'Pickup Requests', value: stats.pickups, icon: ClipboardList, color: 'text-primary', bg: 'bg-secondary', link: '/pickups' },
-    { label: 'Revenue (UGX)', value: `${(stats.payments / 1000).toFixed(0)}K`, icon: CreditCard, color: 'text-yellow-600', bg: 'bg-yellow-50', link: '/payments' },
-    { label: 'Open Complaints', value: stats.complaints, icon: MessageSquare, color: 'text-red-500', bg: 'bg-red-50', link: '/complaints' },
-    { label: 'Active Tenants', value: stats.tenants, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50', link: '/tenants' },
-    { label: 'Fleet Vehicles', value: stats.vehicles, icon: Truck, color: 'text-indigo-600', bg: 'bg-indigo-50', link: '/fleet' },
-  ];
+  const pendingPickups = pickups.filter(p => p.status === 'pending').length;
+  const openComplaints = complaints.filter(c => c.status === 'open').length;
+  const totalRevenue = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount_ugx || 0), 0);
 
-  const statusColor = { pending: 'bg-yellow-100 text-yellow-800', assigned: 'bg-blue-100 text-blue-800', in_progress: 'bg-indigo-100 text-indigo-800', completed: 'bg-green-100 text-green-800', cancelled: 'bg-red-100 text-red-800' };
-  const priorityColor = { low: 'bg-gray-100 text-gray-700', medium: 'bg-yellow-100 text-yellow-800', high: 'bg-orange-100 text-orange-800', urgent: 'bg-red-100 text-red-800' };
+  const recentPickups = [...pickups].sort((a,b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
+
+  const statusColor = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    assigned: 'bg-blue-100 text-blue-700',
+    in_progress: 'bg-purple-100 text-purple-700',
+    completed: 'bg-green-100 text-green-700',
+    cancelled: 'bg-red-100 text-red-700',
+  };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold font-jakarta">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Welcome back. Here's what's happening today.</p>
+        <h1 className="text-2xl font-bold font-jakarta">
+          Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'} 👋
+        </h1>
+        <p className="text-muted-foreground mt-1">Here's what's happening today — {format(new Date(), 'EEEE, MMMM d yyyy')}</p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        {statCards.map(s => (
-          <Link key={s.label} to={s.link}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center mb-3`}>
-                  <s.icon className={`w-4 h-4 ${s.color}`} />
-                </div>
-                <p className="text-2xl font-bold font-jakarta">{loading ? '—' : s.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {role === 'super_admin' && (
+          <StatCard title="Total Tenants" value={tenants.length} icon={Truck} color="bg-primary" sub={`${tenants.filter(t=>t.status==='active').length} active`} />
+        )}
+        <StatCard title="Customers" value={customers.length} icon={Users} color="bg-blue-500" sub={`${customers.filter(c=>c.status==='active').length} active`} />
+        <StatCard title="Pending Pickups" value={pendingPickups} icon={Calendar} color="bg-amber-500" sub="awaiting assignment" />
+        <StatCard title="Revenue (UGX)" value={totalRevenue.toLocaleString()} icon={CreditCard} color="bg-primary" sub="total collected" />
+        <StatCard title="Open Complaints" value={openComplaints} icon={MessageSquare} color={openComplaints > 0 ? "bg-red-500" : "bg-green-500"} sub="need attention" />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Recent Pickups */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold">Recent Pickup Requests</CardTitle>
-            <Link to="/pickups"><Button variant="ghost" size="sm" className="text-xs">View all</Button></Link>
+      {/* Recent Pickups */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold font-jakarta flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary" /> Recent Pickup Requests
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {recentPickups.length === 0 && !loading && <p className="text-sm text-muted-foreground text-center py-4">No pickups yet</p>}
-            {recentPickups.map(p => (
-              <div key={p.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div>
-                  <p className="text-sm font-medium">{p.request_type?.replace('_', ' ')} — {p.waste_type}</p>
-                  <p className="text-xs text-muted-foreground">{p.scheduled_date || 'No date set'}</p>
-                </div>
-                <Badge className={statusColor[p.status] || 'bg-gray-100'}>{p.status}</Badge>
+          <CardContent>
+            {recentPickups.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No pickup requests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentPickups.map(p => (
+                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/40 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{p.address || 'No address'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{p.request_type?.replace('_',' ')} · {p.waste_type}</p>
+                    </div>
+                    <Badge className={`text-xs ${statusColor[p.status] || ''}`} variant="secondary">
+                      {p.status?.replace('_',' ')}
+                    </Badge>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
 
-        {/* Open Complaints */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold">Open Complaints</CardTitle>
-            <Link to="/complaints"><Button variant="ghost" size="sm" className="text-xs">View all</Button></Link>
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold font-jakarta flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500" /> Open Complaints
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {recentComplaints.length === 0 && !loading && (
-              <div className="flex items-center gap-2 py-4 justify-center text-green-600">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm">No open complaints</span>
+          <CardContent>
+            {complaints.filter(c=>c.status==='open').length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No open complaints. Great!</p>
+            ) : (
+              <div className="space-y-3">
+                {complaints.filter(c=>c.status==='open').slice(0,5).map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-2 border-b border-border/40 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{c.subject || c.category?.replace('_',' ')}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{c.category?.replace('_',' ')}</p>
+                    </div>
+                    <Badge variant="secondary" className={`text-xs ${c.priority === 'urgent' ? 'bg-red-100 text-red-700' : c.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-muted text-muted-foreground'}`}>
+                      {c.priority}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             )}
-            {recentComplaints.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div>
-                  <p className="text-sm font-medium">{c.subject || c.category?.replace('_', ' ')}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{c.category?.replace('_', ' ')}</p>
-                </div>
-                <Badge className={priorityColor[c.priority] || 'bg-gray-100'}>{c.priority}</Badge>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>

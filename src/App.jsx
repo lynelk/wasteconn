@@ -6,34 +6,38 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
-
-// Pages
 import Dashboard from '@/pages/Dashboard';
 import Tenants from '@/pages/Tenants';
-import ServiceZones from '@/pages/ServiceZones';
 import Customers from '@/pages/Customers';
+import ServiceZones from '@/pages/ServiceZones';
 import ServicePlans from '@/pages/ServicePlans';
-import Subscriptions from '@/pages/Subscriptions';
 import PickupRequests from '@/pages/PickupRequests';
+import Vehicles from '@/pages/Vehicles';
 import Payments from '@/pages/Payments';
 import Complaints from '@/pages/Complaints';
-import Fleet from '@/pages/Fleet';
-import Settings from '@/pages/Settings';
+import Analytics from '@/pages/Analytics';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-4 border-secondary border-t-primary rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground font-medium">Loading NLSWMS...</p>
+        </div>
       </div>
     );
   }
 
   if (authError) {
-    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    else if (authError.type === 'auth_required') { navigateToLogin(); return null; }
+    if (authError.type === 'user_not_registered') {
+      return <UserNotRegisteredError />;
+    } else if (authError.type === 'auth_required') {
+      navigateToLogin();
+      return null;
+    }
   }
 
   return (
@@ -41,15 +45,14 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tenants" element={<Tenants />} />
-        <Route path="/zones" element={<ServiceZones />} />
         <Route path="/customers" element={<Customers />} />
-        <Route path="/service-plans" element={<ServicePlans />} />
-        <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/zones" element={<ServiceZones />} />
+        <Route path="/plans" element={<ServicePlans />} />
         <Route path="/pickups" element={<PickupRequests />} />
+        <Route path="/vehicles" element={<Vehicles />} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/complaints" element={<Complaints />} />
-        <Route path="/fleet" element={<Fleet />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/analytics" element={<Analytics />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

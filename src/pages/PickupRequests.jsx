@@ -1,190 +1,134 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Calendar, Edit2, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, Edit, Trash2, ClipboardList } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import PickupForm from '@/components/pickups/PickupForm';
+import { format } from 'date-fns';
 
-const statusColor = { pending: 'bg-yellow-100 text-yellow-800', assigned: 'bg-blue-100 text-blue-800', in_progress: 'bg-indigo-100 text-indigo-800', completed: 'bg-green-100 text-green-800', cancelled: 'bg-red-100 text-red-800' };
-const empty = { tenant_id:'', customer_id:'', zone_id:'', request_type:'on_demand', status:'pending', scheduled_date:'', scheduled_time:'', waste_type:'general', estimated_weight_kg:'', address:'', notes:'' };
+const statusColor = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  assigned: 'bg-blue-100 text-blue-800',
+  in_progress: 'bg-purple-100 text-purple-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+const typeColor = {
+  scheduled: 'bg-blue-50 text-blue-600',
+  on_demand: 'bg-orange-50 text-orange-600',
+  bulk: 'bg-gray-100 text-gray-600',
+};
 
 export default function PickupRequests() {
-  const [requests, setRequests] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [tenants, setTenants] = useState([]);
-  const [zones, setZones] = useState([]);
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    const [r, c, t, z] = await Promise.all([
-      base44.entities.PickupRequest.list('-created_date'),
-      base44.entities.Customer.list(),
-      base44.entities.Tenant.list(),
-      base44.entities.ServiceZone.list()
-    ]);
-    setRequests(r); setCustomers(c); setTenants(t); setZones(z);
-  };
-  useEffect(() => { load(); }, []);
+  const { data: pickups = [], isLoading } = useQuery({
+    queryKey: ['pickups'],
+    queryFn: () => base44.entities.PickupRequest.list('-created_date'),
+  });
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
 
-  const filtered = requests.filter(r => {
-    const cust = customers.find(c => c.id === r.customer_id);
-    const matchSearch = cust?.full_name?.toLowerCase().includes(search.toLowerCase()) || r.address?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
+  const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.PickupRequest.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pickups'] }),
+  });
+
+  const filtered = pickups.filter(p => {
+    const c = customerMap[p.customer_id];
+    const matchSearch = c?.full_name?.toLowerCase().includes(search.toLowerCase()) || p.address?.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus === 'all' || p.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
-  const custName = (id) => customers.find(c => c.id === id)?.full_name || '—';
-  const zoneName = (id) => zones.find(z => z.id === id)?.zone_name || '—';
-  const openEdit = (r) => { setForm({...r}); setEditing(r.id); setOpen(true); };
-  const openNew = () => { setForm(empty); setEditing(null); setOpen(true); };
-
-  const save = async () => {
-    setLoading(true);
-    if (editing) await base44.entities.PickupRequest.update(editing, form);
-    else await base44.entities.PickupRequest.create(form);
-    await load(); setOpen(false); setLoading(false);
-  };
-
-  const remove = async (id) => {
-    if (!confirm('Delete this request?')) return;
-    await base44.entities.PickupRequest.delete(id); await load();
-  };
-
-  const filteredCustomers = customers.filter(c => !form.tenant_id || c.tenant_id === form.tenant_id);
-  const filteredZones = zones.filter(z => !form.tenant_id || z.tenant_id === form.tenant_id);
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Pickup Requests</h1>
-          <p className="text-sm text-muted-foreground">{requests.filter(r => r.status === 'pending').length} pending requests</p>
+          <p className="text-muted-foreground text-sm mt-1">{pickups.filter(p=>p.status==='pending').length} pending</p>
         </div>
-        <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" />New Request</Button>
+        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+          <Plus className="w-4 h-4" /> New Request
+        </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search customer, address..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by customer or address..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            {['pending','assigned','in_progress','completed','cancelled'].map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace('_',' ')}</SelectItem>)}
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="border rounded-xl overflow-hidden bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Customer</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Waste</TableHead>
-              <TableHead>Zone</TableHead>
-              <TableHead>Scheduled</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(r => (
-              <TableRow key={r.id} className="hover:bg-muted/30">
-                <TableCell className="font-medium text-sm">{custName(r.customer_id)}</TableCell>
-                <TableCell><Badge variant="outline" className="capitalize text-xs">{r.request_type?.replace('_',' ')}</Badge></TableCell>
-                <TableCell className="text-sm capitalize">{r.waste_type}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{zoneName(r.zone_id)}</TableCell>
-                <TableCell className="text-sm">{r.scheduled_date || '—'} {r.scheduled_time && <span className="text-muted-foreground">{r.scheduled_time}</span>}</TableCell>
-                <TableCell><Badge className={statusColor[r.status] || 'bg-gray-100'}>{r.status?.replace('_',' ')}</Badge></TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => openEdit(r)}><Edit className="w-3 h-3" /></Button>
-                    <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive" onClick={() => remove(r.id)}><Trash2 className="w-3 h-3" /></Button>
+      {isLoading ? (
+        <div className="space-y-3">{[1,2,3,4].map(i=><div key={i} className="h-16 rounded-xl bg-muted animate-pulse"/>)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No pickup requests found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(p => {
+            const customer = customerMap[p.customer_id];
+            return (
+              <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card hover:shadow-sm transition-shadow">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-sm">{customer?.full_name || 'Unknown Customer'}</p>
+                    <Badge className={`text-xs ${typeColor[p.request_type]}`} variant="secondary">{p.request_type?.replace('_',' ')}</Badge>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">No requests found</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Request' : 'New Pickup Request'}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div>
-              <Label>Tenant</Label>
-              <Select value={form.tenant_id} onValueChange={v => setForm({...form,tenant_id:v,customer_id:'',zone_id:''})}>
-                <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
-                <SelectContent>{tenants.map(t => <SelectItem key={t.id} value={t.id}>{t.company_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Customer</Label>
-              <Select value={form.customer_id} onValueChange={v => setForm({...form,customer_id:v})}>
-                <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                <SelectContent>{filteredCustomers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Zone</Label>
-              <Select value={form.zone_id} onValueChange={v => setForm({...form,zone_id:v})}>
-                <SelectTrigger><SelectValue placeholder="Select zone" /></SelectTrigger>
-                <SelectContent>{filteredZones.map(z => <SelectItem key={z.id} value={z.id}>{z.zone_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            {[
-              ['request_type','Request Type',['scheduled','on_demand','bulk']],
-              ['status','Status',['pending','assigned','in_progress','completed','cancelled']],
-              ['waste_type','Waste Type',['general','recyclable','organic','hazardous','bulky']],
-            ].map(([k,l,opts]) => (
-              <div key={k}>
-                <Label>{l}</Label>
-                <Select value={form[k]} onValueChange={v => setForm({...form,[k]:v})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{opts.map(o => <SelectItem key={o} value={o} className="capitalize">{o.replace('_',' ')}</SelectItem>)}</SelectContent>
-                </Select>
+                  <p className="text-xs text-muted-foreground">{p.address || 'No address'} · {p.waste_type} waste</p>
+                  {p.scheduled_date && <p className="text-xs text-muted-foreground mt-0.5">📅 {format(new Date(p.scheduled_date), 'MMM d, yyyy')}</p>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge className={`text-xs ${statusColor[p.status]}`} variant="secondary">{p.status?.replace('_',' ')}</Badge>
+                  {p.status === 'pending' && (
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateMutation.mutate({ id: p.id, data: { status: 'assigned' } })}>
+                      Assign
+                    </Button>
+                  )}
+                  {p.status === 'assigned' && (
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateMutation.mutate({ id: p.id, data: { status: 'completed' } })}>
+                      Complete
+                    </Button>
+                  )}
+                  <button onClick={() => { setEditing(p); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            ))}
-            <div>
-              <Label>Scheduled Date</Label>
-              <Input type="date" value={form.scheduled_date||''} onChange={e => setForm({...form,scheduled_date:e.target.value})} />
-            </div>
-            <div>
-              <Label>Scheduled Time</Label>
-              <Input type="time" value={form.scheduled_time||''} onChange={e => setForm({...form,scheduled_time:e.target.value})} />
-            </div>
-            <div>
-              <Label>Est. Weight (kg)</Label>
-              <Input type="number" value={form.estimated_weight_kg||''} onChange={e => setForm({...form,estimated_weight_kg:e.target.value})} />
-            </div>
-            <div className="col-span-2">
-              <Label>Address</Label>
-              <Input value={form.address||''} onChange={e => setForm({...form,address:e.target.value})} />
-            </div>
-            <div className="col-span-2">
-              <Label>Notes</Label>
-              <Textarea value={form.notes||''} onChange={e => setForm({...form,notes:e.target.value})} rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-          </DialogFooter>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-jakarta">{editing ? 'Edit Pickup Request' : 'New Pickup Request'}</DialogTitle>
+          </DialogHeader>
+          <PickupForm pickup={editing} onClose={() => { setOpen(false); setEditing(null); }} />
         </DialogContent>
       </Dialog>
     </div>
