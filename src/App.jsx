@@ -17,6 +17,8 @@ import Vehicles from '@/pages/Vehicles';
 import Payments from '@/pages/Payments';
 import Complaints from '@/pages/Complaints';
 import Analytics from '@/pages/Analytics';
+import DriverApp from '@/pages/DriverApp';
+import CustomerApp from '@/pages/CustomerApp';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -55,6 +57,8 @@ const AuthenticatedApp = () => {
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/analytics" element={<Analytics />} />
       </Route>
+      <Route path="/driver-app" element={<DriverApp />} />
+      <Route path="/customer-app" element={<CustomerApp />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
