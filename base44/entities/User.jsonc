@@ -1,0 +1,35 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user",
+        "super_admin",
+        "dispatcher",
+        "driver",
+        "customer"
+      ]
+    },
+    "phone": {
+      "type": "string",
+      "description": "User's phone number for contact and mobile money"
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": [
+        "english",
+        "luganda",
+        "swahili"
+      ],
+      "default": "english",
+      "description": "Preferred communication language"
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

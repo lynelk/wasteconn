@@ -2,6 +2,8 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from '@/components/ui/PageTransition';
 import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
   MessageSquare, Settings, Menu, X, LogOut,
@@ -142,7 +144,11 @@ export default function Layout() {
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 lg:pb-6">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
         </main>
 
         <MobileBottomNav />

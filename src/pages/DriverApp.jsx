@@ -9,6 +9,8 @@ import { Truck, MapPin, CheckCircle2, Clock, Camera, LogOut, RefreshCw, ChevronD
 import { base44 as sdk } from '@/api/base44Client';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 
 const statusOrder = ['assigned', 'in_progress', 'completed', 'cancelled'];
 
@@ -93,6 +95,8 @@ export default function DriverApp() {
     queryClient.invalidateQueries({ queryKey: ['driver-jobs'] });
   };
 
+  const { pulling, pullDistance, refreshing } = usePullToRefresh({ onRefresh: refetch });
+
   const todayJobs = jobs.filter(j => j.scheduled_date === today || j.status === 'in_progress');
   const completedToday = todayJobs.filter(j => j.status === 'completed').length;
 
@@ -132,6 +136,9 @@ export default function DriverApp() {
           </div>
         )}
       </div>
+
+      {/* Pull-to-refresh indicator */}
+      <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} />
 
       {/* Stats */}
       <DriverStats jobs={todayJobs} completedToday={completedToday} />

@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import BottomSheetSelect from '@/components/ui/BottomSheetSelect';
 
 export default function CustomerPickupModal({ servicePoints, customer, onSubmit, onClose, isLoading }) {
   const [form, setForm] = useState({
@@ -12,10 +14,27 @@ export default function CustomerPickupModal({ servicePoints, customer, onSubmit,
 
   const wasteTypes = ['general', 'recyclable', 'organic', 'hazardous', 'bulky'];
 
+  const addressOptions = [
+    ...(servicePoints || []).map(sp => ({ value: sp.address, label: sp.address })),
+    ...(customer?.address ? [{ value: customer.address, label: 'My registered address' }] : []),
+  ];
+
   return (
+    <AnimatePresence>
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl p-6">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        className="relative bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl p-6"
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-primary" />
@@ -48,17 +67,13 @@ export default function CustomerPickupModal({ servicePoints, customer, onSubmit,
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Pickup Address</label>
-            {servicePoints.length > 0 ? (
-              <select
-                className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm"
+            {addressOptions.length > 0 ? (
+              <BottomSheetSelect
                 value={form.address}
-                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-              >
-                {servicePoints.map(sp => (
-                  <option key={sp.id} value={sp.address}>{sp.address}</option>
-                ))}
-                <option value={customer?.address || ''}>My registered address</option>
-              </select>
+                onChange={val => setForm(f => ({ ...f, address: val }))}
+                options={addressOptions}
+                placeholder="Select address…"
+              />
             ) : (
               <input
                 className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm"
@@ -98,7 +113,8 @@ export default function CustomerPickupModal({ servicePoints, customer, onSubmit,
             {isLoading ? 'Submitting...' : 'Submit Pickup Request'}
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
+    </AnimatePresence>
   );
 }

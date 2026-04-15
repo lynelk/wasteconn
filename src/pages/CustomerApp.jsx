@@ -3,6 +3,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 import { FileText, Calendar, Plus, LogOut, Download, Truck, CheckCircle2, Clock, AlertCircle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,12 +70,25 @@ export default function CustomerApp() {
     { key: 'invoices', label: 'Invoices', icon: FileText },
   ];
 
+  const handleRefresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['my-pickups'] }),
+      queryClient.invalidateQueries({ queryKey: ['my-invoices'] }),
+      queryClient.invalidateQueries({ queryKey: ['my-service-points'] }),
+    ]);
+  };
+
+  const { pulling, pullDistance, refreshing } = usePullToRefresh({ onRefresh: handleRefresh });
+
   const recentPickups = [...pickups].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
   const completedCount = pickups.filter(p => p.status === 'completed').length;
   const pendingCount = pickups.filter(p => ['pending', 'assigned', 'in_progress'].includes(p.status)).length;
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Pull-to-refresh indicator */}
+      <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} />
+
       {/* Header */}
       <div className="bg-primary text-white px-4 pt-6 pb-8">
         <div className="max-w-lg mx-auto">
