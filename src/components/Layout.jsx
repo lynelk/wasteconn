@@ -4,12 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
 import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
-  MessageSquare, Settings, ChevronDown, Menu, X, LogOut,
-  Building2, ClipboardList, BarChart3, Bell, User
+  MessageSquare, Settings, Menu, X, LogOut,
+  Building2, ClipboardList, BarChart3, Bell, User, ChevronLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', roles: ['admin', 'user', 'super_admin', 'dispatcher', 'driver', 'customer'] },
@@ -111,19 +112,35 @@ export default function Layout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-14 border-b border-border bg-card flex items-center px-4 gap-4 sticky top-0 z-30">
-          <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex-1" />
-          <button className="text-muted-foreground hover:text-foreground transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+        <header
+          className="border-b border-border bg-card flex flex-col sticky top-0 z-30 safe-top"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <div className="h-14 flex items-center px-4 gap-3">
+            {/* Back button on mobile when not on root */}
+            {location.pathname !== '/' && (
+              <button
+                className="lg:hidden text-muted-foreground hover:text-foreground transition-colors mr-1"
+                onClick={() => navigate(-1)}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            <button className="lg:hidden text-muted-foreground" onClick={() => setSidebarOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex-1" />
+            <button className="text-muted-foreground hover:text-foreground transition-colors">
+              <Bell className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 lg:pb-6">
           <Outlet />
         </main>
+
+        <MobileBottomNav />
       </div>
     </div>
   );

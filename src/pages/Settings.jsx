@@ -1,8 +1,21 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings as SettingsIcon, Database, Users, MapPin, Truck, CreditCard, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Settings as SettingsIcon, Database, Users, MapPin, Truck, CreditCard, MessageSquare, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { base44 } from '@/api/base44Client';
 
 export default function Settings() {
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    await base44.auth.logout('/');
+  };
+
   const modules = [
     { icon: Users, label: 'Tenants', desc: 'Multi-tenant waste management companies', status: 'active' },
     { icon: Users, label: 'Customers', desc: 'Residential & commercial customer management', status: 'active' },
@@ -60,6 +73,46 @@ export default function Settings() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-destructive/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-destructive flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Danger Zone
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+          <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="gap-2">
+                <Trash2 className="w-4 h-4" />
+                Delete Account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your account and remove all your data from the platform. This action <strong>cannot be undone</strong>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Yes, Delete My Account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

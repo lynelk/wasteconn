@@ -80,8 +80,27 @@
   }
   body {
     @apply bg-background text-foreground font-inter;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-jakarta;
+  }
+  button, a, nav, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Prevent iOS zoom on input focus */
+  @media (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+  /* Safe area support */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
