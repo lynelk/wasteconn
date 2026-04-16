@@ -7,7 +7,6 @@ Deno.serve(async (req) => {
 
     // This is called by scheduled automation — use service role
     const now = new Date();
-    // Default to previous month
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const periodFrom = prevMonth.toISOString().substring(0, 10);
     const periodTo = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().substring(0, 10);
@@ -165,17 +164,15 @@ Deno.serve(async (req) => {
       doc.text(`NLSWMS Compliance Report | ${reportNum} | Page ${i} of ${pageCount} | IMMUTABLE ARCHIVE`, margin, 293);
     }
 
-    const pdfBase64 = doc.output('datauristring');
-    // Store as data URI reference (in production, integrate with storage)
-    const pdfUrl = pdfBase64.length > 0 ? `data:application/pdf;base64,${doc.output('base64')}` : null;
-    // Attempt cloud upload
+    // Upload PDF — convert to base64 string for UploadFile integration
     let cloudUrl = null;
     try {
-      const pdfBytes = doc.output('arraybuffer');
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
+      const pdfBase64 = doc.output('base64');
+      const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: pdfBase64 });
       cloudUrl = uploadRes?.file_url || null;
-    } catch (_) {}
+    } catch (_) {
+      // Upload failed — store without PDF URL
+    }
 
     await base44.asServiceRole.entities.ComplianceReport.create({
       tenant_id: 'system',
