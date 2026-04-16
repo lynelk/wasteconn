@@ -126,6 +126,8 @@ export default function AIRouteOptimiser({ jobs, zones, vehicles, selectedDate, 
 
 DATE: ${selectedDate}
 CONTEXT: Urban East African road conditions. Average speed in city: 20-30 km/h. Peak hours: 7-9am, 4-7pm (avoid when possible).
+Use your knowledge of current Kampala traffic patterns, road conditions, and construction zones to refine route estimates.
+Factor in real-world conditions: Kampala Road, Entebbe Road, Jinja Road, and Northern Bypass have distinct traffic characteristics.
 
 VEHICLES AVAILABLE (${vehicles.length}):
 ${JSON.stringify(vehicleSummary, null, 2)}

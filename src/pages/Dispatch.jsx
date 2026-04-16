@@ -12,7 +12,7 @@ import DispatchJobList from '@/components/dispatch/DispatchJobList';
 import RouteBuilder from '@/components/dispatch/RouteBuilder';
 import AIRouteOptimiser from '@/components/dispatch/AIRouteOptimiser';
 import PredictiveExceptionEngine from '@/components/dispatch/PredictiveExceptionEngine';
-import DispatchMap from '@/components/dispatch/DispatchMap';
+import LiveDispatchMap from '@/components/dispatch/LiveDispatchMap';
 
 export default function Dispatch() {
   const queryClient = useQueryClient();
@@ -133,7 +133,7 @@ export default function Dispatch() {
       {showMap && (
         <Card className="border-border/60">
           <CardContent className="pt-4">
-            <DispatchMap jobs={jobs} routes={routes} />
+            <LiveDispatchMap jobs={jobs} routes={routes} />
           </CardContent>
         </Card>
       )}

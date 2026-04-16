@@ -1,0 +1,53 @@
+{
+  "name": "DriverLocation",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "User ID of the driver"
+    },
+    "driver_name": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "accuracy_meters": {
+      "type": "number"
+    },
+    "heading": {
+      "type": "number",
+      "description": "Direction in degrees 0-360"
+    },
+    "speed_kmh": {
+      "type": "number"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Active route being driven"
+    },
+    "current_job_id": {
+      "type": "string",
+      "description": "Current pickup job in progress"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "driver_id",
+    "latitude",
+    "longitude"
+  ]
+}

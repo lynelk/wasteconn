@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CustomerPickupModal from '@/components/customer/CustomerPickupModal';
 import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
 import SurveyModal from '@/components/customer/SurveyModal';
+import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
 import { Star } from 'lucide-react';
 
 const statusColor = {
@@ -28,6 +29,7 @@ export default function CustomerApp() {
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [activeTab, setActiveTab] = useState('history');
   const [activeSurvey, setActiveSurvey] = useState(null);
+  const [trackingPickup, setTrackingPickup] = useState(null);
 
   const { data: customer } = useQuery({
     queryKey: ['my-customer', user?.email],
@@ -221,9 +223,19 @@ export default function CustomerApp() {
                           </p>
                         )}
                       </div>
-                      <Badge className={`text-xs ${statusColor[pickup.status] || ''}`} variant="secondary">
-                        {pickup.status?.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge className={`text-xs ${statusColor[pickup.status] || ''}`} variant="secondary">
+                          {pickup.status?.replace('_', ' ')}
+                        </Badge>
+                        {(pickup.status === 'assigned' || pickup.status === 'in_progress') && pickup.assigned_driver_id && (
+                          <button
+                            onClick={() => setTrackingPickup(pickup)}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            <MapPin className="w-3 h-3" /> Track Driver
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -259,6 +271,11 @@ export default function CustomerApp() {
           onClose={() => setActiveSurvey(null)}
           onSubmitted={() => { setActiveSurvey(null); refetchSurveys(); }}
         />
+      )}
+
+      {/* Track Dispatch Modal */}
+      {trackingPickup && (
+        <TrackDispatchModal pickup={trackingPickup} onClose={() => setTrackingPickup(null)} />
       )}
 
       {/* Pickup Modal */}

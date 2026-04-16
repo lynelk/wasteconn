@@ -9,6 +9,7 @@ import { Truck, MapPin, CheckCircle2, Clock, Camera, LogOut, RefreshCw, ChevronD
 import { base44 as sdk } from '@/api/base44Client';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
+import GPSTracker from '@/components/driver/GPSTracker';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 
@@ -162,6 +163,12 @@ Be concise in your analysis_notes.`,
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GPSTracker
+              user={user}
+              currentJobId={todayJobs.find(j => j.status === 'in_progress')?.id}
+              currentRouteId={null}
+              isOnline={isOnline}
+            />
             {isOnline ? (
               <span className="flex items-center gap-1 text-xs text-green-400"><Wifi className="w-3 h-3" /> Online</span>
             ) : (
