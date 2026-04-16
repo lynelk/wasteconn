@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
-import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, X, Image } from 'lucide-react';
+import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const statusConfig = {
@@ -114,6 +113,26 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
                 </a>
               ))}
             </div>
+
+            {/* CV Analysis Results */}
+            {job.evidence_quality_score != null && (
+              <div className={`rounded-lg px-3 py-2 mb-2 text-xs ${job.cv_flagged_for_review ? 'bg-red-950/50 border border-red-700' : 'bg-green-950/40 border border-green-700'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {job.cv_flagged_for_review
+                    ? <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                    : <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                  }
+                  <span className={`font-semibold ${job.cv_flagged_for_review ? 'text-red-300' : 'text-green-300'}`}>
+                    {job.cv_flagged_for_review ? 'Photo Flagged for Review' : 'Photo Verified'}
+                  </span>
+                  <span className="ml-auto flex items-center gap-1 text-gray-400">
+                    <Star className="w-3 h-3" />{job.evidence_quality_score}/100
+                  </span>
+                </div>
+                {job.cv_analysis_notes && <p className="text-gray-400">{job.cv_analysis_notes}</p>}
+              </div>
+            )}
+
             <input ref={fileRef} type="file" multiple accept="image/*" capture="environment" className="hidden" onChange={handleFiles} />
             <button
               onClick={() => fileRef.current?.click()}
@@ -121,7 +140,7 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
               className="flex items-center gap-2 text-xs text-primary bg-primary/10 border border-primary/30 px-3 py-2 rounded-lg hover:bg-primary/20 disabled:opacity-50"
             >
               <Camera className="w-3.5 h-3.5" />
-              {uploading ? 'Uploading...' : 'Add Photos'}
+              {uploading ? 'Analysing photo with AI...' : 'Add Photos'}
             </button>
           </div>
 

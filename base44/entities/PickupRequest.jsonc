@@ -80,6 +80,27 @@
         "type": "string"
       },
       "description": "Multiple proof-of-service photo URLs"
+    },
+    "evidence_quality_score": {
+      "type": "number",
+      "description": "CV quality score 0-100"
+    },
+    "cv_bin_present": {
+      "type": "boolean",
+      "description": "CV: waste bin detected in photo"
+    },
+    "cv_bin_positioned_correctly": {
+      "type": "boolean",
+      "description": "CV: bin properly positioned"
+    },
+    "cv_flagged_for_review": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged for dispatcher review"
+    },
+    "cv_analysis_notes": {
+      "type": "string",
+      "description": "AI CV analysis summary"
     }
   },
   "required": [

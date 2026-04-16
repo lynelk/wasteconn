@@ -23,6 +23,7 @@ import Dispatch from '@/pages/Dispatch';
 import AuditLogs from '@/pages/AuditLogs';
 import FleetMaintenance from '@/pages/FleetMaintenance';
 import Communications from '@/pages/Communications';
+import DriverPerformance from '@/pages/DriverPerformance';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/fleet-maintenance" element={<FleetMaintenance />} />
         <Route path="/communications" element={<Communications />} />
+        <Route path="/driver-performance" element={<DriverPerformance />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/customer-app" element={<CustomerApp />} />

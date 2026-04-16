@@ -91,7 +91,54 @@ export default function DriverApp() {
       uploadedUrls.push(file_url);
     }
     const existingPhotos = job.photo_urls || [];
-    await base44.entities.PickupRequest.update(job.id, { photo_urls: [...existingPhotos, ...uploadedUrls] });
+    const allPhotos = [...existingPhotos, ...uploadedUrls];
+
+    // Run CV analysis on the first new photo
+    let cvData = {};
+    if (uploadedUrls.length > 0) {
+      const cvRes = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a waste management evidence quality inspector.
+Analyse this proof-of-service photo submitted by a driver upon job completion.
+
+Assess the following:
+1. Is a waste bin clearly visible in the image?
+2. Is the bin properly positioned (upright, accessible, not tipped over)?
+3. Is the image sharp and well-lit (not blurry or too dark)?
+4. Does the photo provide adequate proof of service completion?
+
+Assign an overall quality_score from 0-100:
+- 90-100: Excellent, bin clearly visible, well positioned, sharp photo
+- 70-89: Good, minor issues but acceptable
+- 50-69: Acceptable but has issues (slightly blurry, bin partially visible)
+- Below 50: Poor quality, flag for manual review
+
+Be concise in your analysis_notes.`,
+        file_urls: [uploadedUrls[0]],
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            bin_present: { type: 'boolean' },
+            bin_positioned_correctly: { type: 'boolean' },
+            quality_score: { type: 'number' },
+            flag_for_review: { type: 'boolean' },
+            analysis_notes: { type: 'string' },
+          }
+        }
+      });
+
+      cvData = {
+        evidence_quality_score: cvRes.quality_score ?? null,
+        cv_bin_present: cvRes.bin_present ?? null,
+        cv_bin_positioned_correctly: cvRes.bin_positioned_correctly ?? null,
+        cv_flagged_for_review: cvRes.flag_for_review ?? false,
+        cv_analysis_notes: cvRes.analysis_notes || '',
+      };
+    }
+
+    await base44.entities.PickupRequest.update(job.id, {
+      photo_urls: allPhotos,
+      ...cvData,
+    });
     queryClient.invalidateQueries({ queryKey: ['driver-jobs'] });
   };
 

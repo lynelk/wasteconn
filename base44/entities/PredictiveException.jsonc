@@ -1,0 +1,69 @@
+{
+  "name": "PredictiveException",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "pickup_request_id": {
+      "type": "string",
+      "description": "Associated job"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Associated route if any"
+    },
+    "prediction_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prediction_type": {
+      "type": "string",
+      "enum": [
+        "delay",
+        "missed_pickup",
+        "vehicle_issue",
+        "capacity_exceeded",
+        "other"
+      ],
+      "default": "delay"
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "0-100 risk score"
+    },
+    "confidence_score": {
+      "type": "number",
+      "description": "0-100 AI confidence"
+    },
+    "reason": {
+      "type": "string",
+      "description": "AI-generated explanation"
+    },
+    "mitigation_suggestion": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "predicted",
+        "intervened",
+        "resolved",
+        "false_positive"
+      ],
+      "default": "predicted"
+    },
+    "intervened_by": {
+      "type": "string"
+    },
+    "intervention_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "pickup_request_id",
+    "prediction_type",
+    "risk_score"
+  ]
+}

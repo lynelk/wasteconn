@@ -1,0 +1,55 @@
+{
+  "name": "RouteFeedback",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "route_name": {
+      "type": "string"
+    },
+    "feedback_type": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "negative",
+        "neutral"
+      ],
+      "default": "neutral"
+    },
+    "efficiency_rating": {
+      "type": "number",
+      "description": "1-5 dispatcher rating"
+    },
+    "comments": {
+      "type": "string"
+    },
+    "actual_distance_km": {
+      "type": "number"
+    },
+    "estimated_distance_km": {
+      "type": "number"
+    },
+    "actual_duration_mins": {
+      "type": "number"
+    },
+    "estimated_duration_mins": {
+      "type": "number"
+    },
+    "ai_optimised": {
+      "type": "boolean",
+      "default": false
+    },
+    "dispatcher_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "route_id",
+    "feedback_type"
+  ]
+}

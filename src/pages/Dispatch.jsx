@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { MapPin, Truck, User, Plus, Zap, RefreshCw, CheckCircle2, Send } from 'lucide-react';
+import { MapPin, Truck, Plus, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DispatchJobList from '@/components/dispatch/DispatchJobList';
 import RouteBuilder from '@/components/dispatch/RouteBuilder';
 import AIRouteOptimiser from '@/components/dispatch/AIRouteOptimiser';
+import PredictiveExceptionEngine from '@/components/dispatch/PredictiveExceptionEngine';
 
 export default function Dispatch() {
   const queryClient = useQueryClient();
@@ -38,9 +39,13 @@ export default function Dispatch() {
     queryFn: () => base44.entities.Route.filter({ route_date: selectedDate }),
   });
 
-  const unassigned = jobs.filter(j => j.status === 'pending' && !j.assigned_driver_id);
-  const assigned = jobs.filter(j => j.assigned_driver_id || j.status !== 'pending');
+  // Fetch active predictive exceptions for today's jobs
+  const { data: exceptions = [], refetch: refetchExceptions } = useQuery({
+    queryKey: ['predictive-exceptions', selectedDate],
+    queryFn: () => base44.entities.PredictiveException.filter({ prediction_date: selectedDate, status: 'predicted' }),
+  });
 
+  const unassigned = jobs.filter(j => j.status === 'pending' && !j.assigned_driver_id);
   const filteredUnassigned = selectedZone === 'all'
     ? unassigned
     : unassigned.filter(j => j.zone_id === selectedZone);
@@ -60,6 +65,14 @@ export default function Dispatch() {
     completed: jobs.filter(j => j.status === 'completed').length,
   };
 
+  // Build a set of high-risk job IDs for quick lookup
+  const highRiskJobIds = new Set(
+    exceptions.filter(e => e.risk_score >= 60).map(e => e.pickup_request_id)
+  );
+  const exceptionMap = Object.fromEntries(
+    exceptions.filter(e => e.risk_score >= 60).map(e => [e.pickup_request_id, e])
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -67,7 +80,7 @@ export default function Dispatch() {
           <h1 className="text-2xl font-bold font-jakarta">Dispatch Board</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Assign jobs, build routes, and optimise with AI</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <input
             type="date"
             value={selectedDate}
@@ -97,6 +110,16 @@ export default function Dispatch() {
         ))}
       </div>
 
+      {/* Exception alert bar */}
+      {exceptions.length > 0 && (
+        <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 rounded-xl px-4 py-3">
+          <span className="text-yellow-600 dark:text-yellow-400 font-semibold text-sm">
+            ⚠ {exceptions.length} High-Risk Job{exceptions.length > 1 ? 's' : ''} Detected
+          </span>
+          <span className="text-xs text-muted-foreground">AI has flagged jobs below that may need proactive intervention today.</span>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Unassigned Jobs */}
         <div className="lg:col-span-2 space-y-4">
@@ -118,10 +141,12 @@ export default function Dispatch() {
             onToggle={toggleJob}
             loading={loadingJobs}
             zones={zones}
+            highRiskJobIds={highRiskJobIds}
+            exceptionMap={exceptionMap}
           />
         </div>
 
-        {/* Routes Panel */}
+        {/* Right Panel */}
         <div className="space-y-4">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Today's Routes</h2>
           {routes.length === 0 ? (
@@ -164,6 +189,13 @@ export default function Dispatch() {
             vehicles={vehicles}
             selectedDate={selectedDate}
             onOptimised={() => queryClient.invalidateQueries({ queryKey: ['routes', selectedDate] })}
+          />
+
+          {/* Predictive Exception Engine */}
+          <PredictiveExceptionEngine
+            jobs={jobs}
+            selectedDate={selectedDate}
+            onAnalysisComplete={() => refetchExceptions()}
           />
         </div>
       </div>
