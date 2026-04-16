@@ -39,6 +39,12 @@ import TenantHealthMonitor from '@/pages/TenantHealthMonitor';
 import SchemaEvolution from '@/pages/SchemaEvolution';
 import ExceptionsQueue from '@/pages/ExceptionsQueue';
 import IntegrationQueuePage from '@/pages/IntegrationQueuePage';
+import ZoneHierarchyAdmin from '@/pages/ZoneHierarchyAdmin';
+import CoverageAnalytics from '@/pages/CoverageAnalytics';
+import OmniInbox from '@/pages/OmniInbox';
+import ReportingDashboard from '@/pages/ReportingDashboard';
+import WasteBank from '@/pages/WasteBank';
+import WialonIntegration from '@/pages/WialonIntegration';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -94,6 +100,12 @@ const AuthenticatedApp = () => {
         <Route path="/schema-evolution" element={<SchemaEvolution />} />
         <Route path="/exceptions" element={<ExceptionsQueue />} />
         <Route path="/integration-queue" element={<IntegrationQueuePage />} />
+        <Route path="/zone-hierarchy" element={<ZoneHierarchyAdmin />} />
+        <Route path="/coverage-analytics" element={<CoverageAnalytics />} />
+        <Route path="/omni-inbox" element={<OmniInbox />} />
+        <Route path="/reporting" element={<ReportingDashboard />} />
+        <Route path="/waste-bank" element={<WasteBank />} />
+        <Route path="/wialon" element={<WialonIntegration />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/field-app" element={<FieldApp />} />

@@ -9,7 +9,7 @@ import {
   MessageSquare, Settings, Menu, X, LogOut,
   Building2, ClipboardList, BarChart3, User, ChevronLeft,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
-  Activity, Database, Lock, AlertTriangle, Zap
+  Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale, FileBarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,12 @@ const navItems = [
   { label: 'Schema Evolution', icon: Database, path: '/schema-evolution', roles: ['super_admin'] },
   { label: 'Exceptions Queue', icon: AlertTriangle, path: '/exceptions', roles: ['admin', 'super_admin', 'dispatcher'] },
   { label: 'Integration Queue', icon: Zap, path: '/integration-queue', roles: ['admin', 'super_admin'] },
+  { label: 'Zone Hierarchy', icon: GitBranch, path: '/zone-hierarchy', roles: ['admin', 'super_admin'] },
+  { label: 'Coverage Analytics', icon: BarChart3, path: '/coverage-analytics', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Omni-Inbox', icon: Inbox, path: '/omni-inbox', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Reporting', icon: FileBarChart, path: '/reporting', roles: ['admin', 'super_admin'] },
+  { label: 'Waste Bank', icon: Scale, path: '/waste-bank', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Wialon Telematics', icon: Radio, path: '/wialon', roles: ['admin', 'super_admin'] },
   { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
   { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
   { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },

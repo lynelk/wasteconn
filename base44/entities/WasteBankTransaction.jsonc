@@ -1,0 +1,148 @@
+{
+  "name": "WasteBankTransaction",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "transaction_number": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "payout",
+        "payin"
+      ],
+      "default": "payout",
+      "description": "payout = customer deposits waste and receives money; payin = customer pays to deposit waste"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Field agent who processed the transaction"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "waste_category": {
+      "type": "string",
+      "enum": [
+        "plastic",
+        "paper",
+        "glass",
+        "metal",
+        "organic",
+        "e_waste",
+        "textile",
+        "mixed"
+      ],
+      "default": "mixed"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "rejected"
+      ],
+      "default": "B"
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "rate_ugx_per_kg": {
+      "type": "number"
+    },
+    "gross_amount_ugx": {
+      "type": "number"
+    },
+    "deductions_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "net_amount_ugx": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "mtn_momo",
+        "airtel_money",
+        "cash",
+        "wallet_credit"
+      ],
+      "default": "mtn_momo"
+    },
+    "mobile_money_number": {
+      "type": "string"
+    },
+    "mobile_money_provider": {
+      "type": "string",
+      "enum": [
+        "mtn",
+        "airtel",
+        "none"
+      ],
+      "default": "mtn"
+    },
+    "payment_reference": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "reversed"
+      ],
+      "default": "pending"
+    },
+    "receipt_number": {
+      "type": "string"
+    },
+    "receipt_url": {
+      "type": "string"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gps_lat": {
+      "type": "number"
+    },
+    "gps_lon": {
+      "type": "number"
+    },
+    "fraud_flag": {
+      "type": "boolean",
+      "default": false
+    },
+    "fraud_reason": {
+      "type": "string"
+    },
+    "ai_fraud_score": {
+      "type": "number",
+      "description": "0-100 AI fraud confidence"
+    },
+    "ai_grade_suggestion": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_type",
+    "customer_id",
+    "waste_category",
+    "weight_kg"
+  ]
+}

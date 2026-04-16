@@ -1,0 +1,149 @@
+{
+  "name": "ReportSnapshot",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly"
+      ],
+      "default": "monthly"
+    },
+    "period_label": {
+      "type": "string",
+      "description": "e.g. 2026-04, 2026-W15"
+    },
+    "period_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_to": {
+      "type": "string",
+      "format": "date"
+    },
+    "total_pickups_scheduled": {
+      "type": "number",
+      "default": 0
+    },
+    "total_pickups_completed": {
+      "type": "number",
+      "default": 0
+    },
+    "total_pickups_missed": {
+      "type": "number",
+      "default": 0
+    },
+    "coverage_pct": {
+      "type": "number"
+    },
+    "total_tonnage_kg": {
+      "type": "number",
+      "default": 0
+    },
+    "total_revenue_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "total_outstanding_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "active_customers": {
+      "type": "number",
+      "default": 0
+    },
+    "new_customers": {
+      "type": "number",
+      "default": 0
+    },
+    "churned_customers": {
+      "type": "number",
+      "default": 0
+    },
+    "tickets_opened": {
+      "type": "number",
+      "default": 0
+    },
+    "tickets_resolved": {
+      "type": "number",
+      "default": 0
+    },
+    "sla_breaches": {
+      "type": "number",
+      "default": 0
+    },
+    "operator_scorecards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operator_id": {
+            "type": "string"
+          },
+          "operator_name": {
+            "type": "string"
+          },
+          "completion_rate": {
+            "type": "number"
+          },
+          "sla_score": {
+            "type": "number"
+          },
+          "penalty_ugx": {
+            "type": "number"
+          },
+          "bonus_ugx": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "zone_breakdowns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "zone_id": {
+            "type": "string"
+          },
+          "zone_name": {
+            "type": "string"
+          },
+          "served": {
+            "type": "number"
+          },
+          "missed": {
+            "type": "number"
+          },
+          "tonnage_kg": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "pdf_url": {
+      "type": "string"
+    },
+    "csv_url": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_type",
+    "period_label",
+    "period_from",
+    "period_to"
+  ]
+}

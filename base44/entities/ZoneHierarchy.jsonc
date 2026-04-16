@@ -1,0 +1,85 @@
+{
+  "name": "ZoneHierarchy",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Zone name e.g. Central Region, Kampala District"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "region",
+        "district",
+        "county",
+        "sub_county",
+        "town",
+        "village",
+        "custom"
+      ],
+      "default": "district"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "Parent zone hierarchy node ID"
+    },
+    "path": {
+      "type": "string",
+      "description": "Full slash-delimited path for breadcrumb e.g. Central/Kampala"
+    },
+    "ugx_zone_code": {
+      "type": "string"
+    },
+    "assigned_operator_id": {
+      "type": "string",
+      "description": "Tenant/operator assigned to serve this zone"
+    },
+    "sla_hours": {
+      "type": "number",
+      "default": 24,
+      "description": "SLA target in hours for service"
+    },
+    "required_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required evidence types: photo, gps, weight"
+    },
+    "collection_days": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "population_estimate": {
+      "type": "number"
+    },
+    "area_sqkm": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "unserviced"
+      ],
+      "default": "active"
+    },
+    "custom_label": {
+      "type": "string",
+      "description": "Custom level label if level=custom"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "level"
+  ]
+}

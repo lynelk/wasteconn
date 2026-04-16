@@ -1,0 +1,49 @@
+{
+  "name": "CustomerWallet",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "balance_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "total_earned_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Cumulative payout earnings"
+    },
+    "total_paid_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Cumulative payin deposits"
+    },
+    "total_withdrawn_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "last_transaction_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "frozen",
+        "suspended"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id"
+  ]
+}

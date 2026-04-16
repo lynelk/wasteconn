@@ -1,0 +1,165 @@
+{
+  "name": "Ticket",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "ticket_number": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "web_form",
+        "whatsapp",
+        "email",
+        "phone",
+        "in_app",
+        "operator"
+      ],
+      "default": "web_form"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "customer_phone": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string"
+    },
+    "service_point_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "missed_collection",
+        "billing_dispute",
+        "service_quality",
+        "access_issue",
+        "bin_damage",
+        "driver_behaviour",
+        "wrong_schedule",
+        "general_inquiry",
+        "other"
+      ],
+      "default": "general_inquiry"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "triaged",
+        "assigned",
+        "in_progress",
+        "pending_evidence",
+        "resolved",
+        "closed",
+        "escalated"
+      ],
+      "default": "open"
+    },
+    "assigned_operator_id": {
+      "type": "string"
+    },
+    "assigned_to": {
+      "type": "string"
+    },
+    "sla_hours": {
+      "type": "number",
+      "default": 24
+    },
+    "sla_due_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sla_breached": {
+      "type": "boolean",
+      "default": false
+    },
+    "escalated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "escalated_to": {
+      "type": "string"
+    },
+    "evidence_bundle_id": {
+      "type": "string"
+    },
+    "closure_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "closure_verified_by": {
+      "type": "string"
+    },
+    "closure_verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolution_notes": {
+      "type": "string"
+    },
+    "customer_rating": {
+      "type": "number",
+      "description": "1-5 rating post-closure"
+    },
+    "ai_category": {
+      "type": "string"
+    },
+    "ai_priority": {
+      "type": "string"
+    },
+    "ai_sentiment": {
+      "type": "string"
+    },
+    "ai_suggested_action": {
+      "type": "string"
+    },
+    "whatsapp_thread_id": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "category",
+    "description"
+  ]
+}

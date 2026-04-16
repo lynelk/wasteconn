@@ -1,0 +1,66 @@
+{
+  "name": "SLAPolicy",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "ticket_category": {
+      "type": "string",
+      "enum": [
+        "missed_collection",
+        "billing_dispute",
+        "service_quality",
+        "access_issue",
+        "bin_damage",
+        "driver_behaviour",
+        "wrong_schedule",
+        "general_inquiry",
+        "other"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ]
+    },
+    "response_hours": {
+      "type": "number",
+      "default": 4,
+      "description": "Hours to first response"
+    },
+    "resolution_hours": {
+      "type": "number",
+      "default": 24,
+      "description": "Hours to resolution"
+    },
+    "escalation_hours": {
+      "type": "number",
+      "default": 48,
+      "description": "Hours before auto-escalation"
+    },
+    "escalate_to": {
+      "type": "string",
+      "description": "Email or user to escalate to"
+    },
+    "requires_evidence": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "ticket_category",
+    "priority"
+  ]
+}
