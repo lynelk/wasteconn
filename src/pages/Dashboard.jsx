@@ -1,10 +1,14 @@
+import { Suspense, lazy } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Users, MapPin, Calendar, CreditCard, MessageSquare, Truck, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, MapPin, Calendar, CreditCard, MessageSquare, Truck, AlertCircle, Package, Map } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
+
+const DashboardMap = lazy(() => import('@/components/dashboard/DashboardMap'));
 
 function StatCard({ title, value, icon: IconComponent, color, sub }) {
   return (
@@ -25,6 +29,14 @@ function StatCard({ title, value, icon: IconComponent, color, sub }) {
   );
 }
 
+const statusColor = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  assigned: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-purple-100 text-purple-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role || 'user';
@@ -33,24 +45,23 @@ export default function Dashboard() {
   const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list() });
   const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list() });
   const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list() });
+  const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: () => base44.entities.Vehicle.list() });
+  const { data: inventory = [] } = useQuery({ queryKey: ['inventory'], queryFn: () => base44.entities.Inventory.list() });
+  const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list() });
+  const { data: routes = [] } = useQuery({ queryKey: ['routes-today'], queryFn: () => base44.entities.Route.filter({ route_date: format(new Date(), 'yyyy-MM-dd') }) });
   const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list(), enabled: role === 'super_admin' });
 
   const pendingPickups = pickups.filter(p => p.status === 'pending').length;
   const openComplaints = complaints.filter(c => c.status === 'open').length;
   const totalRevenue = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount_ugx || 0), 0);
+  const lowStock = inventory.filter(i => i.current_stock <= i.safety_threshold).length;
+  const vehiclesOnRoute = vehicles.filter(v => v.status === 'on_route').length;
 
-  const recentPickups = [...pickups].sort((a,b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
-
-  const statusColor = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    assigned: 'bg-blue-100 text-blue-700',
-    in_progress: 'bg-purple-100 text-purple-700',
-    completed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-red-100 text-red-700',
-  };
+  const recentPickups = [...pickups].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold font-jakarta">
           Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'} 👋
@@ -58,18 +69,49 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Here's what's happening today — {format(new Date(), 'EEEE, MMMM d yyyy')}</p>
       </div>
 
-      {/* Stats */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {role === 'super_admin' && (
-          <StatCard title="Total Tenants" value={tenants.length} icon={Truck} color="bg-primary" sub={`${tenants.filter(t=>t.status==='active').length} active`} />
+          <StatCard title="Total Tenants" value={tenants.length} icon={Truck} color="bg-primary" sub={`${tenants.filter(t => t.status === 'active').length} active`} />
         )}
-        <StatCard title="Customers" value={customers.length} icon={Users} color="bg-blue-500" sub={`${customers.filter(c=>c.status==='active').length} active`} />
+        <StatCard title="Customers" value={customers.length} icon={Users} color="bg-blue-500" sub={`${customers.filter(c => c.status === 'active').length} active`} />
         <StatCard title="Pending Pickups" value={pendingPickups} icon={Calendar} color="bg-amber-500" sub="awaiting assignment" />
         <StatCard title="Revenue (UGX)" value={totalRevenue.toLocaleString()} icon={CreditCard} color="bg-primary" sub="total collected" />
-        <StatCard title="Open Complaints" value={openComplaints} icon={MessageSquare} color={openComplaints > 0 ? "bg-red-500" : "bg-green-500"} sub="need attention" />
+        <StatCard title="Open Complaints" value={openComplaints} icon={MessageSquare} color={openComplaints > 0 ? 'bg-red-500' : 'bg-green-500'} sub="need attention" />
+        <StatCard title="Vehicles On Route" value={vehiclesOnRoute} icon={Truck} color="bg-blue-600" sub={`${vehicles.length} total`} />
+        <StatCard title="Low Stock Items" value={lowStock} icon={Package} color={lowStock > 0 ? 'bg-orange-500' : 'bg-green-500'} sub="below threshold" />
+        <StatCard title="Active Routes" value={routes.filter(r => r.status === 'published' || r.status === 'in_progress').length} icon={MapPin} color="bg-purple-500" sub="today" />
       </div>
 
-      {/* Recent Pickups */}
+      {/* Live Operational Map */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold font-jakarta flex items-center gap-2">
+            <Map className="w-4 h-4 text-primary" /> Live Operational Map
+            <Badge variant="secondary" className="text-xs ml-auto">
+              {pickups.filter(p => p.status === 'in_progress').length} active · {vehicles.filter(v => v.status === 'on_route').length} vehicles on route
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pb-5">
+          <Suspense fallback={<div className="h-80 rounded-xl bg-muted animate-pulse flex items-center justify-center text-muted-foreground text-sm">Loading map...</div>}>
+            <DashboardMap
+              servicePoints={servicePoints}
+              pickups={pickups.filter(p => p.status !== 'cancelled')}
+              vehicles={vehicles.filter(v => v.status !== 'retired')}
+              routes={routes}
+            />
+          </Suspense>
+        </CardContent>
+      </Card>
+
+      {/* Charts */}
+      <div>
+        <h2 className="font-semibold font-jakarta text-base mb-4">Performance Analytics</h2>
+        <DashboardCharts pickups={pickups} payments={payments} complaints={complaints} />
+      </div>
+
+      {/* Activity Feed */}
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-border/60">
           <CardHeader className="pb-3">
@@ -86,10 +128,10 @@ export default function Dashboard() {
                   <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/40 last:border-0">
                     <div>
                       <p className="text-sm font-medium">{p.address || 'No address'}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{p.request_type?.replace('_',' ')} · {p.waste_type}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{p.request_type?.replace('_', ' ')} · {p.waste_type}</p>
                     </div>
                     <Badge className={`text-xs ${statusColor[p.status] || ''}`} variant="secondary">
-                      {p.status?.replace('_',' ')}
+                      {p.status?.replace('_', ' ')}
                     </Badge>
                   </div>
                 ))}
@@ -105,15 +147,15 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {complaints.filter(c=>c.status==='open').length === 0 ? (
+            {complaints.filter(c => c.status === 'open').length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No open complaints. Great!</p>
             ) : (
               <div className="space-y-3">
-                {complaints.filter(c=>c.status==='open').slice(0,5).map(c => (
+                {complaints.filter(c => c.status === 'open').slice(0, 5).map(c => (
                   <div key={c.id} className="flex items-center justify-between py-2 border-b border-border/40 last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{c.subject || c.category?.replace('_',' ')}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{c.category?.replace('_',' ')}</p>
+                      <p className="text-sm font-medium">{c.subject || c.category?.replace('_', ' ')}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{c.category?.replace('_', ' ')}</p>
                     </div>
                     <Badge variant="secondary" className={`text-xs ${c.priority === 'urgent' ? 'bg-red-100 text-red-700' : c.priority === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-muted text-muted-foreground'}`}>
                       {c.priority}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import { MapPin, Truck, Plus, Zap, Map } from 'lucide-react';
+import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -88,6 +89,19 @@ export default function Dispatch() {
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
             className="border border-input bg-background rounded-lg px-3 py-2 text-sm"
+          />
+          <ExportButton
+            title="Dispatch_Jobs"
+            columns={[
+              { label: 'Address', key: 'address' },
+              { label: 'Status', key: 'status' },
+              { label: 'Type', key: 'request_type' },
+              { label: 'Waste Type', key: 'waste_type' },
+              { label: 'Scheduled Date', key: 'scheduled_date' },
+              { label: 'Scheduled Time', key: 'scheduled_time' },
+              { label: 'Est. Weight (kg)', key: 'estimated_weight_kg' },
+            ]}
+            rows={jobs}
           />
           <Button variant="outline" onClick={() => setShowMap(m => !m)} className="gap-2">
             <Map className="w-4 h-4" /> {showMap ? 'Hide Map' : 'Live Map'}

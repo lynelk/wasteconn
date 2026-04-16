@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Truck, Edit2, Trash2, Search } from 'lucide-react';
+import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -44,9 +45,24 @@ export default function Vehicles() {
           <h1 className="text-2xl font-bold font-jakarta">Vehicles</h1>
           <p className="text-muted-foreground text-sm mt-1">{vehicles.filter(v=>v.status==='available').length} available</p>
         </div>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Vehicle
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            title="Vehicles"
+            columns={[
+              { label: 'Registration', key: 'registration_number' },
+              { label: 'Type', key: 'vehicle_type' },
+              { label: 'Make/Model', key: 'make_model' },
+              { label: 'Status', key: 'status' },
+              { label: 'Capacity (T)', key: 'capacity_tonnes' },
+              { label: 'Fuel Type', key: 'fuel_type' },
+              { label: 'Last Service', key: 'last_service_date' },
+            ]}
+            rows={vehicles}
+          />
+          <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Vehicle
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm">

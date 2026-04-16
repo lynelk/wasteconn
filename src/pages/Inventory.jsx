@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Package, AlertTriangle, Plus, CheckCircle, RefreshCw, ShoppingCart } from 'lucide-react';
+import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +79,21 @@ export default function Inventory() {
           <p className="text-muted-foreground text-sm mt-0.5">Track waste collection supplies and automate purchase orders</p>
         </div>
         <div className="flex gap-2">
+          <ExportButton
+            title="Inventory"
+            columns={[
+              { label: 'Item Name', key: 'item_name' },
+              { label: 'Category', key: 'category' },
+              { label: 'SKU', key: 'sku' },
+              { label: 'Stock', key: 'current_stock' },
+              { label: 'Unit', key: 'unit_of_measure' },
+              { label: 'Threshold', key: 'safety_threshold' },
+              { label: 'Supplier', key: 'supplier_name' },
+              { label: 'PO Status', key: 'po_status' },
+              { label: 'Unit Cost (UGX)', key: 'unit_cost_ugx' },
+            ]}
+            rows={items}
+          />
           <Button variant="outline" onClick={handleCheckAlerts} disabled={checkingAlerts} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${checkingAlerts ? 'animate-spin' : ''}`} />
             {checkingAlerts ? 'Checking...' : 'Run Alert Check'}

@@ -7,13 +7,14 @@ import PageTransition from '@/components/ui/PageTransition';
 import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
   MessageSquare, Settings, Menu, X, LogOut,
-  Building2, ClipboardList, BarChart3, Bell, User, ChevronLeft,
+  Building2, ClipboardList, BarChart3, User, ChevronLeft,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', roles: ['admin', 'user', 'super_admin', 'dispatcher', 'driver', 'customer'] },
@@ -141,9 +142,7 @@ export default function Layout() {
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex-1" />
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
+            <NotificationCenter />
           </div>
         </header>
 

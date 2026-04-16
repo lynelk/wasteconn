@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Users, Edit2, Trash2, Search, Phone, MapPin } from 'lucide-react';
+import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -52,9 +53,24 @@ export default function Customers() {
           <h1 className="text-2xl font-bold font-jakarta">Customers</h1>
           <p className="text-muted-foreground text-sm mt-1">{customers.length} registered customers</p>
         </div>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Customer
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            title="Customers"
+            columns={[
+              { label: 'Name', key: 'full_name' },
+              { label: 'Phone', key: 'phone' },
+              { label: 'Email', key: 'email' },
+              { label: 'Type', key: 'customer_type' },
+              { label: 'District', key: 'district' },
+              { label: 'Status', key: 'status' },
+              { label: 'Account #', key: 'account_number' },
+            ]}
+            rows={customers}
+          />
+          <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Customer
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">
