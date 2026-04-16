@@ -1,0 +1,84 @@
+{
+  "name": "Contract",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "contract_number": {
+      "type": "string"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "residential",
+        "commercial",
+        "industrial",
+        "municipal"
+      ],
+      "default": "residential"
+    },
+    "service_plan_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "auto_renew": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "suspended",
+        "terminated",
+        "expired"
+      ],
+      "default": "draft"
+    },
+    "signed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signed_by_customer": {
+      "type": "boolean",
+      "default": false
+    },
+    "document_url": {
+      "type": "string"
+    },
+    "monthly_value_ugx": {
+      "type": "number"
+    },
+    "payment_terms_days": {
+      "type": "number",
+      "default": 30
+    },
+    "special_conditions": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "contract_type",
+    "start_date"
+  ]
+}

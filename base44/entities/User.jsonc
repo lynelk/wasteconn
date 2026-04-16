@@ -4,54 +4,73 @@
   "properties": {
     "role": {
       "type": "string",
-      "description": "The role of the user in the app",
       "enum": [
         "admin",
         "user",
         "super_admin",
+        "city_admin",
+        "city_analyst",
+        "operator_admin",
+        "operator_manager",
         "dispatcher",
         "driver",
-        "customer"
-      ]
+        "field_agent",
+        "billing_officer",
+        "compliance_officer",
+        "customer",
+        "support_agent",
+        "readonly"
+      ],
+      "default": "user"
+    },
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant this user belongs to"
+    },
+    "rbac_role_id": {
+      "type": "string",
+      "description": "Reference to RBACRole entity for granular permissions"
+    },
+    "field_pin": {
+      "type": "string",
+      "description": "PIN for field app authentication"
+    },
+    "zone_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Assigned zone IDs for scoped access"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Assigned branch/depot"
+    },
+    "facility_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Assigned facility IDs"
     },
     "phone": {
-      "type": "string",
-      "description": "User's phone number for contact and mobile money"
+      "type": "string"
     },
-    "preferred_language": {
-      "type": "string",
-      "enum": [
-        "english",
-        "luganda",
-        "swahili"
-      ],
-      "default": "english",
-      "description": "Preferred communication language"
+    "avatar_url": {
+      "type": "string"
     },
-    "pin_hash": {
-      "type": "string",
-      "description": "Hashed PIN for quick Field App user switching"
-    },
-    "field_app_role": {
+    "status": {
       "type": "string",
       "enum": [
-        "driver",
-        "supervisor",
-        "mechanic"
+        "active",
+        "inactive",
+        "suspended"
       ],
-      "default": "driver",
-      "description": "Specific role within Field App"
+      "default": "active"
     },
-    "sms_alerts_enabled": {
-      "type": "boolean",
-      "default": true
-    },
-    "email_alerts_enabled": {
-      "type": "boolean",
-      "default": true
+    "last_active_at": {
+      "type": "string",
+      "format": "date-time"
     }
-  },
-  "required": [
-    "role"
-  ]
+  }
 }

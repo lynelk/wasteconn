@@ -10,13 +10,24 @@
       "type": "string",
       "description": "Unique URL-friendly identifier"
     },
-    "logo_url": {
+    "tenant_type": {
       "type": "string",
-      "description": "Company logo URL"
+      "enum": [
+        "city",
+        "operator"
+      ],
+      "default": "operator",
+      "description": "City = regulatory authority; Operator = waste collection company"
+    },
+    "parent_city_tenant_id": {
+      "type": "string",
+      "description": "For operators: the city tenant they operate under"
+    },
+    "logo_url": {
+      "type": "string"
     },
     "primary_color": {
-      "type": "string",
-      "description": "Brand color hex"
+      "type": "string"
     },
     "contact_email": {
       "type": "string",
@@ -29,15 +40,13 @@
       "type": "string"
     },
     "district": {
-      "type": "string",
-      "description": "Primary district of operation"
+      "type": "string"
     },
     "districts_served": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "All districts served"
+      }
     },
     "status": {
       "type": "string",
@@ -58,10 +67,26 @@
       "default": "basic"
     },
     "admin_email": {
-      "type": "string",
-      "description": "Tenant admin email"
+      "type": "string"
     },
     "registration_number": {
+      "type": "string"
+    },
+    "isolation_enforced": {
+      "type": "boolean",
+      "default": true,
+      "description": "Tenant data isolation flag"
+    },
+    "health_score": {
+      "type": "number",
+      "default": 100,
+      "description": "AI-computed tenant health 0-100"
+    },
+    "quarantine_active": {
+      "type": "boolean",
+      "default": false
+    },
+    "quarantine_reason": {
       "type": "string"
     },
     "notes": {

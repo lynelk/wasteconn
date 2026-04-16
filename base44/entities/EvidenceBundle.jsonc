@@ -1,0 +1,97 @@
+{
+  "name": "EvidenceBundle",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "bundle_number": {
+      "type": "string"
+    },
+    "bundle_type": {
+      "type": "string",
+      "enum": [
+        "job_completion",
+        "dispute_resolution",
+        "compliance_submission",
+        "audit"
+      ],
+      "default": "job_completion"
+    },
+    "pickup_request_id": {
+      "type": "string"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "evidence_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "video_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gps_coordinates": {
+      "type": "string",
+      "description": "JSON array of lat/lon points"
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "waste_type": {
+      "type": "string"
+    },
+    "cv_quality_score": {
+      "type": "number"
+    },
+    "cv_bin_present": {
+      "type": "boolean"
+    },
+    "cv_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ai_summary": {
+      "type": "string"
+    },
+    "file_hash": {
+      "type": "string",
+      "description": "SHA-256 bundle hash for tamper-evidence"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "complete",
+        "flagged",
+        "archived"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "bundle_type",
+    "evidence_date"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "RBACPermissionUsage",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "role_id": {
+      "type": "string"
+    },
+    "role_type": {
+      "type": "string"
+    },
+    "permission": {
+      "type": "string",
+      "description": "The specific permission used"
+    },
+    "resource_type": {
+      "type": "string"
+    },
+    "resource_id": {
+      "type": "string"
+    },
+    "last_used_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "use_count_30d": {
+      "type": "number",
+      "default": 0
+    },
+    "use_count_total": {
+      "type": "number",
+      "default": 0
+    },
+    "is_dormant": {
+      "type": "boolean",
+      "default": false,
+      "description": "Unused > 30 days"
+    },
+    "ml_least_privilege_suggestion": {
+      "type": "string"
+    },
+    "ml_flagged_for_review": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_id",
+    "permission"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "RBACRole",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "null = platform-wide role"
+    },
+    "role_name": {
+      "type": "string"
+    },
+    "role_type": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "city_admin",
+        "city_analyst",
+        "operator_admin",
+        "operator_manager",
+        "dispatcher",
+        "driver",
+        "field_agent",
+        "billing_officer",
+        "compliance_officer",
+        "customer",
+        "support_agent",
+        "readonly"
+      ],
+      "description": "Canonical role type"
+    },
+    "description": {
+      "type": "string"
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Permission scope strings e.g. tenant:*  zone:KLA-N-01  branch:HQ  facility:depot_1"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. customers:read customers:write invoices:read jobs:complete"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "is_system_role": {
+      "type": "boolean",
+      "default": false,
+      "description": "System roles cannot be deleted"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "role_name",
+    "role_type"
+  ]
+}

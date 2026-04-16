@@ -1,0 +1,87 @@
+{
+  "name": "SchemaEvolutionProposal",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "proposed_by": {
+      "type": "string"
+    },
+    "entity_name": {
+      "type": "string"
+    },
+    "change_type": {
+      "type": "string",
+      "enum": [
+        "add_field",
+        "remove_field",
+        "rename_field",
+        "change_type",
+        "add_index",
+        "remove_index",
+        "add_relation",
+        "other"
+      ],
+      "default": "add_field"
+    },
+    "proposed_change": {
+      "type": "string",
+      "description": "JSON description of the proposed change"
+    },
+    "ai_impact_analysis": {
+      "type": "string",
+      "description": "AI-generated downstream impact summary"
+    },
+    "breaking_changes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of breaking change descriptions"
+    },
+    "affected_entities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "migration_suggestion": {
+      "type": "string",
+      "description": "AI-suggested backward-compatible migration path"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ai_analysis_pending",
+        "ai_analysis_complete",
+        "approved",
+        "rejected",
+        "applied"
+      ],
+      "default": "draft"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "entity_name",
+    "change_type",
+    "proposed_change"
+  ]
+}

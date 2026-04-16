@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,8 @@ export default function TenantForm({ tenant, onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     company_name: tenant?.company_name || '',
+    tenant_type: tenant?.tenant_type || 'operator',
+    parent_city_tenant_id: tenant?.parent_city_tenant_id || '',
     contact_email: tenant?.contact_email || '',
     contact_phone: tenant?.contact_phone || '',
     district: tenant?.district || '',
@@ -21,8 +23,15 @@ export default function TenantForm({ tenant, onClose }) {
     subscription_plan: tenant?.subscription_plan || 'basic',
     status: tenant?.status || 'pending',
     admin_email: tenant?.admin_email || '',
+    isolation_enforced: tenant?.isolation_enforced !== false,
     notes: tenant?.notes || '',
   });
+
+  const { data: allTenants = [] } = useQuery({
+    queryKey: ['tenants'],
+    queryFn: () => base44.entities.Tenant.list(),
+  });
+  const cityTenants = allTenants.filter(t => t.tenant_type === 'city');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -40,6 +49,28 @@ export default function TenantForm({ tenant, onClose }) {
           <Label>Company Name *</Label>
           <Input value={form.company_name} onChange={e => set('company_name', e.target.value)} placeholder="e.g. Kampala Clean Ltd" />
         </div>
+        <div className="space-y-1.5">
+          <Label>Tenant Type *</Label>
+          <Select value={form.tenant_type} onValueChange={v => set('tenant_type', v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="city">🏛️ City Authority</SelectItem>
+              <SelectItem value="operator">🚛 Operator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {form.tenant_type === 'operator' && (
+          <div className="space-y-1.5">
+            <Label>Parent City</Label>
+            <Select value={form.parent_city_tenant_id} onValueChange={v => set('parent_city_tenant_id', v)}>
+              <SelectTrigger><SelectValue placeholder="Select city…" /></SelectTrigger>
+              <SelectContent>
+                {cityTenants.length === 0 && <SelectItem value="none" disabled>No city tenant yet</SelectItem>}
+                {cityTenants.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>Contact Email *</Label>
           <Input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} />

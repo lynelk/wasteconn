@@ -8,7 +8,8 @@ import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
   MessageSquare, Settings, Menu, X, LogOut,
   Building2, ClipboardList, BarChart3, User, ChevronLeft,
-  Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package
+  Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
+  Activity, Database, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +41,9 @@ const navItems = [
   { label: 'Audit Log', icon: Shield, path: '/audit-logs', roles: ['admin', 'super_admin'] },
   { label: 'System Settings', icon: Settings, path: '/sync-settings', roles: ['super_admin'] },
   { label: 'Integration Health', icon: Radio, path: '/integration-health', roles: ['admin', 'super_admin'] },
+  { label: 'RBAC Management', icon: Lock, path: '/rbac', roles: ['super_admin'] },
+  { label: 'Tenant Health', icon: Activity, path: '/tenant-health', roles: ['super_admin'] },
+  { label: 'Schema Evolution', icon: Database, path: '/schema-evolution', roles: ['super_admin'] },
   { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
   { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
   { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },

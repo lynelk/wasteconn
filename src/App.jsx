@@ -34,6 +34,9 @@ import CustomerShop from '@/pages/CustomerShop';
 import SyncSettingsPage from '@/pages/SyncSettingsPage';
 import IntegrationHealth from '@/pages/IntegrationHealth';
 import Subscriptions from '@/pages/Subscriptions';
+import RBACManagement from '@/pages/RBACManagement';
+import TenantHealthMonitor from '@/pages/TenantHealthMonitor';
+import SchemaEvolution from '@/pages/SchemaEvolution';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -84,6 +87,9 @@ const AuthenticatedApp = () => {
         <Route path="/sync-settings" element={<SyncSettingsPage />} />
         <Route path="/integration-health" element={<IntegrationHealth />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/rbac" element={<RBACManagement />} />
+        <Route path="/tenant-health" element={<TenantHealthMonitor />} />
+        <Route path="/schema-evolution" element={<SchemaEvolution />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/field-app" element={<FieldApp />} />

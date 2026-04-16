@@ -1,0 +1,89 @@
+{
+  "name": "TenantHealthAlert",
+  "type": "object",
+  "properties": {
+    "source_tenant_id": {
+      "type": "string"
+    },
+    "target_tenant_id": {
+      "type": "string",
+      "description": "Tenant whose data may be leaking"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "cross_tenant_query",
+        "data_leakage_attempt",
+        "unusual_query_pattern",
+        "bulk_cross_tenant_read",
+        "auth_anomaly",
+        "quarantine_triggered"
+      ],
+      "default": "unusual_query_pattern"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "query_fingerprint": {
+      "type": "string",
+      "description": "Statistical fingerprint of the query pattern"
+    },
+    "deviation_score": {
+      "type": "number",
+      "description": "Statistical deviation from baseline 0-100"
+    },
+    "baseline_value": {
+      "type": "number"
+    },
+    "observed_value": {
+      "type": "number"
+    },
+    "affected_entity_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "quarantine_applied": {
+      "type": "boolean",
+      "default": false
+    },
+    "quarantine_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "investigating",
+        "resolved",
+        "false_positive"
+      ],
+      "default": "new"
+    },
+    "resolved_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "alert_type",
+    "severity"
+  ]
+}

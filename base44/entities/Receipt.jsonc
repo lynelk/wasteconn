@@ -1,0 +1,62 @@
+{
+  "name": "Receipt",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "invoice_id": {
+      "type": "string"
+    },
+    "payment_id": {
+      "type": "string"
+    },
+    "receipt_number": {
+      "type": "string"
+    },
+    "amount_ugx": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "yo_payments",
+        "mtn_momo",
+        "airtel_money",
+        "pesa_pal",
+        "cash",
+        "bank_transfer"
+      ],
+      "default": "cash"
+    },
+    "payment_reference": {
+      "type": "string"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issued_by": {
+      "type": "string"
+    },
+    "pdf_url": {
+      "type": "string"
+    },
+    "file_hash": {
+      "type": "string",
+      "description": "SHA-256 for immutability"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "receipt_number",
+    "amount_ugx"
+  ]
+}
