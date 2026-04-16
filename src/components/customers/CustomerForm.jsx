@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import DuplicateCheckBanner from '@/components/customers/DuplicateCheckBanner';
 
 const UGANDA_DISTRICTS = ['Kampala','Wakiso','Mukono','Jinja','Mbarara','Gulu','Lira','Arua','Fort Portal','Mbale','Soroti','Masaka'];
 
@@ -42,6 +43,9 @@ export default function CustomerForm({ customer, onClose }) {
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      {!customer && (
+        <DuplicateCheckBanner fullName={form.full_name} phone={form.phone} email={form.email} />
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Full Name *</Label>

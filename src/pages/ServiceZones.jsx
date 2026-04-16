@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ZoneForm from '@/components/zones/ZoneForm';
+import ZoneCoverageAI from '@/components/zones/ZoneCoverageAI';
 
 const DAY_LABELS = { monday:'Mon', tuesday:'Tue', wednesday:'Wed', thursday:'Thu', friday:'Fri', saturday:'Sat', sunday:'Sun' };
 
@@ -101,6 +102,8 @@ export default function ServiceZones() {
           })}
         </div>
       )}
+
+      <ZoneCoverageAI />
 
       <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
         <DialogContent className="max-w-lg">

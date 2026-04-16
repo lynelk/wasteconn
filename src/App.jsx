@@ -32,6 +32,7 @@ import BillingPage from '@/pages/BillingPage';
 import CircularEconomy from '@/pages/CircularEconomy';
 import CustomerShop from '@/pages/CustomerShop';
 import SyncSettingsPage from '@/pages/SyncSettingsPage';
+import IntegrationHealth from '@/pages/IntegrationHealth';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/circular-economy" element={<CircularEconomy />} />
         <Route path="/sync-settings" element={<SyncSettingsPage />} />
+        <Route path="/integration-health" element={<IntegrationHealth />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/field-app" element={<FieldApp />} />

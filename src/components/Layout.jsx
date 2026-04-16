@@ -38,6 +38,7 @@ const navItems = [
   { label: 'Circular Economy', icon: Package, path: '/circular-economy', roles: ['admin', 'super_admin', 'dispatcher'] },
   { label: 'Audit Log', icon: Shield, path: '/audit-logs', roles: ['admin', 'super_admin'] },
   { label: 'System Settings', icon: Settings, path: '/sync-settings', roles: ['super_admin'] },
+  { label: 'Integration Health', icon: Radio, path: '/integration-health', roles: ['admin', 'super_admin'] },
   { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
   { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
   { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },

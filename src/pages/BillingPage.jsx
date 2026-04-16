@@ -3,14 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format, endOfMonth, addDays } from 'date-fns';
 import {
-  CreditCard, RefreshCw, Play, Download, CheckCircle, AlertCircle,
-  Clock, ChevronDown, ChevronUp, FileText, Send
+  CreditCard, RefreshCw, Play, CheckCircle,
+  ChevronDown, ChevronUp, FileText, Send, TrendingDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
+import ArrearsAgingTable from '@/components/billing/ArrearsAgingTable';
+import CollectionsRiskPanel from '@/components/billing/CollectionsRiskPanel';
 
 const statusColors = {
   issued: 'bg-blue-100 text-blue-700',
@@ -31,7 +34,12 @@ export default function BillingPage() {
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => base44.entities.Invoice.list('-created_date', 100),
+    queryFn: () => base44.entities.Invoice.list('-created_date', 200),
+  });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => base44.entities.Customer.list(),
   });
 
   const { data: stats } = useQuery({
@@ -145,95 +153,110 @@ export default function BillingPage() {
         <span className="text-xs text-blue-600 dark:text-blue-400">Configure in System Settings when ready to connect</span>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Invoices</h2>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="issued">Issued</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-            <SelectItem value="partially_paid">Partially Paid</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="invoices">
+        <TabsList>
+          <TabsTrigger value="invoices" className="gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Invoices</TabsTrigger>
+          <TabsTrigger value="arrears" className="gap-1.5"><TrendingDown className="w-3.5 h-3.5" /> Arrears Aging</TabsTrigger>
+          <TabsTrigger value="risk" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Collections AI</TabsTrigger>
+        </TabsList>
 
-      {/* Invoice List */}
-      {isLoading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No invoices found</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(inv => (
-            <Card key={inv.id} className="border-border/60">
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm font-jakarta">{inv.invoice_number}</span>
-                      <Badge className={`text-xs ${statusColors[inv.status] || ''}`} variant="secondary">
-                        {inv.status?.replace('_', ' ')}
-                      </Badge>
+        <TabsContent value="invoices" className="mt-4 space-y-4">
+          {/* Filter */}
+          <div className="flex items-center gap-3">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="partially_paid">Partially Paid</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p>No invoices found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(inv => (
+                <Card key={inv.id} className="border-border/60">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm font-jakarta">{inv.invoice_number}</span>
+                          <Badge className={`text-xs ${statusColors[inv.status] || ''}`} variant="secondary">
+                            {inv.status?.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Issued: {inv.issue_date} · Due: {inv.due_date}
+                          {inv.paid_date && ` · Paid: ${format(new Date(inv.paid_date), 'MMM d, yyyy')}`}
+                        </div>
+                        <div className="text-base font-bold text-primary mt-1">
+                          {(inv.amount_ugx || 0).toLocaleString()} UGX
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {inv.status === 'issued' && (
+                          <Button size="sm" variant="outline" onClick={() => handleMarkPaid(inv)} className="gap-1 text-xs h-7">
+                            <CheckCircle className="w-3 h-3" /> Mark Paid
+                          </Button>
+                        )}
+                        <button onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)} className="text-muted-foreground hover:text-foreground">
+                          {expandedId === inv.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Issued: {inv.issue_date} · Due: {inv.due_date}
-                      {inv.paid_date && ` · Paid: ${format(new Date(inv.paid_date), 'MMM d, yyyy')}`}
-                    </div>
-                    <div className="text-base font-bold text-primary mt-1">
-                      {(inv.amount_ugx || 0).toLocaleString()} UGX
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {inv.status === 'issued' && (
-                      <Button size="sm" variant="outline" onClick={() => handleMarkPaid(inv)} className="gap-1 text-xs h-7">
-                        <CheckCircle className="w-3 h-3" /> Mark Paid
-                      </Button>
+                    {expandedId === inv.id && inv.items?.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border/60">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-muted-foreground">
+                              <th className="text-left pb-1">Description</th>
+                              <th className="text-right pb-1">Qty</th>
+                              <th className="text-right pb-1">Unit</th>
+                              <th className="text-right pb-1">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inv.items.map((item, i) => (
+                              <tr key={i}>
+                                <td className="py-0.5">{item.description}</td>
+                                <td className="text-right py-0.5">{item.quantity}</td>
+                                <td className="text-right py-0.5">{(item.unit_price_ugx||0).toLocaleString()}</td>
+                                <td className="text-right py-0.5 font-medium">{(item.total_ugx||0).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {inv.notes && <p className="text-xs text-muted-foreground mt-2 italic">{inv.notes}</p>}
+                      </div>
                     )}
-                    <button onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)} className="text-muted-foreground hover:text-foreground">
-                      {expandedId === inv.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-                {expandedId === inv.id && inv.items?.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-border/60">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-muted-foreground">
-                          <th className="text-left pb-1">Description</th>
-                          <th className="text-right pb-1">Qty</th>
-                          <th className="text-right pb-1">Unit</th>
-                          <th className="text-right pb-1">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {inv.items.map((item, i) => (
-                          <tr key={i}>
-                            <td className="py-0.5">{item.description}</td>
-                            <td className="text-right py-0.5">{item.quantity}</td>
-                            <td className="text-right py-0.5">{(item.unit_price_ugx||0).toLocaleString()}</td>
-                            <td className="text-right py-0.5 font-medium">{(item.total_ugx||0).toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {inv.notes && <p className="text-xs text-muted-foreground mt-2 italic">{inv.notes}</p>}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+        <TabsContent value="arrears" className="mt-4">
+          <ArrearsAgingTable invoices={invoices} customers={customers} />
+        </TabsContent>
+
+        <TabsContent value="risk" className="mt-4">
+          <CollectionsRiskPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
