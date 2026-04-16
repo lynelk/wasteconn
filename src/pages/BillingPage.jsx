@@ -4,8 +4,9 @@ import { base44 } from '@/api/base44Client';
 import { format, endOfMonth, addDays } from 'date-fns';
 import {
   CreditCard, RefreshCw, Play, CheckCircle,
-  ChevronDown, ChevronUp, FileText, Send, TrendingDown
+  ChevronDown, ChevronUp, FileText, Send, TrendingDown, Plus
 } from 'lucide-react';
+import AdHocInvoiceModal from '@/components/billing/AdHocInvoiceModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [showAdHoc, setShowAdHoc] = useState(false);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
@@ -117,6 +119,9 @@ export default function BillingPage() {
           <Button variant="outline" onClick={handleSendReminders} disabled={sendingReminders} className="gap-2">
             {sendingReminders ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Send Reminders
+          </Button>
+          <Button variant="outline" onClick={() => setShowAdHoc(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Ad-hoc Invoice
           </Button>
           <Button onClick={handleGenerateInvoices} disabled={generating} className="gap-2">
             {generating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -257,6 +262,14 @@ export default function BillingPage() {
           <CollectionsRiskPanel />
         </TabsContent>
       </Tabs>
+      {showAdHoc && (
+        <AdHocInvoiceModal
+          open={showAdHoc}
+          onClose={() => setShowAdHoc(false)}
+          customers={customers}
+          onSaved={() => { qc.invalidateQueries({ queryKey: ['invoices'] }); qc.invalidateQueries({ queryKey: ['billing-stats'] }); }}
+        />
+      )}
     </div>
   );
 }

@@ -30,6 +30,7 @@
         "pickup_reminder",
         "pickup_completed",
         "pickup_missed",
+        "pickup_rescheduled",
         "invoice_issued",
         "invoice_overdue",
         "payment_received",
@@ -57,6 +58,34 @@
     "sent_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_receipt": {
+      "type": "string",
+      "description": "Raw delivery receipt from provider"
+    },
+    "provider_message_id": {
+      "type": "string"
+    },
+    "open_count": {
+      "type": "number",
+      "default": 0
+    },
+    "ai_send_time_optimised": {
+      "type": "boolean",
+      "default": false
+    },
+    "ai_tone": {
+      "type": "string",
+      "enum": [
+        "formal",
+        "casual",
+        "urgent"
+      ],
+      "default": "formal"
     },
     "related_entity_type": {
       "type": "string"

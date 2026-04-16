@@ -1,0 +1,112 @@
+{
+  "name": "ExceptionQueue",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "pickup_request_id": {
+      "type": "string"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "exception_type": {
+      "type": "string",
+      "enum": [
+        "missed_pickup",
+        "access_denied",
+        "bin_not_out",
+        "driver_incident",
+        "vehicle_breakdown",
+        "overweight",
+        "weather",
+        "customer_absent",
+        "wrong_address",
+        "other"
+      ],
+      "default": "other"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "description": {
+      "type": "string"
+    },
+    "default_next_action": {
+      "type": "string",
+      "enum": [
+        "retry",
+        "reschedule",
+        "escalate",
+        "notify_customer",
+        "close"
+      ],
+      "default": "reschedule"
+    },
+    "next_action_taken": {
+      "type": "string",
+      "enum": [
+        "retry",
+        "reschedule",
+        "escalate",
+        "notify_customer",
+        "close"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "actioned",
+        "resolved",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "retry_scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "escalated_to": {
+      "type": "string"
+    },
+    "customer_notified": {
+      "type": "boolean",
+      "default": false
+    },
+    "actioned_by": {
+      "type": "string"
+    },
+    "actioned_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolution_notes": {
+      "type": "string"
+    },
+    "ai_risk_score": {
+      "type": "number",
+      "description": "Pre-dispatch risk score from predictive model"
+    },
+    "ai_predicted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Was this exception predicted by AI before it happened?"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "exception_type",
+    "description"
+  ]
+}

@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
-import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star } from 'lucide-react';
+import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star, MapPinOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import NavigationAssist, { recordJobCompletion } from '@/components/driver/NavigationAssist';
+import LocationCorrectionModal from '@/components/driver/LocationCorrectionModal';
 
 const statusConfig = {
   pending:     { label: 'Pending',     color: 'bg-gray-700 text-gray-300' },
@@ -19,6 +21,8 @@ const wasteColor = {
 export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showLocationCorrection, setShowLocationCorrection] = useState(false);
+  const [startedAt] = useState(() => job.status === 'in_progress' ? (localStorage.getItem(`job_start_${job.id}`) || null) : null);
   const fileRef = useRef();
 
   const cfg = statusConfig[job.status] || statusConfig.assigned;
@@ -75,16 +79,43 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
               <Play className="w-3.5 h-3.5" /> Start Job
             </button>
           )}
+          {job.status === 'assigned' && (
+            <button
+              onClick={() => { localStorage.setItem(`job_start_${job.id}`, new Date().toISOString()); }}
+              className="hidden" // already handled by status update
+            />
+          )}
           {job.status === 'in_progress' && (
             <button
-              onClick={() => onStatusUpdate(job, 'completed')}
+              onClick={() => {
+                const start = localStorage.getItem(`job_start_${job.id}`);
+                if (start && job.zone_id) {
+                  const mins = (Date.now() - new Date(start).getTime()) / 60000;
+                  recordJobCompletion(job.zone_id, job.id, mins);
+                }
+                onStatusUpdate(job, 'completed');
+              }}
               className="flex items-center gap-1.5 text-xs text-green-400 bg-green-950/50 px-3 py-1.5 rounded-lg hover:bg-green-900/50"
             >
               <CheckCircle2 className="w-3.5 h-3.5" /> Complete
             </button>
           )}
+          <button
+            onClick={() => setShowLocationCorrection(true)}
+            className="flex items-center gap-1.5 text-xs text-orange-400 bg-orange-950/40 px-3 py-1.5 rounded-lg hover:bg-orange-900/50"
+            title="Suggest pin correction"
+          >
+            <MapPinOff className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
+
+      {/* Navigation Assist (shown when in progress) */}
+      {job.status === 'in_progress' && (
+        <div className="px-4 pb-3">
+          <NavigationAssist job={job} startedAt={startedAt} />
+        </div>
+      )}
 
       {/* Expanded details */}
       {expanded && (
@@ -154,5 +185,9 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
         </div>
       )}
     </div>
+
+    {showLocationCorrection && (
+      <LocationCorrectionModal job={job} onClose={() => setShowLocationCorrection(false)} />
+    )}
   );
 }

@@ -1,0 +1,108 @@
+{
+  "name": "IntegrationQueue",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "payment_webhook",
+        "sms_send",
+        "email_send",
+        "whatsapp_send",
+        "pickup_status",
+        "invoice_generated",
+        "outbound_api"
+      ],
+      "default": "outbound_api"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "inbound",
+        "outbound"
+      ],
+      "default": "outbound"
+    },
+    "payload": {
+      "type": "string",
+      "description": "JSON stringified event payload"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Target URL or provider"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "success",
+        "failed",
+        "dead_letter"
+      ],
+      "default": "pending"
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 0
+    },
+    "max_attempts": {
+      "type": "number",
+      "default": 5
+    },
+    "next_retry_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "response_code": {
+      "type": "number"
+    },
+    "response_body": {
+      "type": "string"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Unique key to prevent duplicate processing"
+    },
+    "signature_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "ai_failure_class": {
+      "type": "string",
+      "description": "AI-classified failure type"
+    },
+    "ai_remediation": {
+      "type": "string",
+      "description": "AI-suggested auto-remediation"
+    },
+    "ai_auto_remediated": {
+      "type": "boolean",
+      "default": false
+    },
+    "replayed_by": {
+      "type": "string"
+    },
+    "replayed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_type",
+    "payload"
+  ]
+}

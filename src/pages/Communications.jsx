@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { Bell, Send, Mail, MessageSquare, Plus, Zap, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Bell, Send, Mail, MessageSquare, Plus, Zap, Loader2, CheckCircle2, XCircle, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +42,7 @@ export default function Communications() {
   const failed = notifications.filter(n => n.status === 'failed').length;
   const pending = notifications.filter(n => n.status === 'pending').length;
 
-  const templateTypes = ['pickup_reminder','pickup_completed','pickup_missed','invoice_issued','invoice_overdue','payment_received','welcome','custom'];
+  const templateTypes = ['pickup_reminder','pickup_completed','pickup_missed','pickup_rescheduled','invoice_issued','invoice_overdue','payment_received','welcome','custom'];
 
   return (
     <div className="space-y-6">
@@ -94,8 +94,8 @@ export default function Communications() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30">
-                    {['Time', 'Recipient', 'Channel', 'Template', 'Status'].map(h => (
-                      <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-3">{h}</th>
+                    {['Time', 'Recipient', 'Channel', 'Template', 'Status', 'Delivery'].map(h => (
+                     <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -113,9 +113,13 @@ export default function Communications() {
                       </td>
                       <td className="px-4 py-3 text-xs capitalize">{n.template_type?.replace(/_/g,' ')}</td>
                       <td className="px-4 py-3">
-                        <Badge className={`text-xs ${statusColor[n.status] || ''}`} variant="secondary">{n.status}</Badge>
-                      </td>
-                    </tr>
+                         <Badge className={`text-xs ${statusColor[n.status] || ''}`} variant="secondary">{n.status}</Badge>
+                       </td>
+                       <td className="px-4 py-3 text-xs text-muted-foreground">
+                         {n.delivered_at ? format(new Date(n.delivered_at), 'HH:mm') : n.status === 'failed' ? <span className="text-red-500">Failed</span> : '—'}
+                         {n.ai_send_time_optimised && <span className="ml-1 text-primary" title="Send-time optimised by AI"><Brain className="w-3 h-3 inline" /></span>}
+                       </td>
+                      </tr>
                   ))}
                 </tbody>
               </table>
