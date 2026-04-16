@@ -1,0 +1,55 @@
+{
+  "name": "SyncSettings",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "null for super admin global settings"
+    },
+    "inactive_user_sync_interval_minutes": {
+      "type": "number",
+      "default": 15,
+      "description": "How often inactive field app users check for new assignments/notifications"
+    },
+    "max_idle_alert_minutes": {
+      "type": "number",
+      "default": 10,
+      "description": "Minutes of engine idle before alert is triggered"
+    },
+    "route_deviation_alert_meters": {
+      "type": "number",
+      "default": 500,
+      "description": "Meters off-route before deviation alert fires"
+    },
+    "telematics_provider": {
+      "type": "string",
+      "enum": [
+        "wialon",
+        "samsara",
+        "manual"
+      ],
+      "default": "manual"
+    },
+    "telematics_poll_interval_minutes": {
+      "type": "number",
+      "default": 5
+    },
+    "quickbooks_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "quickbooks_realm_id": {
+      "type": "string"
+    },
+    "quickbooks_sync_direction": {
+      "type": "string",
+      "enum": [
+        "push_only",
+        "pull_only",
+        "bidirectional"
+      ],
+      "default": "push_only"
+    }
+  },
+  "required": []
+}

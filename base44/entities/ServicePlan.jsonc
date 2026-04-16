@@ -34,7 +34,7 @@
     },
     "price_ugx": {
       "type": "number",
-      "description": "Price in Ugandan Shillings"
+      "description": "Base monthly fee in UGX"
     },
     "billing_cycle": {
       "type": "string",
@@ -44,6 +44,42 @@
         "annually"
       ],
       "default": "monthly"
+    },
+    "billing_model": {
+      "type": "string",
+      "enum": [
+        "flat_fee",
+        "fixed_plus_overage_kg"
+      ],
+      "default": "flat_fee",
+      "description": "How billing is calculated"
+    },
+    "overage_threshold_kg": {
+      "type": "number",
+      "description": "Kg included in base fee before overage charges"
+    },
+    "overage_rate_ugx_per_kg": {
+      "type": "number",
+      "description": "Cost per kg over threshold"
+    },
+    "invoice_due_days": {
+      "type": "number",
+      "default": 0,
+      "description": "Days from month-end invoice is due (0 = last day of month)"
+    },
+    "email_reminder_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Days before due date to send email reminders e.g. [7, 3, 0]"
+    },
+    "sms_reminder_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Days before due date to send SMS reminders e.g. [3, 0]"
     },
     "includes_recycling": {
       "type": "boolean",

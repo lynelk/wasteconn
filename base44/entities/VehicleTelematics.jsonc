@@ -1,0 +1,78 @@
+{
+  "name": "VehicleTelematics",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "registration_number": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "speed_kmh": {
+      "type": "number"
+    },
+    "heading": {
+      "type": "number",
+      "description": "Direction 0-360 degrees"
+    },
+    "ignition_on": {
+      "type": "boolean"
+    },
+    "engine_idle_seconds": {
+      "type": "number",
+      "default": 0,
+      "description": "Continuous idle time in seconds"
+    },
+    "odometer_km": {
+      "type": "number"
+    },
+    "fuel_level_pct": {
+      "type": "number",
+      "description": "Fuel level 0-100%"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "wialon",
+        "samsara",
+        "manual"
+      ],
+      "default": "manual"
+    },
+    "provider_unit_id": {
+      "type": "string",
+      "description": "ID of unit in the telematics provider"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Currently assigned route"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "deviation_alert_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "latitude",
+    "longitude"
+  ]
+}

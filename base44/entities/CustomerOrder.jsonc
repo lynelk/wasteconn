@@ -1,0 +1,127 @@
+{
+  "name": "CustomerOrder",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price_ugx": {
+            "type": "number"
+          },
+          "total_ugx": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total_amount_ugx": {
+      "type": "number"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "yo_payments",
+        "mtn_momo",
+        "airtel_money",
+        "pesa_pal",
+        "cash"
+      ],
+      "default": "yo_payments"
+    },
+    "payment_reference": {
+      "type": "string",
+      "description": "Transaction reference from payment gateway"
+    },
+    "delivery_address": {
+      "type": "string"
+    },
+    "delivery_latitude": {
+      "type": "number"
+    },
+    "delivery_longitude": {
+      "type": "number"
+    },
+    "requested_delivery_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "requested_delivery_slot": {
+      "type": "string",
+      "description": "e.g. 08:00-10:00"
+    },
+    "confirmed_delivery_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "confirmed_delivery_slot": {
+      "type": "string"
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "scheduled",
+        "in_transit",
+        "delivered",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "assigned_driver_id": {
+      "type": "string"
+    },
+    "assigned_vehicle_id": {
+      "type": "string"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_photo_url": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "customer_notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "items",
+    "total_amount_ugx",
+    "delivery_address"
+  ]
+}

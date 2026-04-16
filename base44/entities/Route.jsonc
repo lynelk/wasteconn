@@ -39,6 +39,20 @@
       },
       "description": "Ordered list of PickupRequest IDs"
     },
+    "path_geojson": {
+      "type": "string",
+      "description": "GeoJSON LineString string representing the route path"
+    },
+    "path_input_method": {
+      "type": "string",
+      "enum": [
+        "drawn",
+        "imported",
+        "manual"
+      ],
+      "default": "manual",
+      "description": "How the route path was defined"
+    },
     "estimated_distance_km": {
       "type": "number"
     },

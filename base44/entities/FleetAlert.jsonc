@@ -1,0 +1,87 @@
+{
+  "name": "FleetAlert",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "registration_number": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "route_deviation",
+        "idle_time_excess",
+        "speeding",
+        "geofence_breach",
+        "offline"
+      ],
+      "default": "route_deviation"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "message": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "deviation_meters": {
+      "type": "number"
+    },
+    "idle_seconds": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "acknowledged",
+        "resolved"
+      ],
+      "default": "new"
+    },
+    "acknowledged_by": {
+      "type": "string"
+    },
+    "acknowledged_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notified_email": {
+      "type": "boolean",
+      "default": false
+    },
+    "notified_sms": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "alert_type",
+    "message"
+  ]
+}

@@ -27,6 +27,11 @@ import DriverPerformance from '@/pages/DriverPerformance';
 import ZoneSatisfactionAnalytics from '@/pages/ZoneSatisfactionAnalytics';
 import ComplianceReports from '@/pages/ComplianceReports';
 import Inventory from '@/pages/Inventory';
+import FieldApp from '@/pages/FieldApp';
+import BillingPage from '@/pages/BillingPage';
+import CircularEconomy from '@/pages/CircularEconomy';
+import CustomerShop from '@/pages/CustomerShop';
+import SyncSettingsPage from '@/pages/SyncSettingsPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -72,8 +77,13 @@ const AuthenticatedApp = () => {
         <Route path="/satisfaction" element={<ZoneSatisfactionAnalytics />} />
         <Route path="/compliance" element={<ComplianceReports />} />
         <Route path="/inventory" element={<Inventory />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/circular-economy" element={<CircularEconomy />} />
+        <Route path="/sync-settings" element={<SyncSettingsPage />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
+      <Route path="/field-app" element={<FieldApp />} />
+      <Route path="/customer-shop" element={<CustomerShop />} />
       <Route path="/customer-app" element={<CustomerApp />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
