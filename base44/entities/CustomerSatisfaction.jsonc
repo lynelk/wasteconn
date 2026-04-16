@@ -1,0 +1,66 @@
+{
+  "name": "CustomerSatisfaction",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "pickup_request_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "1-5 star rating from customer"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "in_app",
+        "sms",
+        "email"
+      ],
+      "default": "in_app"
+    },
+    "responded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ai_sentiment": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "description": "AI-classified sentiment"
+    },
+    "ai_pain_points": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "AI-extracted pain point tags"
+    },
+    "surveyed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether notification was sent"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "pickup_request_id"
+  ]
+}

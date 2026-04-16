@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CustomerPickupModal from '@/components/customer/CustomerPickupModal';
 import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
+import SurveyModal from '@/components/customer/SurveyModal';
+import { Star } from 'lucide-react';
 
 const statusColor = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -25,6 +28,7 @@ export default function CustomerApp() {
   const queryClient = useQueryClient();
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [activeTab, setActiveTab] = useState('history');
+  const [activeSurvey, setActiveSurvey] = useState(null);
 
   const { data: customer } = useQuery({
     queryKey: ['my-customer', user?.email],
@@ -42,6 +46,13 @@ export default function CustomerApp() {
   const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
     queryKey: ['my-invoices', customer?.id],
     queryFn: () => base44.entities.Invoice.filter({ customer_id: customer?.id }),
+    enabled: !!customer?.id,
+  });
+
+  const { data: pendingSurveys = [], refetch: refetchSurveys } = useQuery({
+    queryKey: ['my-surveys', customer?.id],
+    queryFn: () => base44.entities.CustomerSatisfaction.filter({ customer_id: customer?.id }),
+    select: data => data?.filter(s => s.rating == null) || [],
     enabled: !!customer?.id,
   });
 
@@ -126,6 +137,20 @@ export default function CustomerApp() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-4">
+        {/* Pending Survey Banner */}
+        {pendingSurveys.length > 0 && (
+          <button
+            onClick={() => setActiveSurvey(pendingSurveys[0])}
+            className="w-full mb-3 flex items-center gap-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 rounded-xl px-4 py-3 text-left hover:bg-yellow-100 transition-colors"
+          >
+            <Star className="w-5 h-5 text-yellow-500 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Rate your recent pickup</p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400">{pendingSurveys.length} survey{pendingSurveys.length > 1 ? 's' : ''} awaiting your response</p>
+            </div>
+          </button>
+        )}
+
         {/* Request Pickup CTA */}
         <Button
           onClick={() => setShowPickupModal(true)}
@@ -227,6 +252,15 @@ export default function CustomerApp() {
           </div>
         )}
       </div>
+
+      {/* Survey Modal */}
+      {activeSurvey && (
+        <SurveyModal
+          survey={activeSurvey}
+          onClose={() => setActiveSurvey(null)}
+          onSubmitted={() => { setActiveSurvey(null); refetchSurveys(); }}
+        />
+      )}
 
       {/* Pickup Modal */}
       {showPickupModal && (

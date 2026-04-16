@@ -24,6 +24,7 @@ import AuditLogs from '@/pages/AuditLogs';
 import FleetMaintenance from '@/pages/FleetMaintenance';
 import Communications from '@/pages/Communications';
 import DriverPerformance from '@/pages/DriverPerformance';
+import ZoneSatisfactionAnalytics from '@/pages/ZoneSatisfactionAnalytics';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
         <Route path="/fleet-maintenance" element={<FleetMaintenance />} />
         <Route path="/communications" element={<Communications />} />
         <Route path="/driver-performance" element={<DriverPerformance />} />
+        <Route path="/satisfaction" element={<ZoneSatisfactionAnalytics />} />
       </Route>
       <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/customer-app" element={<CustomerApp />} />
