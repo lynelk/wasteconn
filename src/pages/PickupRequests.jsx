@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar, Edit2, Search, Filter } from 'lucide-react';
+import { Plus, Calendar, Edit2, Search, Zap, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import PickupForm from '@/components/pickups/PickupForm';
 import { format } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 const statusColor = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -25,10 +27,29 @@ const typeColor = {
 
 export default function PickupRequests() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({ customer_id: '', horizon_days: 30 });
+  const [scheduling, setScheduling] = useState(false);
+
+  const handleAISchedule = async () => {
+    if (!scheduleForm.customer_id) return;
+    setScheduling(true);
+    try {
+      const res = await base44.functions.invoke('aiScheduleGenerator', scheduleForm);
+      toast({ title: 'Schedule Generated', description: `${res.data?.created_count || 0} pickups created. ${res.data?.summary || ''}` });
+      qc.invalidateQueries({ queryKey: ['pickups'] });
+      setScheduleOpen(false);
+    } catch (e) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setScheduling(false);
+    }
+  };
 
   const { data: pickups = [], isLoading } = useQuery({
     queryKey: ['pickups'],
@@ -57,9 +78,14 @@ export default function PickupRequests() {
           <h1 className="text-2xl font-bold font-jakarta">Pickup Requests</h1>
           <p className="text-muted-foreground text-sm mt-1">{pickups.filter(p=>p.status==='pending').length} pending</p>
         </div>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
-          <Plus className="w-4 h-4" /> New Request
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setScheduleOpen(true)} className="gap-2">
+            <Zap className="w-4 h-4" /> AI Schedule
+          </Button>
+          <Button onClick={() => { setEditing(null); setOpen(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> New Request
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -122,6 +148,46 @@ export default function PickupRequests() {
           })}
         </div>
       )}
+
+      {/* AI Schedule Generator Dialog */}
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-jakarta flex items-center gap-2"><Zap className="w-5 h-5 text-primary" /> AI Schedule Generator</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">Automatically generates recurring pickup schedules based on service plan, zone collection days, and demand history.</p>
+            <div>
+              <Label>Customer</Label>
+              <Select value={scheduleForm.customer_id} onValueChange={v => setScheduleForm(f => ({ ...f, customer_id: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer..." /></SelectTrigger>
+                <SelectContent>
+                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Horizon (days)</Label>
+              <Select value={String(scheduleForm.horizon_days)} onValueChange={v => setScheduleForm(f => ({ ...f, horizon_days: Number(v) }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="14">14 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setScheduleOpen(false)} className="flex-1">Cancel</Button>
+              <Button onClick={handleAISchedule} disabled={!scheduleForm.customer_id || scheduling} className="flex-1 gap-2">
+                {scheduling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {scheduling ? 'Generating...' : 'Generate Schedule'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
         <DialogContent className="max-w-lg">

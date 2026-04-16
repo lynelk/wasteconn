@@ -34,6 +34,7 @@ const navItems = [
   { label: 'Satisfaction', icon: Star, path: '/satisfaction', roles: ['admin', 'super_admin'] },
   { label: 'Compliance', icon: FileCheck, path: '/compliance', roles: ['admin', 'super_admin'] },
   { label: 'Inventory', icon: Package, path: '/inventory', roles: ['admin', 'super_admin', 'dispatcher'] },
+  { label: 'Subscriptions', icon: ClipboardList, path: '/subscriptions', roles: ['admin', 'super_admin'] },
   { label: 'Billing', icon: CreditCard, path: '/billing', roles: ['admin', 'super_admin'] },
   { label: 'Circular Economy', icon: Package, path: '/circular-economy', roles: ['admin', 'super_admin', 'dispatcher'] },
   { label: 'Audit Log', icon: Shield, path: '/audit-logs', roles: ['admin', 'super_admin'] },

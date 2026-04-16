@@ -61,6 +61,39 @@
     },
     "feedback": {
       "type": "string"
+    },
+    "ai_sentiment": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "description": "AI-classified sentiment"
+    },
+    "ai_pain_points": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "AI-extracted pain point tags"
+    },
+    "ai_resolution_suggestion": {
+      "type": "string",
+      "description": "AI-suggested resolution action"
+    },
+    "ai_escalate": {
+      "type": "boolean",
+      "default": false,
+      "description": "AI recommends manager escalation"
+    },
+    "ai_estimated_resolution_hours": {
+      "type": "number",
+      "description": "AI estimated hours to resolve"
+    },
+    "ai_confidence_score": {
+      "type": "number",
+      "description": "AI classification confidence 0-100"
     }
   },
   "required": [
