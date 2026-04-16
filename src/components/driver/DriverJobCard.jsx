@@ -184,10 +184,9 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
           )}
         </div>
       )}
+      {showLocationCorrection && (
+        <LocationCorrectionModal job={job} onClose={() => setShowLocationCorrection(false)} />
+      )}
     </div>
-
-    {showLocationCorrection && (
-      <LocationCorrectionModal job={job} onClose={() => setShowLocationCorrection(false)} />
-    )}
   );
 }
