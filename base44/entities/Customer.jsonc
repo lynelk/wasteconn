@@ -27,8 +27,40 @@
       ],
       "default": "residential"
     },
+    "customer_segment": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "sme",
+        "institution"
+      ],
+      "default": "individual",
+      "description": "Onboarding segment"
+    },
+    "customer_tier": {
+      "type": "string",
+      "enum": [
+        "basic",
+        "standard",
+        "premium",
+        "enterprise"
+      ],
+      "default": "basic",
+      "description": "AI-suggested or manually assigned billing tier"
+    },
+    "tier_auto_classified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the tier was auto-classified by AI"
+    },
     "address": {
       "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
     },
     "district": {
       "type": "string"
@@ -70,12 +102,56 @@
       ],
       "default": "none"
     },
+    "institution_name": {
+      "type": "string",
+      "description": "For institutions: official organisation name"
+    },
+    "contact_person": {
+      "type": "string",
+      "description": "Primary contact person name"
+    },
+    "num_branches": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of branches/service points"
+    },
+    "parent_customer_id": {
+      "type": "string",
+      "description": "For branch accounts: parent institution customer id"
+    },
+    "is_branch": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this is a branch of a parent institution"
+    },
+    "bin_count": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of waste bins"
+    },
+    "estimated_waste_kg_month": {
+      "type": "number",
+      "description": "Estimated monthly waste volume in kg"
+    },
+    "onboarding_source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "bulk_import",
+        "self_service",
+        "referral"
+      ],
+      "default": "manual"
+    },
+    "churn_risk_score": {
+      "type": "number",
+      "description": "AI-calculated churn risk 0-100"
+    },
     "notes": {
       "type": "string"
     }
   },
   "required": [
-    "tenant_id",
     "full_name",
     "phone"
   ]

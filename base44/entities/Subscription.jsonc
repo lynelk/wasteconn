@@ -14,11 +14,24 @@
     "zone_id": {
       "type": "string"
     },
+    "service_point_id": {
+      "type": "string",
+      "description": "Linked service point"
+    },
+    "billing_model": {
+      "type": "string",
+      "enum": [
+        "prepaid",
+        "postpaid"
+      ],
+      "default": "postpaid"
+    },
     "status": {
       "type": "string",
       "enum": [
         "active",
-        "paused",
+        "pending",
+        "suspended",
         "cancelled",
         "expired"
       ],
@@ -32,12 +45,29 @@
       "type": "string",
       "format": "date"
     },
+    "contract_duration_months": {
+      "type": "number",
+      "default": 12,
+      "description": "Length of contract in months"
+    },
+    "auto_renew": {
+      "type": "boolean",
+      "default": true
+    },
     "next_billing_date": {
       "type": "string",
       "format": "date"
     },
     "amount_ugx": {
       "type": "number"
+    },
+    "discount_pct": {
+      "type": "number",
+      "default": 0,
+      "description": "Discount percentage applied (e.g. churn-risk discount)"
+    },
+    "discount_reason": {
+      "type": "string"
     },
     "payment_method": {
       "type": "string",
@@ -49,12 +79,45 @@
       ],
       "default": "cash"
     },
+    "service_frequency": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "twice_weekly",
+        "weekly",
+        "biweekly",
+        "monthly"
+      ],
+      "default": "weekly"
+    },
+    "collection_days": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Days of week for collection"
+    },
+    "ai_recommended_plan": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this plan was AI-recommended"
+    },
+    "ai_recommendation_notes": {
+      "type": "string"
+    },
+    "contract_signed": {
+      "type": "boolean",
+      "default": false
+    },
+    "contract_signed_date": {
+      "type": "string",
+      "format": "date"
+    },
     "notes": {
       "type": "string"
     }
   },
   "required": [
-    "tenant_id",
     "customer_id",
     "plan_id"
   ]

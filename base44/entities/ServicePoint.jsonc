@@ -30,20 +30,84 @@
       "type": "string",
       "description": "Nearby landmark for easy identification"
     },
+    "pin_method": {
+      "type": "string",
+      "enum": [
+        "gps_auto",
+        "gps_manual",
+        "map_pin",
+        "address_geocoded"
+      ],
+      "default": "gps_manual",
+      "description": "How the GPS pin was captured"
+    },
     "status": {
       "type": "string",
       "enum": [
         "active",
-        "inactive"
+        "inactive",
+        "pending_approval"
       ],
       "default": "active"
+    },
+    "change_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "changed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changed_by": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "old_value": {
+            "type": "string"
+          },
+          "new_value": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Audit trail of changes to this service point"
+    },
+    "pending_change": {
+      "type": "object",
+      "description": "Proposed change awaiting approval",
+      "properties": {
+        "requested_by": {
+          "type": "string"
+        },
+        "requested_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "new_latitude": {
+          "type": "number"
+        },
+        "new_longitude": {
+          "type": "number"
+        },
+        "new_address": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
     },
     "notes": {
       "type": "string"
     }
   },
   "required": [
-    "tenant_id",
     "customer_id",
     "address"
   ]
