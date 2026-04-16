@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { MapPin, Truck, Plus, Zap } from 'lucide-react';
+import { MapPin, Truck, Plus, Zap, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import DispatchJobList from '@/components/dispatch/DispatchJobList';
 import RouteBuilder from '@/components/dispatch/RouteBuilder';
 import AIRouteOptimiser from '@/components/dispatch/AIRouteOptimiser';
 import PredictiveExceptionEngine from '@/components/dispatch/PredictiveExceptionEngine';
+import DispatchMap from '@/components/dispatch/DispatchMap';
 
 export default function Dispatch() {
   const queryClient = useQueryClient();
@@ -18,6 +19,7 @@ export default function Dispatch() {
   const [selectedZone, setSelectedZone] = useState('all');
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const { data: jobs = [], isLoading: loadingJobs } = useQuery({
     queryKey: ['dispatch-jobs', selectedDate],
@@ -87,6 +89,9 @@ export default function Dispatch() {
             onChange={e => setSelectedDate(e.target.value)}
             className="border border-input bg-background rounded-lg px-3 py-2 text-sm"
           />
+          <Button variant="outline" onClick={() => setShowMap(m => !m)} className="gap-2">
+            <Map className="w-4 h-4" /> {showMap ? 'Hide Map' : 'Live Map'}
+          </Button>
           <Button onClick={() => { if (selectedJobs.length > 0) setShowRouteBuilder(true); }} disabled={selectedJobs.length === 0}>
             <Plus className="w-4 h-4" /> Build Route ({selectedJobs.length})
           </Button>
@@ -109,6 +114,15 @@ export default function Dispatch() {
           </Card>
         ))}
       </div>
+
+      {/* Live Map */}
+      {showMap && (
+        <Card className="border-border/60">
+          <CardContent className="pt-4">
+            <DispatchMap jobs={jobs} routes={routes} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Exception alert bar */}
       {exceptions.length > 0 && (

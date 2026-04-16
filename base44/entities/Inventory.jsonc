@@ -1,0 +1,93 @@
+{
+  "name": "Inventory",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Name of the supply item"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "bags",
+        "safety_gear",
+        "fuel_cans",
+        "tools",
+        "ppe",
+        "other"
+      ],
+      "default": "other"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Stock keeping unit code"
+    },
+    "current_stock": {
+      "type": "number",
+      "default": 0
+    },
+    "unit_of_measure": {
+      "type": "string",
+      "enum": [
+        "units",
+        "litres",
+        "kg",
+        "boxes",
+        "rolls"
+      ],
+      "default": "units"
+    },
+    "safety_threshold": {
+      "type": "number",
+      "description": "Minimum stock before alert triggers"
+    },
+    "reorder_quantity": {
+      "type": "number",
+      "description": "Quantity to order when restocking"
+    },
+    "unit_cost_ugx": {
+      "type": "number"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "supplier_contact": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string",
+      "description": "Storage location"
+    },
+    "last_restocked_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "po_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pending",
+        "submitted",
+        "fulfilled"
+      ],
+      "default": "none",
+      "description": "Purchase order status"
+    },
+    "merx365_po_id": {
+      "type": "string",
+      "description": "Purchase order ID from Merx365"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "item_name",
+    "current_stock",
+    "safety_threshold"
+  ]
+}

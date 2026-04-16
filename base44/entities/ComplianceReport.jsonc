@@ -1,0 +1,79 @@
+{
+  "name": "ComplianceReport",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "report_number": {
+      "type": "string"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "route_completion",
+        "monthly_summary",
+        "payment_audit",
+        "evidence_bundle"
+      ],
+      "default": "route_completion"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "period_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_to": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generating",
+        "generated",
+        "submitted",
+        "archived"
+      ],
+      "default": "generating"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL to generated PDF"
+    },
+    "file_hash": {
+      "type": "string",
+      "description": "SHA-256 hash for immutability verification"
+    },
+    "jobs_count": {
+      "type": "number"
+    },
+    "evidence_photos_count": {
+      "type": "number"
+    },
+    "total_weight_kg": {
+      "type": "number"
+    },
+    "total_revenue_ugx": {
+      "type": "number"
+    },
+    "generated_by": {
+      "type": "string"
+    },
+    "municipality_ref": {
+      "type": "string",
+      "description": "Reference number from municipality"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "report_type",
+    "period_from",
+    "period_to"
+  ]
+}
