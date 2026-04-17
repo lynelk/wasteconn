@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import NavigationAssist, { recordJobCompletion } from '@/components/driver/NavigationAssist';
 import LocationCorrectionModal from '@/components/driver/LocationCorrectionModal';
+import { getBreadcrumbs, clearBreadcrumbs, estimateDistanceKm } from '@/components/driver/GPSBreadcrumbTracker';
 
 const statusConfig = {
   pending:     { label: 'Pending',     color: 'bg-gray-700 text-gray-300' },
@@ -23,6 +24,8 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
   const [uploading, setUploading] = useState(false);
   const [showLocationCorrection, setShowLocationCorrection] = useState(false);
   const [startedAt] = useState(() => job.status === 'in_progress' ? (localStorage.getItem(`job_start_${job.id}`) || null) : null);
+  const [routeFeedback, setRouteFeedback] = useState(null);
+  const [breadcrumbs, setBreadcrumbs] = useState(() => job.status === 'in_progress' ? getBreadcrumbs(job.id) : []);
   const fileRef = useRef();
 
   const cfg = statusConfig[job.status] || statusConfig.assigned;
@@ -73,27 +76,41 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
           </button>
           {job.status === 'assigned' && (
             <button
-              onClick={() => onStatusUpdate(job, 'in_progress')}
+              onClick={() => {
+                const startTs = new Date().toISOString();
+                localStorage.setItem(`job_start_${job.id}`, startTs);
+                onStatusUpdate(job, 'in_progress', { job_started_at: startTs });
+              }}
               className="flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-950/50 px-3 py-1.5 rounded-lg hover:bg-yellow-900/50"
             >
               <Play className="w-3.5 h-3.5" /> Start Job
             </button>
           )}
-          {job.status === 'assigned' && (
-            <button
-              onClick={() => { localStorage.setItem(`job_start_${job.id}`, new Date().toISOString()); }}
-              className="hidden" // already handled by status update
-            />
-          )}
           {job.status === 'in_progress' && (
             <button
               onClick={() => {
                 const start = localStorage.getItem(`job_start_${job.id}`);
-                if (start && job.zone_id) {
-                  const mins = (Date.now() - new Date(start).getTime()) / 60000;
-                  recordJobCompletion(job.zone_id, job.id, mins);
+                const trail = getBreadcrumbs(job.id);
+                const distKm = estimateDistanceKm(trail);
+                const mins = start ? (Date.now() - new Date(start).getTime()) / 60000 : 0;
+
+                // On-device ML: record for zone learning
+                if (job.zone_id && mins > 0) {
+                  recordJobCompletion(job.zone_id, job.id, mins, trail, routeFeedback || 'neutral');
                 }
-                onStatusUpdate(job, 'completed');
+
+                // Upload GPS trail + duration to server
+                onStatusUpdate(job, 'completed', {
+                  completed_at: new Date().toISOString(),
+                  actual_duration_mins: Math.round(mins),
+                  actual_route_gps_path: JSON.stringify(trail),
+                  route_distance_km: distKm,
+                  driver_route_feedback: routeFeedback || 'neutral',
+                  ...(start ? { job_started_at: start } : {}),
+                });
+
+                clearBreadcrumbs(job.id);
+                localStorage.removeItem(`job_start_${job.id}`);
               }}
               className="flex items-center gap-1.5 text-xs text-green-400 bg-green-950/50 px-3 py-1.5 rounded-lg hover:bg-green-900/50"
             >
@@ -113,7 +130,12 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
       {/* Navigation Assist (shown when in progress) */}
       {job.status === 'in_progress' && (
         <div className="px-4 pb-3">
-          <NavigationAssist job={job} startedAt={startedAt} />
+          <NavigationAssist
+            job={job}
+            startedAt={startedAt}
+            gpsBreadcrumbs={breadcrumbs}
+            onRouteFeedback={(fb) => setRouteFeedback(fb)}
+          />
         </div>
       )}
 

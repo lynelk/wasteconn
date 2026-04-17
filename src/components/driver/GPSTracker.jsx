@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Navigation, NavigationOff } from 'lucide-react';
+import { appendBreadcrumb } from '@/components/driver/GPSBreadcrumbTracker';
 
 const INTERVAL_MS = 15000; // Send location every 15 seconds
 
@@ -13,7 +14,16 @@ export default function GPSTracker({ user, currentJobId, currentRouteId, isOnlin
   const lastCoordsRef = useRef(null);
 
   const sendLocation = async (coords) => {
-    if (!isOnline || !coords) return;
+    if (!coords) return;
+    // Always record breadcrumb locally regardless of online status
+    if (currentJobId && coords.latitude && coords.longitude) {
+      appendBreadcrumb(currentJobId, coords.latitude, coords.longitude, {
+        speed_kmh: coords.speed != null ? Math.round(coords.speed * 3.6) : null,
+        heading: coords.heading,
+        accuracy: coords.accuracy,
+      });
+    }
+    if (!isOnline) return;
     try {
       await base44.functions.invoke('updateDriverLocation', {
         latitude: coords.latitude,

@@ -92,10 +92,11 @@ export default function FieldApp() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['field-jobs'] }),
   });
 
-  const handleStatusUpdate = async (job, newStatus) => {
+  const handleStatusUpdate = async (job, newStatus, extraData = {}) => {
     const updateData = {
       status: newStatus,
       ...(newStatus === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+      ...extraData,
     };
     if (isOnline) {
       updateMutation.mutate({ id: job.id, data: updateData });

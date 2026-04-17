@@ -38,9 +38,18 @@
     "scheduled_time": {
       "type": "string"
     },
+    "job_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When driver tapped Start Job"
+    },
     "completed_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "actual_duration_mins": {
+      "type": "number",
+      "description": "Computed duration from start to completion"
     },
     "assigned_driver_id": {
       "type": "string"
@@ -67,6 +76,46 @@
     },
     "address": {
       "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "actual_route_gps_path": {
+      "type": "string",
+      "description": "JSON array of {lat, lng, ts} breadcrumb points captured on-device"
+    },
+    "route_distance_km": {
+      "type": "number",
+      "description": "Estimated distance driven for this job based on GPS trace"
+    },
+    "driver_route_feedback": {
+      "type": "string",
+      "enum": [
+        "preferred",
+        "neutral",
+        "suboptimal"
+      ],
+      "description": "Driver's explicit feedback on the route taken"
+    },
+    "driver_route_notes": {
+      "type": "string",
+      "description": "Driver's free-text notes on route deviation or obstacles"
+    },
+    "speed_flag": {
+      "type": "string",
+      "enum": [
+        "too_fast",
+        "too_slow",
+        "normal"
+      ],
+      "description": "ML-flagged completion speed anomaly"
+    },
+    "speed_flag_ratio": {
+      "type": "number",
+      "description": "Ratio of actual vs zone-avg duration"
     },
     "notes": {
       "type": "string"
