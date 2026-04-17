@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format } from 'date-fns';
-import { Shield, AlertTriangle, Search, Filter, Eye } from 'lucide-react';
+import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { Shield, AlertTriangle, Search, Eye, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 const riskColor = (score) => {
   if (!score) return 'text-muted-foreground';
@@ -28,16 +29,45 @@ const eventColor = {
   data_delete: 'bg-red-100 text-red-700',
 };
 
+const EVENT_TYPES = [
+  'job_completion','invoice_issued','payment_settlement','permission_change',
+  'customer_created','customer_updated','ticket_closed','login','bulk_export','data_delete'
+];
+
+function exportCSV(rows) {
+  const headers = ['Timestamp','User','Event','Entity Type','Entity ID','Risk Score','Flagged','Notes'];
+  const lines = rows.map(l => [
+    l.created_date ? format(new Date(l.created_date), 'yyyy-MM-dd HH:mm:ss') : '',
+    l.user_email || l.user_id || '',
+    l.event_type || '',
+    l.entity_type || '',
+    l.entity_id || '',
+    l.risk_score ?? '',
+    l.flagged ? 'Yes' : 'No',
+    (l.notes || '').replace(/,/g, ';'),
+  ]);
+  const csv = [headers, ...lines].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'audit-log.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AuditLogs() {
   const [search, setSearch] = useState('');
   const [eventFilter, setEventFilter] = useState('all');
+  const [entityFilter, setEntityFilter] = useState('all');
   const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState(null);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['audit-logs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date', 200),
+    queryFn: () => base44.entities.AuditLog.list('-created_date', 500),
   });
+
+  const entityTypes = [...new Set(logs.map(l => l.entity_type).filter(Boolean))].sort();
 
   const filtered = logs.filter(l => {
     const matchSearch = !search ||
@@ -45,8 +75,12 @@ export default function AuditLogs() {
       l.entity_type?.toLowerCase().includes(search.toLowerCase()) ||
       l.entity_id?.includes(search);
     const matchEvent = eventFilter === 'all' || l.event_type === eventFilter;
+    const matchEntity = entityFilter === 'all' || l.entity_type === entityFilter;
     const matchFlagged = !flaggedOnly || l.flagged;
-    return matchSearch && matchEvent && matchFlagged;
+    const logDate = l.created_date ? new Date(l.created_date) : null;
+    const matchFrom = !dateFrom || !logDate || isAfter(logDate, startOfDay(parseISO(dateFrom)));
+    const matchTo = !dateTo || !logDate || isBefore(logDate, endOfDay(parseISO(dateTo)));
+    return matchSearch && matchEvent && matchEntity && matchFlagged && matchFrom && matchTo;
   });
 
   const flaggedCount = logs.filter(l => l.flagged).length;
@@ -61,7 +95,7 @@ export default function AuditLogs() {
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">Immutable record of all critical system events</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
             <div className="text-lg font-bold text-red-600 font-jakarta">{flaggedCount}</div>
             <div className="text-xs text-red-500">Flagged</div>
@@ -70,6 +104,9 @@ export default function AuditLogs() {
             <div className="text-lg font-bold text-orange-600 font-jakarta">{highRisk}</div>
             <div className="text-xs text-orange-500">High Risk</div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => exportCSV(filtered)} className="gap-2">
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
         </div>
       </div>
 
@@ -77,7 +114,7 @@ export default function AuditLogs() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search by user, entity..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Search by user, entity, ID..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Select value={eventFilter} onValueChange={setEventFilter}>
           <SelectTrigger className="w-44">
@@ -85,18 +122,44 @@ export default function AuditLogs() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Events</SelectItem>
-            {['job_completion','invoice_issued','payment_settlement','permission_change','customer_created','customer_updated','ticket_closed','login','bulk_export','data_delete'].map(e => (
+            {EVENT_TYPES.map(e => (
               <SelectItem key={e} value={e}>{e.replace(/_/g,' ')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <Select value={entityFilter} onValueChange={setEntityFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Entity type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Entities</SelectItem>
+            {entityTypes.map(e => (
+              <SelectItem key={e} value={e}>{e}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">From</span>
+          <Input type="date" className="w-36" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <span className="text-xs text-muted-foreground">To</span>
+          <Input type="date" className="w-36" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
         <button
           onClick={() => setFlaggedOnly(!flaggedOnly)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${flaggedOnly ? 'bg-red-50 border-red-300 text-red-700' : 'border-border text-muted-foreground hover:border-primary/50'}`}
         >
           <AlertTriangle className="w-4 h-4" /> Flagged Only
         </button>
+        {(search || eventFilter !== 'all' || entityFilter !== 'all' || flaggedOnly || dateFrom || dateTo) && (
+          <button
+            onClick={() => { setSearch(''); setEventFilter('all'); setEntityFilter('all'); setFlaggedOnly(false); setDateFrom(''); setDateTo(''); }}
+            className="px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:border-destructive/50 hover:text-destructive transition-all"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
+      <p className="text-xs text-muted-foreground -mt-2">Showing {filtered.length} of {logs.length} entries</p>
 
       {/* Log Table */}
       <Card className="border-border/60">
