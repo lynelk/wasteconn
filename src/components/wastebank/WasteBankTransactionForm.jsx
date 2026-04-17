@@ -4,9 +4,10 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, WifiOff } from 'lucide-react';
+import MobileSelect from '@/components/ui/MobileSelect';
+import { queueWBTransaction } from '@/lib/offlineDB';
 
 const WASTE_CATEGORIES = ['plastic','paper','glass','metal','organic','e_waste','textile','mixed'];
 const GRADES = ['A','B','C','rejected'];
@@ -16,7 +17,7 @@ const PAYMENT_METHODS = ['mtn_momo','airtel_money','cash','wallet_credit'];
 const BASE_RATES = { plastic: 800, paper: 300, glass: 200, metal: 1200, organic: 150, e_waste: 2000, textile: 400, mixed: 200 };
 const GRADE_MULTIPLIER = { A: 1.2, B: 1.0, C: 0.7, rejected: 0 };
 
-export default function WasteBankTransactionForm({ transactionType, customers = [], onClose }) {
+export default function WasteBankTransactionForm({ transactionType, customers = [], onClose, isOnline = true }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     customer_id: '', waste_category: 'plastic', grade: 'B', weight_kg: '',
@@ -34,12 +35,11 @@ export default function WasteBankTransactionForm({ transactionType, customers = 
   const mutation = useMutation({
     mutationFn: async (data) => {
       const txNum = `WB-${transactionType.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-      const customer = customers.find(c => c.id === data.customer_id);
 
       // Fraud check: flag if weight > 500kg or amount > 5M UGX
       const fraudFlag = parseFloat(data.weight_kg) > 500 || netAmount > 5000000;
 
-      const tx = await base44.entities.WasteBankTransaction.create({
+      const payload = {
         ...data,
         transaction_type: transactionType,
         transaction_number: txNum,
@@ -52,9 +52,17 @@ export default function WasteBankTransactionForm({ transactionType, customers = 
         fraud_flag: fraudFlag,
         fraud_reason: fraudFlag ? 'High weight or amount — manual review required' : '',
         ai_fraud_score: fraudFlag ? 80 : 10,
-      });
+      };
 
-      // Update or create wallet
+      // If offline — queue to IndexedDB and return early
+      if (!isOnline) {
+        await queueWBTransaction(payload);
+        return null;
+      }
+
+      const tx = await base44.entities.WasteBankTransaction.create(payload);
+
+      // Update or create wallet (only when online)
       const wallets = await base44.entities.CustomerWallet.filter({ customer_id: data.customer_id });
       if (wallets.length > 0) {
         const w = wallets[0];
@@ -103,24 +111,25 @@ Return JSON: { grade: string, reason: string, fraud_risk: "low"|"medium"|"high" 
 
   return (
     <div className="space-y-4">
+      {!isOnline && (
+        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-700">
+          <WifiOff className="w-3.5 h-3.5 shrink-0" />
+          Offline mode — transaction will be queued and synced automatically.
+        </div>
+      )}
       <div>
         <Label className="text-xs">Customer *</Label>
-        <Select value={form.customer_id || 'none'} onValueChange={v => set('customer_id', v === 'none' ? '' : v)}>
-          <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Select customer...</SelectItem>
-            {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} · {c.phone}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="mt-1">
+          <MobileSelect value={form.customer_id || ''} onChange={v => set('customer_id', v)} options={[{ value: '', label: 'Select customer…' }, ...customers.map(c => ({ value: c.id, label: `${c.full_name} · ${c.phone}` }))]} placeholder="Select customer" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs">Waste Category *</Label>
-          <Select value={form.waste_category} onValueChange={v => set('waste_category', v)}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>{WASTE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c.replace('_',' ')}</SelectItem>)}</SelectContent>
-          </Select>
+          <div className="mt-1">
+            <MobileSelect value={form.waste_category} onChange={v => set('waste_category', v)} options={WASTE_CATEGORIES.map(c => ({ value: c, label: c.replace('_', ' ') }))} />
+          </div>
         </div>
         <div>
           <Label className="text-xs">Weight (kg) *</Label>
@@ -131,10 +140,9 @@ Return JSON: { grade: string, reason: string, fraud_risk: "low"|"medium"|"high" 
       <div className="flex items-end gap-3">
         <div className="flex-1">
           <Label className="text-xs">Grade *</Label>
-          <Select value={form.grade} onValueChange={v => set('grade', v)}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-          </Select>
+          <div className="mt-1">
+            <MobileSelect value={form.grade} onChange={v => set('grade', v)} options={GRADES.map(g => ({ value: g, label: g }))} />
+          </div>
         </div>
         <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" onClick={handleAIGrade} disabled={aiLoading || !form.waste_category}>
           {aiLoading ? 'Checking...' : '⚡ AI Grade'}
@@ -158,10 +166,9 @@ Return JSON: { grade: string, reason: string, fraud_risk: "low"|"medium"|"high" 
 
       <div>
         <Label className="text-xs">Payment Method</Label>
-        <Select value={form.payment_method} onValueChange={v => set('payment_method', v)}>
-          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-          <SelectContent>{PAYMENT_METHODS.map(p => <SelectItem key={p} value={p}>{p.replace('_',' ')}</SelectItem>)}</SelectContent>
-        </Select>
+        <div className="mt-1">
+          <MobileSelect value={form.payment_method} onChange={v => set('payment_method', v)} options={PAYMENT_METHODS.map(p => ({ value: p, label: p.replace(/_/g, ' ') }))} />
+        </div>
       </div>
 
       {['mtn_momo','airtel_money'].includes(form.payment_method) && (
@@ -172,13 +179,9 @@ Return JSON: { grade: string, reason: string, fraud_risk: "low"|"medium"|"high" 
           </div>
           <div>
             <Label className="text-xs">Provider</Label>
-            <Select value={form.mobile_money_provider} onValueChange={v => set('mobile_money_provider', v)}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mtn">MTN MoMo</SelectItem>
-                <SelectItem value="airtel">Airtel Money</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="mt-1">
+              <MobileSelect value={form.mobile_money_provider} onChange={v => set('mobile_money_provider', v)} options={[{value:'mtn',label:'MTN MoMo'},{value:'airtel',label:'Airtel Money'}]} />
+            </div>
           </div>
         </div>
       )}

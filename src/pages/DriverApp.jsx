@@ -5,13 +5,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Truck, MapPin, CheckCircle2, Clock, Camera, LogOut, RefreshCw, ChevronDown, ChevronUp, Upload, Wifi, WifiOff } from 'lucide-react';
+import { Truck, MapPin, CheckCircle2, Clock, Camera, LogOut, RefreshCw, Upload, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { base44 as sdk } from '@/api/base44Client';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
 import GPSTracker from '@/components/driver/GPSTracker';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
+import IncidentReportModal from '@/components/field/IncidentReportModal';
+import { cacheDriverJobs, getCachedDriverJobs, updateCachedDriverJob, enqueueAction } from '@/lib/offlineDB';
 
 const statusOrder = ['assigned', 'in_progress', 'completed', 'cancelled'];
 
@@ -22,6 +24,8 @@ export default function DriverApp() {
   const [pendingSync, setPendingSync] = useState(() => {
     try { return JSON.parse(localStorage.getItem('nlswms_pending_sync') || '[]'); } catch { return []; }
   });
+  const [incidentOpen, setIncidentOpen] = useState(false);
+  const [selectedJobForIncident, setSelectedJobForIncident] = useState(null);
 
   useEffect(() => {
     const onOnline = () => {
@@ -40,12 +44,15 @@ export default function DriverApp() {
     queryKey: ['driver-jobs', user?.id],
     queryFn: async () => {
       const all = await base44.entities.PickupRequest.filter({ assigned_driver_id: user?.id });
-      // Cache for offline
+      // Cache to both localStorage AND IndexedDB
       localStorage.setItem('nlswms_driver_jobs', JSON.stringify(all));
+      await cacheDriverJobs(all);
       return all;
     },
-    // Fallback to cache if offline
-    placeholderData: () => {
+    // Fallback to IndexedDB cache if offline
+    placeholderData: async () => {
+      const cached = await getCachedDriverJobs();
+      if (cached.length) return cached;
       try { return JSON.parse(localStorage.getItem('nlswms_driver_jobs') || '[]'); } catch { return []; }
     },
     retry: isOnline ? 3 : false,
@@ -65,6 +72,11 @@ export default function DriverApp() {
     localStorage.removeItem('nlswms_pending_sync');
     setPendingSync([]);
     queryClient.invalidateQueries({ queryKey: ['driver-jobs'] });
+  };
+
+  const handleReportIncident = (job) => {
+    setSelectedJobForIncident(job);
+    setIncidentOpen(true);
   };
 
   const handleStatusUpdate = (job, newStatus) => {
@@ -169,6 +181,12 @@ Be concise in your analysis_notes.`,
               currentRouteId={null}
               isOnline={isOnline}
             />
+            <button
+              onClick={() => setIncidentOpen(true)}
+              className="flex items-center gap-1 text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded-lg border border-red-800"
+            >
+              <AlertTriangle className="w-3 h-3" /> Incident
+            </button>
             {isOnline ? (
               <span className="flex items-center gap-1 text-xs text-green-400"><Wifi className="w-3 h-3" /> Online</span>
             ) : (
@@ -220,11 +238,19 @@ Be concise in your analysis_notes.`,
                 job={job}
                 onStatusUpdate={handleStatusUpdate}
                 onPhotoUpload={handlePhotoUpload}
+                onReportIncident={handleReportIncident}
               />
             ))}
           </div>
         )}
       </div>
+      <IncidentReportModal
+        open={incidentOpen}
+        onClose={() => { setIncidentOpen(false); setSelectedJobForIncident(null); }}
+        pickupId={selectedJobForIncident?.id}
+        user={user}
+        isOnline={isOnline}
+      />
     </div>
   );
 }

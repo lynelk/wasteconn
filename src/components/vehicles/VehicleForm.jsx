@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 
 export default function VehicleForm({ vehicle, onClose }) {
   const qc = useQueryClient();
@@ -42,16 +42,7 @@ export default function VehicleForm({ vehicle, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Vehicle Type</Label>
-          <Select value={form.vehicle_type} onValueChange={v => set('vehicle_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="truck">Truck</SelectItem>
-              <SelectItem value="tipper">Tipper</SelectItem>
-              <SelectItem value="compactor">Compactor</SelectItem>
-              <SelectItem value="pickup">Pickup</SelectItem>
-              <SelectItem value="tricycle">Tricycle</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.vehicle_type} onChange={v => set('vehicle_type', v)} options={[{value:'truck',label:'Truck'},{value:'tipper',label:'Tipper'},{value:'compactor',label:'Compactor'},{value:'pickup',label:'Pickup'},{value:'tricycle',label:'Tricycle'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Make / Model</Label>
@@ -67,26 +58,11 @@ export default function VehicleForm({ vehicle, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Fuel Type</Label>
-          <Select value={form.fuel_type} onValueChange={v => set('fuel_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="diesel">Diesel</SelectItem>
-              <SelectItem value="petrol">Petrol</SelectItem>
-              <SelectItem value="electric">Electric</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.fuel_type} onChange={v => set('fuel_type', v)} options={[{value:'diesel',label:'Diesel'},{value:'petrol',label:'Petrol'},{value:'electric',label:'Electric'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Status</Label>
-          <Select value={form.status} onValueChange={v => set('status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="available">Available</SelectItem>
-              <SelectItem value="on_route">On Route</SelectItem>
-              <SelectItem value="maintenance">Maintenance</SelectItem>
-              <SelectItem value="retired">Retired</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.status} onChange={v => set('status', v)} options={[{value:'available',label:'Available'},{value:'on_route',label:'On Route'},{value:'maintenance',label:'Maintenance'},{value:'retired',label:'Retired'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Last Service Date</Label>

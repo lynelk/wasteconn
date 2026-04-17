@@ -6,7 +6,7 @@ import { RefreshCw, AlertTriangle, CheckCircle, Clock, Zap, RotateCcw, Brain } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { useToast } from '@/components/ui/use-toast';
 
 const statusColor = {
@@ -76,16 +76,9 @@ export default function IntegrationQueuePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="dead_letter">Dead Letter</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="w-36">
+            <MobileSelect value={statusFilter} onChange={setStatusFilter} options={[{value:'all',label:'All'},{value:'pending',label:'Pending'},{value:'failed',label:'Failed'},{value:'dead_letter',label:'Dead Letter'},{value:'success',label:'Success'}]} />
+          </div>
           <Button variant="outline" onClick={runWorker} disabled={running} className="gap-2">
             {running ? <><RefreshCw className="w-4 h-4 animate-spin" /> Running...</> : <><RefreshCw className="w-4 h-4" /> Run Worker</>}
           </Button>

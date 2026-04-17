@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, Navigation } from 'lucide-react';
 import DuplicateCheckBanner from '@/components/customers/DuplicateCheckBanner';
+import MobileSelect from '@/components/ui/MobileSelect';
 
-const UGANDA_DISTRICTS = ['Kampala','Wakiso','Mukono','Jinja','Mbarara','Gulu','Lira','Arua','Fort Portal','Mbale','Soroti','Masaka'];
+const UGANDA_DISTRICTS_OPTS = ['Kampala','Wakiso','Mukono','Jinja','Mbarara','Gulu','Lira','Arua','Fort Portal','Mbale','Soroti','Masaka'].map(d => ({ value: d, label: d }));
+
+
 
 export default function CustomerForm({ customer, onClose }) {
   const qc = useQueryClient();
@@ -139,22 +141,12 @@ export default function CustomerForm({ customer, onClose }) {
 
         <div className="space-y-1.5">
           <Label>Customer Type</Label>
-          <Select value={form.customer_type} onValueChange={v => set('customer_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="residential">Residential</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-              <SelectItem value="industrial">Industrial</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.customer_type} onChange={v => set('customer_type', v)} options={[{value:'residential',label:'Residential'},{value:'commercial',label:'Commercial'},{value:'industrial',label:'Industrial'}]} />
         </div>
 
         <div className="space-y-1.5">
           <Label>District</Label>
-          <Select value={form.district} onValueChange={v => set('district', v)}>
-            <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-            <SelectContent>{UGANDA_DISTRICTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-          </Select>
+          <MobileSelect value={form.district} onChange={v => set('district', v)} options={UGANDA_DISTRICTS_OPTS} placeholder="Select district" />
         </div>
 
         <div className="col-span-2 space-y-1.5">
@@ -178,22 +170,12 @@ export default function CustomerForm({ customer, onClose }) {
 
         <div className="space-y-1.5">
           <Label>Service Zone</Label>
-          <Select value={form.zone_id} onValueChange={v => set('zone_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Assign zone" /></SelectTrigger>
-            <SelectContent>{zones.map(z => <SelectItem key={z.id} value={z.id}>{z.zone_name}</SelectItem>)}</SelectContent>
-          </Select>
+          <MobileSelect value={form.zone_id} onChange={v => set('zone_id', v)} options={zones.map(z => ({ value: z.id, label: z.zone_name }))} placeholder="Assign zone" />
         </div>
 
         <div className="space-y-1.5">
           <Label>Status</Label>
-          <Select value={form.status} onValueChange={v => set('status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.status} onChange={v => set('status', v)} options={[{value:'active',label:'Active'},{value:'inactive',label:'Inactive'},{value:'suspended',label:'Suspended'}]} />
         </div>
 
         {/* Volume & tier */}
@@ -213,15 +195,7 @@ export default function CustomerForm({ customer, onClose }) {
               <Sparkles className="w-3 h-3" /> Auto-Classify
             </Button>
           </div>
-          <Select value={form.customer_tier} onValueChange={v => set('customer_tier', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="basic">Basic</SelectItem>
-              <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
-              <SelectItem value="enterprise">Enterprise</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.customer_tier} onChange={v => set('customer_tier', v)} options={[{value:'basic',label:'Basic'},{value:'standard',label:'Standard'},{value:'premium',label:'Premium'},{value:'enterprise',label:'Enterprise'}]} />
         </div>
 
         {/* Branch linking for institutions */}
@@ -232,12 +206,7 @@ export default function CustomerForm({ customer, onClose }) {
               <Label htmlFor="isBranch" className="text-sm">This is a branch of an existing institution</Label>
             </div>
             {form.is_branch && (
-              <Select value={form.parent_customer_id} onValueChange={v => set('parent_customer_id', v)}>
-                <SelectTrigger><SelectValue placeholder="Select parent institution..." /></SelectTrigger>
-                <SelectContent>
-                  {parentCandidates.map(c => <SelectItem key={c.id} value={c.id}>{c.institution_name || c.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MobileSelect value={form.parent_customer_id} onChange={v => set('parent_customer_id', v)} options={parentCandidates.map(c => ({ value: c.id, label: c.institution_name || c.full_name }))} placeholder="Select parent institution…" />
             )}
           </div>
         )}
@@ -245,14 +214,7 @@ export default function CustomerForm({ customer, onClose }) {
         {/* Payment */}
         <div className="space-y-1.5">
           <Label>Mobile Money Provider</Label>
-          <Select value={form.mobile_money_provider} onValueChange={v => set('mobile_money_provider', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="mtn">MTN MoMo</SelectItem>
-              <SelectItem value="airtel">Airtel Money</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.mobile_money_provider} onChange={v => set('mobile_money_provider', v)} options={[{value:'none',label:'None'},{value:'mtn',label:'MTN MoMo'},{value:'airtel',label:'Airtel Money'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Mobile Money Number</Label>
@@ -261,14 +223,7 @@ export default function CustomerForm({ customer, onClose }) {
 
         <div className="space-y-1.5">
           <Label>Preferred Language</Label>
-          <Select value={form.preferred_language} onValueChange={v => set('preferred_language', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="english">English</SelectItem>
-              <SelectItem value="luganda">Luganda</SelectItem>
-              <SelectItem value="swahili">Swahili</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.preferred_language} onChange={v => set('preferred_language', v)} options={[{value:'english',label:'English'},{value:'luganda',label:'Luganda'},{value:'swahili',label:'Swahili'}]} />
         </div>
 
         <div className="col-span-2 space-y-1.5">

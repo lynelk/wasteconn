@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function PickupForm({ pickup, onClose }) {
@@ -45,34 +45,15 @@ export default function PickupForm({ pickup, onClose }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Customer *</Label>
-          <Select value={form.customer_id} onValueChange={handleCustomerChange}>
-            <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-            <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.phone}</SelectItem>)}</SelectContent>
-          </Select>
+          <MobileSelect value={form.customer_id} onChange={handleCustomerChange} options={customers.map(c => ({ value: c.id, label: `${c.full_name} — ${c.phone}` }))} placeholder="Select customer" />
         </div>
         <div className="space-y-1.5">
           <Label>Request Type</Label>
-          <Select value={form.request_type} onValueChange={v => set('request_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="on_demand">On Demand</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="bulk">Bulk</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.request_type} onChange={v => set('request_type', v)} options={[{value:'on_demand',label:'On Demand'},{value:'scheduled',label:'Scheduled'},{value:'bulk',label:'Bulk'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Waste Type</Label>
-          <Select value={form.waste_type} onValueChange={v => set('waste_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">General</SelectItem>
-              <SelectItem value="recyclable">Recyclable</SelectItem>
-              <SelectItem value="organic">Organic</SelectItem>
-              <SelectItem value="hazardous">Hazardous</SelectItem>
-              <SelectItem value="bulky">Bulky</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.waste_type} onChange={v => set('waste_type', v)} options={[{value:'general',label:'General'},{value:'recyclable',label:'Recyclable'},{value:'organic',label:'Organic'},{value:'hazardous',label:'Hazardous'},{value:'bulky',label:'Bulky'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Scheduled Date</Label>
@@ -93,16 +74,7 @@ export default function PickupForm({ pickup, onClose }) {
         {pickup && (
           <div className="col-span-2 space-y-1.5">
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={v => set('status', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+            <MobileSelect value={form.status} onChange={v => set('status', v)} options={[{value:'pending',label:'Pending'},{value:'assigned',label:'Assigned'},{value:'in_progress',label:'In Progress'},{value:'completed',label:'Completed'},{value:'cancelled',label:'Cancelled'}]} />
           </div>
         )}
       </div>

@@ -6,7 +6,7 @@ import { FileText, Download, Plus, Shield, CheckCircle, Clock, Archive } from 'l
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 
 const statusColors = {
   generating: 'bg-yellow-100 text-yellow-700',
@@ -106,17 +106,7 @@ export default function ComplianceReports() {
           <div className="flex flex-wrap gap-3 items-end">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Report Type</label>
-              <Select value={reportType} onValueChange={setReportType}>
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="route_completion">Route Completion</SelectItem>
-                  <SelectItem value="monthly_summary">Monthly Summary</SelectItem>
-                  <SelectItem value="payment_audit">Payment Audit</SelectItem>
-                  <SelectItem value="evidence_bundle">Evidence Bundle</SelectItem>
-                </SelectContent>
-              </Select>
+              <MobileSelect value={reportType} onChange={setReportType} options={[{value:'route_completion',label:'Route Completion'},{value:'monthly_summary',label:'Monthly Summary'},{value:'payment_audit',label:'Payment Audit'},{value:'evidence_bundle',label:'Evidence Bundle'}]} className="w-44" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Period From</label>

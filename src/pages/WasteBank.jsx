@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Scale, Plus, Wallet, AlertTriangle, CheckCircle2, Download, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Scale, AlertTriangle, CheckCircle2, Download, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import WasteBankTransactionForm from '@/components/wastebank/WasteBankTransactionForm';
 import CustomerWalletView from '@/components/wastebank/CustomerWalletView';
+import MobileSelect from '@/components/ui/MobileSelect';
+import OfflineSyncBanner from '@/components/wastebank/OfflineSyncBanner';
+import { useSyncManager } from '@/lib/useSyncManager';
 import { format } from 'date-fns';
 
 function exportCSV(rows, filename) {
@@ -32,6 +34,7 @@ export default function WasteBank() {
   const [txType, setTxType] = useState('payout');
   const [typeFilter, setTypeFilter] = useState('all');
   const [walletCustomer, setWalletCustomer] = useState(null);
+  const { isOnline, pendingCount, syncing, lastSyncAt, syncNow } = useSyncManager();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['waste-bank-transactions'],
@@ -91,6 +94,9 @@ export default function WasteBank() {
         ))}
       </div>
 
+      {/* Offline sync banner */}
+      <OfflineSyncBanner isOnline={isOnline} pendingCount={pendingCount} syncing={syncing} lastSyncAt={lastSyncAt} onSync={syncNow} />
+
       {/* Fraud Alert */}
       {fraudFlags.length > 0 && (
         <Card className="border-red-200 bg-red-50/50">
@@ -111,14 +117,9 @@ export default function WasteBank() {
 
         <TabsContent value="transactions" className="mt-4 space-y-4">
           <div className="flex gap-3 flex-wrap items-center">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="payout">Payout</SelectItem>
-                <SelectItem value="payin">Payin</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-36">
+              <MobileSelect value={typeFilter} onChange={setTypeFilter} options={[{value:'all',label:'All Types'},{value:'payout',label:'Payout'},{value:'payin',label:'Payin'}]} />
+            </div>
             <Button variant="outline" size="sm" className="gap-2 text-xs ml-auto" onClick={() => exportCSV(filtered.map(t => ({
               Number: t.transaction_number, Type: t.transaction_type, Customer: getCustomer(t.customer_id)?.full_name || '',
               Category: t.waste_category, Grade: t.grade, 'Weight kg': t.weight_kg, 'Net UGX': t.net_amount_ugx,
@@ -196,6 +197,7 @@ export default function WasteBank() {
             transactionType={txType}
             customers={customers}
             onClose={() => setOpen(false)}
+            isOnline={isOnline}
           />
         </DialogContent>
       </Dialog>

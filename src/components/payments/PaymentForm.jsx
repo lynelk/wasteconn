@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function PaymentForm({ onClose }) {
@@ -40,10 +40,7 @@ export default function PaymentForm({ onClose }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Customer *</Label>
-          <Select value={form.customer_id} onValueChange={handleCustomerChange}>
-            <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-            <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.phone}</SelectItem>)}</SelectContent>
-          </Select>
+          <MobileSelect value={form.customer_id} onChange={handleCustomerChange} options={customers.map(c => ({ value: c.id, label: `${c.full_name} — ${c.phone}` }))} placeholder="Select customer" />
         </div>
         <div className="space-y-1.5">
           <Label>Amount (UGX) *</Label>
@@ -55,25 +52,11 @@ export default function PaymentForm({ onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Payment Method</Label>
-          <Select value={form.payment_method} onValueChange={v => set('payment_method', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="mtn_momo">MTN MoMo</SelectItem>
-              <SelectItem value="airtel_money">Airtel Money</SelectItem>
-              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.payment_method} onChange={v => set('payment_method', v)} options={[{value:'cash',label:'Cash'},{value:'mtn_momo',label:'MTN MoMo'},{value:'airtel_money',label:'Airtel Money'},{value:'bank_transfer',label:'Bank Transfer'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Status</Label>
-          <Select value={form.status} onValueChange={v => set('status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect value={form.status} onChange={v => set('status', v)} options={[{value:'completed',label:'Completed'},{value:'pending',label:'Pending'}]} />
         </div>
         <div className="col-span-2 space-y-1.5">
           <Label>Transaction Reference</Label>
