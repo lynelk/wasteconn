@@ -17,7 +17,6 @@ import Vehicles from '@/pages/Vehicles';
 import Payments from '@/pages/Payments';
 import Complaints from '@/pages/Complaints';
 import Analytics from '@/pages/Analytics';
-import DriverApp from '@/pages/DriverApp';
 import CustomerApp from '@/pages/CustomerApp';
 import Dispatch from '@/pages/Dispatch';
 import AuditLogs from '@/pages/AuditLogs';
@@ -107,7 +106,6 @@ const AuthenticatedApp = () => {
         <Route path="/waste-bank" element={<WasteBank />} />
         <Route path="/wialon" element={<WialonIntegration />} />
       </Route>
-      <Route path="/driver-app" element={<DriverApp />} />
       <Route path="/field-app" element={<FieldApp />} />
       <Route path="/customer-shop" element={<CustomerShop />} />
       <Route path="/customer-app" element={<CustomerApp />} />

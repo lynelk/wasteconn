@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Truck, LogOut, RefreshCw, Wifi, WifiOff, Users } from 'lucide-react';
+import { Truck, LogOut, RefreshCw, AlertTriangle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
@@ -11,6 +11,14 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 import PinSwitchScreen from '@/components/field/PinSwitchScreen';
 import UserSessionBar from '@/components/field/UserSessionBar';
+import IncidentReportModal from '@/components/field/IncidentReportModal';
+import { useSyncManager } from '@/lib/useSyncManager';
+import {
+  cacheDriverJobs,
+  getCachedDriverJobs,
+  updateCachedDriverJob,
+  enqueueAction,
+} from '@/lib/offlineDB';
 
 const SESSIONS_KEY = 'field_app_sessions';
 const ACTIVE_SESSION_KEY = 'field_app_active_session';
@@ -30,13 +38,13 @@ function saveActiveSession(session) {
 
 export default function FieldApp() {
   const queryClient = useQueryClient();
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { isOnline, pendingCount, syncing, syncNow } = useSyncManager();
+
   const [activeUser, setActiveUser] = useState(() => getActiveSession());
   const [sessions, setSessions] = useState(() => getSessions());
   const [showPinSwitch, setShowPinSwitch] = useState(false);
-  const [pendingSync, setPendingSync] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('nlswms_pending_sync') || '[]'); } catch { return []; }
-  });
+  const [incidentOpen, setIncidentOpen] = useState(false);
+  const [selectedJobForIncident, setSelectedJobForIncident] = useState(null);
 
   // Register current base44 user into sessions on first load
   useEffect(() => {
@@ -45,7 +53,13 @@ export default function FieldApp() {
       const existing = getSessions();
       const alreadyExists = existing.find(s => s.id === user.id);
       if (!alreadyExists) {
-        const updated = [...existing, { id: user.id, full_name: user.full_name, email: user.email, role: user.role, field_app_role: user.field_app_role || 'driver' }];
+        const updated = [...existing, {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          role: user.role,
+          field_app_role: user.field_app_role || 'driver',
+        }];
         saveSessions(updated);
         setSessions(updated);
       }
@@ -56,25 +70,18 @@ export default function FieldApp() {
     });
   }, []);
 
-  useEffect(() => {
-    const onOnline = () => { setIsOnline(true); syncPendingUpdates(); };
-    const onOffline = () => setIsOnline(false);
-    window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
-    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
-  }, [pendingSync]);
-
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const { data: jobs = [], isLoading, refetch } = useQuery({
     queryKey: ['field-jobs', activeUser?.id],
     queryFn: async () => {
       const all = await base44.entities.PickupRequest.filter({ assigned_driver_id: activeUser?.id });
-      localStorage.setItem(`nlswms_jobs_${activeUser?.id}`, JSON.stringify(all));
+      await cacheDriverJobs(all);
       return all;
     },
-    placeholderData: () => {
-      try { return JSON.parse(localStorage.getItem(`nlswms_jobs_${activeUser?.id}`) || '[]'); } catch { return []; }
+    placeholderData: async () => {
+      const cached = await getCachedDriverJobs();
+      return cached.length ? cached : [];
     },
     enabled: !!activeUser?.id,
     retry: isOnline ? 3 : false,
@@ -85,30 +92,20 @@ export default function FieldApp() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['field-jobs'] }),
   });
 
-  const syncPendingUpdates = async () => {
-    const pending = JSON.parse(localStorage.getItem('nlswms_pending_sync') || '[]');
-    if (!pending.length) return;
-    for (const update of pending) {
-      await base44.entities.PickupRequest.update(update.id, update.data);
-    }
-    localStorage.removeItem('nlswms_pending_sync');
-    setPendingSync([]);
-    queryClient.invalidateQueries({ queryKey: ['field-jobs'] });
-  };
-
-  const handleStatusUpdate = (job, newStatus) => {
-    const updateData = { status: newStatus, ...(newStatus === 'completed' ? { completed_at: new Date().toISOString() } : {}) };
+  const handleStatusUpdate = async (job, newStatus) => {
+    const updateData = {
+      status: newStatus,
+      ...(newStatus === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+    };
     if (isOnline) {
       updateMutation.mutate({ id: job.id, data: updateData });
     } else {
-      const pending = JSON.parse(localStorage.getItem('nlswms_pending_sync') || '[]');
-      pending.push({ id: job.id, data: updateData });
-      localStorage.setItem('nlswms_pending_sync', JSON.stringify(pending));
-      setPendingSync(pending);
-      const cached = JSON.parse(localStorage.getItem(`nlswms_jobs_${activeUser?.id}`) || '[]');
-      const updated = cached.map(j => j.id === job.id ? { ...j, ...updateData } : j);
-      localStorage.setItem(`nlswms_jobs_${activeUser?.id}`, JSON.stringify(updated));
-      queryClient.setQueryData(['field-jobs', activeUser?.id], updated);
+      // Queue in IndexedDB and optimistically update cached jobs
+      await enqueueAction('PickupRequest', 'update', { id: job.id, data: updateData });
+      await updateCachedDriverJob(job.id, updateData);
+      queryClient.setQueryData(['field-jobs', activeUser?.id], (old = []) =>
+        old.map(j => j.id === job.id ? { ...j, ...updateData } : j)
+      );
     }
   };
 
@@ -118,12 +115,14 @@ export default function FieldApp() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       uploadedUrls.push(file_url);
     }
-    const existingPhotos = job.photo_urls || [];
-    const allPhotos = [...existingPhotos, ...uploadedUrls];
+    const allPhotos = [...(job.photo_urls || []), ...uploadedUrls];
     let cvData = {};
     if (uploadedUrls.length > 0) {
       const cvRes = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyse this proof-of-service photo. Assess: 1) Is a waste bin visible? 2) Is the bin properly positioned? 3) Is the image sharp/well-lit? 4) Does it prove service completion? Assign quality_score 0-100.`,
+        prompt: `You are a waste management evidence quality inspector.
+Analyse this proof-of-service photo submitted by a driver upon job completion.
+Assess: 1) Is a waste bin clearly visible? 2) Is the bin properly positioned? 3) Is the image sharp and well-lit? 4) Does it prove service completion?
+Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <50: Poor).`,
         file_urls: [uploadedUrls[0]],
         response_json_schema: {
           type: 'object',
@@ -148,6 +147,11 @@ export default function FieldApp() {
     queryClient.invalidateQueries({ queryKey: ['field-jobs'] });
   };
 
+  const handleReportIncident = (job) => {
+    setSelectedJobForIncident(job);
+    setIncidentOpen(true);
+  };
+
   const handleSwitchUser = (user) => {
     saveActiveSession(user);
     setActiveUser(user);
@@ -155,11 +159,11 @@ export default function FieldApp() {
     queryClient.invalidateQueries({ queryKey: ['field-jobs'] });
   };
 
-  const handleAddSession = async () => {
+  const handleAddSession = () => {
     base44.auth.redirectToLogin(window.location.href);
   };
 
-  const { pulling, pullDistance, refreshing } = usePullToRefresh({ onRefresh: refetch });
+  const { pullDistance, refreshing } = usePullToRefresh({ onRefresh: refetch });
 
   const todayJobs = jobs.filter(j => j.scheduled_date === today || j.status === 'in_progress');
   const completedToday = todayJobs.filter(j => j.status === 'completed').length;
@@ -197,9 +201,15 @@ export default function FieldApp() {
               currentRouteId={null}
               isOnline={isOnline}
             />
+            <button
+              onClick={() => setIncidentOpen(true)}
+              className="flex items-center gap-1 text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded-lg border border-red-800"
+            >
+              <AlertTriangle className="w-3 h-3" /> Incident
+            </button>
             {isOnline
-              ? <span className="flex items-center gap-1 text-xs text-green-400"><Wifi className="w-3 h-3" /> Online</span>
-              : <span className="flex items-center gap-1 text-xs text-yellow-400"><WifiOff className="w-3 h-3" /> Offline</span>
+              ? <span className="text-xs text-green-400">● Online</span>
+              : <span className="text-xs text-yellow-400">● Offline</span>
             }
             <button onClick={() => setShowPinSwitch(true)} className="p-2 text-gray-400 hover:text-white" title="Switch User">
               <Users className="w-4 h-4" />
@@ -213,17 +223,21 @@ export default function FieldApp() {
           </div>
         </div>
 
-        {pendingSync.length > 0 && (
+        {/* Pending sync banner */}
+        {pendingCount > 0 && (
           <div className="mt-2 bg-yellow-900/50 border border-yellow-700 rounded-lg px-3 py-2 flex items-center justify-between">
-            <p className="text-xs text-yellow-300">{pendingSync.length} update(s) pending sync</p>
-            {isOnline && <button onClick={syncPendingUpdates} className="text-xs text-yellow-400 underline">Sync now</button>}
+            <p className="text-xs text-yellow-300">
+              {syncing ? 'Syncing…' : `${pendingCount} update(s) pending sync`}
+            </p>
+            {isOnline && !syncing && (
+              <button onClick={syncNow} className="text-xs text-yellow-400 underline">Sync now</button>
+            )}
           </div>
         )}
       </div>
 
       <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} />
 
-      {/* Session switcher bar */}
       {sessions.length > 1 && (
         <UserSessionBar sessions={sessions} activeUser={activeUser} onSwitch={() => setShowPinSwitch(true)} />
       )}
@@ -237,7 +251,7 @@ export default function FieldApp() {
 
         {isLoading ? (
           <div className="space-y-3">
-            {[1,2,3].map(i => <div key={i} className="h-28 bg-gray-800 rounded-xl animate-pulse" />)}
+            {[1, 2, 3].map(i => <div key={i} className="h-28 bg-gray-800 rounded-xl animate-pulse" />)}
           </div>
         ) : todayJobs.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
@@ -252,13 +266,13 @@ export default function FieldApp() {
                 job={job}
                 onStatusUpdate={handleStatusUpdate}
                 onPhotoUpload={handlePhotoUpload}
+                onReportIncident={handleReportIncident}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* PIN Switch Modal */}
       {showPinSwitch && (
         <PinSwitchScreen
           sessions={sessions}
@@ -268,6 +282,14 @@ export default function FieldApp() {
           onClose={() => setShowPinSwitch(false)}
         />
       )}
+
+      <IncidentReportModal
+        open={incidentOpen}
+        onClose={() => { setIncidentOpen(false); setSelectedJobForIncident(null); }}
+        pickupId={selectedJobForIncident?.id}
+        user={activeUser}
+        isOnline={isOnline}
+      />
     </div>
   );
 }
