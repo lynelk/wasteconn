@@ -64,7 +64,7 @@
     "discount_pct": {
       "type": "number",
       "default": 0,
-      "description": "Discount percentage applied (e.g. churn-risk discount)"
+      "description": "Discount percentage applied"
     },
     "discount_reason": {
       "type": "string"
@@ -99,8 +99,7 @@
     },
     "ai_recommended_plan": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether this plan was AI-recommended"
+      "default": false
     },
     "ai_recommendation_notes": {
       "type": "string"
@@ -112,6 +111,77 @@
     "contract_signed_date": {
       "type": "string",
       "format": "date"
+    },
+    "contract_document_url": {
+      "type": "string",
+      "description": "URL to signed contract PDF"
+    },
+    "contract_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of contract document for immutability"
+    },
+    "contract_version": {
+      "type": "number",
+      "default": 1,
+      "description": "Contract version number (increments on amendment)"
+    },
+    "terms_and_conditions_version": {
+      "type": "string",
+      "description": "Reference to the T&C document version"
+    },
+    "early_termination_fee_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Fee if contract terminated before end date"
+    },
+    "sales_agent_id": {
+      "type": "string",
+      "description": "ID of the user who closed the deal"
+    },
+    "signed_by_customer_id": {
+      "type": "string",
+      "description": "Signatory if different from primary customer"
+    },
+    "signed_by_agent_id": {
+      "type": "string",
+      "description": "Internal agent who finalized the contract"
+    },
+    "legal_reviewer_id": {
+      "type": "string",
+      "description": "ID of internal user who reviewed the contract"
+    },
+    "renewal_reminder_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether a renewal reminder has been sent"
+    },
+    "amendment_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "amended_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amended_by": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "previous_plan_id": {
+            "type": "string"
+          },
+          "previous_amount_ugx": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Audit trail of contract amendments"
     },
     "notes": {
       "type": "string"

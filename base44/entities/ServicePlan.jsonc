@@ -36,6 +36,16 @@
       "type": "number",
       "description": "Base monthly fee in UGX"
     },
+    "setup_fee_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "One-time setup/onboarding fee"
+    },
+    "min_commitment_months": {
+      "type": "number",
+      "default": 1,
+      "description": "Minimum contract commitment in months"
+    },
     "billing_cycle": {
       "type": "string",
       "enum": [
@@ -65,7 +75,7 @@
     "invoice_due_days": {
       "type": "number",
       "default": 0,
-      "description": "Days from month-end invoice is due (0 = last day of month)"
+      "description": "Days from month-end invoice is due (0 = last day)"
     },
     "email_reminder_days": {
       "type": "array",
@@ -89,11 +99,48 @@
       "type": "number",
       "default": 1
     },
+    "terms_and_conditions_version": {
+      "type": "string",
+      "description": "T&C version associated with this plan"
+    },
+    "terms_document_url": {
+      "type": "string",
+      "description": "URL to the T&C document"
+    },
+    "tiered_pricing": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier_name": {
+            "type": "string"
+          },
+          "min_bins": {
+            "type": "number"
+          },
+          "max_bins": {
+            "type": "number"
+          },
+          "price_ugx": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Optional volume-based tiered pricing brackets"
+    },
+    "applicable_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Zone IDs where this plan is available"
+    },
     "status": {
       "type": "string",
       "enum": [
         "active",
-        "inactive"
+        "inactive",
+        "draft"
       ],
       "default": "active"
     },

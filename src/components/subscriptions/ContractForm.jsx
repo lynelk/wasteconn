@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { format, addMonths } from 'date-fns';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +34,11 @@ export default function ContractForm({ subscription, customers, plans, servicePo
     discount_reason: subscription?.discount_reason || '',
     contract_signed: subscription?.contract_signed || false,
     contract_signed_date: subscription?.contract_signed_date || '',
+    contract_document_url: subscription?.contract_document_url || '',
+    contract_version: subscription?.contract_version || 1,
+    terms_and_conditions_version: subscription?.terms_and_conditions_version || '',
+    early_termination_fee_ugx: subscription?.early_termination_fee_ugx || 0,
+    sales_agent_id: subscription?.sales_agent_id || '',
     notes: subscription?.notes || '',
     ai_recommended_plan: subscription?.ai_recommended_plan || false,
     ai_recommendation_notes: subscription?.ai_recommendation_notes || '',
@@ -42,6 +46,7 @@ export default function ContractForm({ subscription, customers, plans, servicePo
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiRecs, setAiRecs] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -92,12 +97,42 @@ export default function ContractForm({ subscription, customers, plans, servicePo
     }));
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await base44.integrations.Core.UploadFile({ file });
+      set('contract_document_url', res.file_url);
+      toast({ title: 'Contract document uploaded' });
+    } catch {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     const data = { ...form };
-    // Compute amount
     if (selectedPlan) {
       const baseAmount = selectedPlan.price_ugx || 0;
       data.amount_ugx = Math.round(baseAmount * (1 - (data.discount_pct / 100)));
+    }
+    // On update: bump version and record amendment if plan changed
+    if (subscription?.id && subscription.plan_id !== data.plan_id) {
+      const prevHistory = subscription.amendment_history || [];
+      data.contract_version = (subscription.contract_version || 1) + 1;
+      data.amendment_history = [
+        ...prevHistory,
+        {
+          amended_at: new Date().toISOString(),
+          amended_by: 'user',
+          version: data.contract_version,
+          summary: `Plan changed from ${subscription.plan_id} to ${data.plan_id}`,
+          previous_plan_id: subscription.plan_id,
+          previous_amount_ugx: subscription.amount_ugx || 0,
+        },
+      ];
     }
     if (subscription?.id) {
       await base44.entities.Subscription.update(subscription.id, data);
@@ -284,6 +319,38 @@ export default function ContractForm({ subscription, customers, plans, servicePo
           </div>
         </div>
       )}
+
+      {/* Legal & Contract Details */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Early Termination Fee (UGX)</Label>
+          <Input type="number" min={0} value={form.early_termination_fee_ugx} onChange={e => set('early_termination_fee_ugx', Number(e.target.value))} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>T&C Version</Label>
+          <Input value={form.terms_and_conditions_version} onChange={e => set('terms_and_conditions_version', e.target.value)} placeholder="e.g. v2.1-2025" />
+        </div>
+      </div>
+
+      {/* Contract Document Upload */}
+      <div className="space-y-1.5">
+        <Label>Contract Document</Label>
+        {form.contract_document_url ? (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-secondary/30 text-sm">
+            <FileText className="w-4 h-4 text-primary shrink-0" />
+            <a href={form.contract_document_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex-1 truncate">View document</a>
+            <button onClick={() => set('contract_document_url', '')} className="text-muted-foreground hover:text-destructive">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-border bg-muted/30 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors">
+            <Upload className="w-4 h-4" />
+            {uploading ? 'Uploading...' : 'Upload PDF / contract document'}
+            <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          </label>
+        )}
+      </div>
 
       {/* Contract signature */}
       <div className="flex items-center gap-4">
