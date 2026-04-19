@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
-import { jsPDF } from 'npm:jspdf@4.0.0';
+import { jsPDF } from 'jspdf';
 
 const MONTHS = [
   'January','February','March','April','May','June',
