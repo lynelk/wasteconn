@@ -13,6 +13,7 @@ import CustomerPickupModal from '@/components/customer/CustomerPickupModal';
 import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
 import SurveyModal from '@/components/customer/SurveyModal';
 import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
+import SupportChatWidget from '@/components/customer/SupportChatWidget';
 import { Star } from 'lucide-react';
 
 const statusColor = {
@@ -277,6 +278,9 @@ export default function CustomerApp() {
       {trackingPickup && (
         <TrackDispatchModal pickup={trackingPickup} onClose={() => setTrackingPickup(null)} />
       )}
+
+      {/* AI Support Chat */}
+      <SupportChatWidget customer={customer} />
 
       {/* Pickup Modal */}
       {showPickupModal && (

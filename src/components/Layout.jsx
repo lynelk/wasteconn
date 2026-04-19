@@ -10,7 +10,7 @@ import {
   Building2, ClipboardList, BarChart3, User, ChevronLeft, ChevronDown,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
-  FileBarChart, PlugZap, RefreshCw, Recycle
+  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,6 +69,7 @@ const navGroups = [
       { label: 'Billing', icon: FileBarChart, path: '/billing', roles: ['admin', 'super_admin'] },
       { label: 'Subscriptions', icon: ClipboardList, path: '/subscriptions', roles: ['admin', 'super_admin'] },
       { label: 'Inventory', icon: Package, path: '/inventory', roles: ['admin', 'super_admin', 'dispatcher'] },
+      { label: 'Marketing Hub', icon: Megaphone, path: '/marketing', roles: ['admin', 'super_admin'] },
     ]
   },
   {

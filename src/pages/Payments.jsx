@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CreditCard, Search, CheckCircle, Smartphone } from 'lucide-react';
+import { Plus, CreditCard, Search, CheckCircle, Smartphone, FileText, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PaymentForm from '@/components/payments/PaymentForm';
 import YoPaymentPanel from '@/components/payments/YoPaymentPanel';
+import CollectionsDashboard from '@/components/payments/CollectionsDashboard';
+import CustomerStatementModal from '@/components/payments/CustomerStatementModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 
@@ -25,6 +27,8 @@ export default function Payments() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [open, setOpen] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
+  const [showCharts, setShowCharts] = useState(true);
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['payments'],
@@ -54,10 +58,20 @@ export default function Payments() {
           <h1 className="text-2xl font-bold font-jakarta">Payments</h1>
           <p className="text-muted-foreground text-sm mt-1">Total collected: <span className="font-semibold text-primary">{totalCompleted.toLocaleString()} UGX</span></p>
         </div>
-        <Button onClick={() => setOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" /> Record Payment
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setStatementOpen(true)} className="gap-2">
+            <FileText className="w-4 h-4" /> Statement
+          </Button>
+          <Button variant="outline" onClick={() => setShowCharts(v => !v)} className="gap-2">
+            <BarChart2 className="w-4 h-4" /> {showCharts ? 'Hide' : 'Show'} Charts
+          </Button>
+          <Button onClick={() => setOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Record Payment
+          </Button>
+        </div>
       </div>
+
+      {showCharts && <CollectionsDashboard payments={payments} />}
 
       <Tabs defaultValue="list">
         <TabsList>
@@ -127,6 +141,8 @@ export default function Payments() {
 
         </TabsContent>
       </Tabs>
+
+      <CustomerStatementModal open={statementOpen} onClose={() => setStatementOpen(false)} customers={customers} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
