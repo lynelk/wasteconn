@@ -1,30 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Allow override via secret for production endpoint
-const CITO_BASE_URL = Deno.env.get('CITOCONNECT_API_URL') || 'https://api.cito.gateway';
+/**
+ * CitoConnect — SMS and payment disbursement gateway.
+ * Authenticates using CITOCONNECT_API_KEY directly in the Authorization header.
+ * Set CITOCONNECT_API_URL to override the default base URL (e.g. https://api.citoconnect.com).
+ */
 
-async function getCitoToken() {
+const CITO_BASE_URL = (() => {
+  const url = Deno.env.get('CITOCONNECT_API_URL') || '';
+  // Guard: if the secret looks like a key (no http), fall back to empty so we hit provisioned mode
+  return url.startsWith('http') ? url.replace(/\/$/, '') : '';
+})();
+
+async function citoRequest(path, body) {
   const apiKey = Deno.env.get('CITOCONNECT_API_KEY');
-  if (!apiKey) throw new Error('CITOCONNECT_API_KEY not set');
-  const res = await fetch(`${CITO_BASE_URL}/v1/auth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: apiKey, grant_type: 'api_key' }),
-  });
-  if (!res.ok) {
-    // Return mock token in sandbox/test environments where the gateway is unreachable
-    const errorText = await res.text().catch(() => 'network error');
-    throw new Error(`CitoConnect auth failed (${res.status}): ${errorText}`);
-  }
-  const data = await res.json();
-  if (!data.access_token) throw new Error(`CitoConnect auth failed: ${JSON.stringify(data)}`);
-  return data.access_token;
-}
-
-async function citoRequest(token, path, body) {
   const res = await fetch(`${CITO_BASE_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'X-API-Key': apiKey,
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -41,55 +37,42 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { action, ...params } = await req.json();
-
     if (!action) return Response.json({ error: 'action is required' }, { status: 400 });
 
-    // Validate CitoConnect key presence before attempting auth
     const apiKey = Deno.env.get('CITOCONNECT_API_KEY');
-    if (!apiKey) {
+    if (!apiKey || !CITO_BASE_URL) {
       return Response.json({
         success: false,
         provisioned: true,
-        message: 'CitoConnect not configured. Set CITOCONNECT_API_KEY secret.',
-        action,
-      });
-    }
-
-    let token;
-    try {
-      token = await getCitoToken();
-    } catch (authErr) {
-      // Gateway unreachable — return informative provisioned response instead of 500
-      return Response.json({
-        success: false,
-        provisioned: true,
-        message: `CitoConnect gateway unreachable. Verify CITOCONNECT_API_URL is correct and the service is reachable. Error: ${authErr.message}`,
+        message: !apiKey
+          ? 'CITOCONNECT_API_KEY not set.'
+          : 'CITOCONNECT_API_URL must start with https://. Please set the correct CitoConnect base URL.',
         action,
       });
     }
 
     if (action === 'send_sms') {
-      const result = await citoRequest(token, '/v1/sms/send', params);
+      const result = await citoRequest('/v1/sms/send', params);
       return Response.json(result);
     }
     if (action === 'collect_payment') {
-      const result = await citoRequest(token, '/v1/payments/collect', params);
+      const result = await citoRequest('/v1/payments/collect', params);
       return Response.json(result);
     }
     if (action === 'disburse_payment') {
-      const result = await citoRequest(token, '/v1/payments/disburse', params);
+      const result = await citoRequest('/v1/payments/disburse', params);
       return Response.json(result);
     }
     if (action === 'verify_and_payout') {
-      const result = await citoRequest(token, '/functions/verifyAndPayout', { action: 'initiate_payout', ...params });
+      const result = await citoRequest('/v1/payments/payout', { action: 'initiate_payout', ...params });
       return Response.json(result);
     }
     if (action === 'get_transaction_stats') {
+      const apiKey2 = Deno.env.get('CITOCONNECT_API_KEY');
       const res = await fetch(`${CITO_BASE_URL}/v1/analytics/transactions`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${apiKey2}`, 'X-API-Key': apiKey2 },
       });
-      const result = await res.json();
-      return Response.json(result);
+      return Response.json(await res.json());
     }
 
     return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
