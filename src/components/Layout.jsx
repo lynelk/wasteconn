@@ -120,6 +120,9 @@ const navGroups = [
 
 function NavGroup({ group, role, location, onNavigate, defaultOpen }) {
   const hasVisibleItem = group.items.some(item => item.roles.includes(role));
+  const isGroupActive = group.items.some(item => location.pathname === item.path);
+  const [open, setOpen] = useState(defaultOpen || isGroupActive);
+
   if (!hasVisibleItem) return null;
 
   // Ungrouped (no label)
@@ -148,9 +151,6 @@ function NavGroup({ group, role, location, onNavigate, defaultOpen }) {
       </div>
     );
   }
-
-  const isGroupActive = group.items.some(item => location.pathname === item.path);
-  const [open, setOpen] = useState(defaultOpen || isGroupActive);
   const visibleItems = group.items.filter(item => item.roles.includes(role));
   const GroupIcon = group.icon;
 
