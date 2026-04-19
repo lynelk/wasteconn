@@ -46,6 +46,7 @@ import WasteBank from '@/pages/WasteBank';
 import WialonIntegration from '@/pages/WialonIntegration';
 import IntegrationsHub from '@/pages/IntegrationsHub';
 import MarketingHub from '@/pages/MarketingHub';
+import PreLaunchDashboard from '@/pages/PreLaunchDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -109,6 +110,7 @@ const AuthenticatedApp = () => {
         <Route path="/wialon" element={<WialonIntegration />} />
         <Route path="/integrations-hub" element={<IntegrationsHub />} />
         <Route path="/marketing" element={<MarketingHub />} />
+        <Route path="/pre-launch" element={<PreLaunchDashboard />} />
       </Route>
       <Route path="/field-app" element={<FieldApp />} />
       <Route path="/customer-shop" element={<CustomerShop />} />

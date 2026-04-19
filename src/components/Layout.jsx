@@ -10,7 +10,7 @@ import {
   Building2, ClipboardList, BarChart3, User, ChevronLeft, ChevronDown,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
-  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone
+  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -105,6 +105,7 @@ const navGroups = [
       { label: 'Integration Queue', icon: Zap, path: '/integration-queue', roles: ['admin', 'super_admin'] },
       { label: 'Integration Health', icon: RefreshCw, path: '/integration-health', roles: ['admin', 'super_admin'] },
       { label: 'Integrations Hub', icon: PlugZap, path: '/integrations-hub', roles: ['admin', 'super_admin'] },
+      { label: 'Pre-Launch Dashboard', icon: Rocket, path: '/pre-launch', roles: ['super_admin'] },
     ]
   },
   // Customer-only items
