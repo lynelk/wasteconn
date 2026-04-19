@@ -1,8 +1,13 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, CreditCard, Calendar } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendingUp, Users, CreditCard, Calendar, Radio, Map } from 'lucide-react';
+import CitoReportExport from '@/components/analytics/CitoReportExport';
+import WialonIntegration from '@/pages/WialonIntegration';
+import CoverageAnalytics from '@/pages/CoverageAnalytics';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
@@ -46,6 +51,15 @@ export default function Analytics() {
         <p className="text-muted-foreground text-sm mt-1">Platform performance overview</p>
       </div>
 
+      <Tabs defaultValue="overview">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="citoconnect">CitoConnect Reports</TabsTrigger>
+          <TabsTrigger value="coverage"><Map className="w-3.5 h-3.5 mr-1" />Coverage</TabsTrigger>
+          <TabsTrigger value="wialon"><Radio className="w-3.5 h-3.5 mr-1" />Telematics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-border/60"><CardContent className="pt-5">
           <p className="text-xs text-muted-foreground">Total Revenue</p>
@@ -137,6 +151,20 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="citoconnect" className="mt-4">
+          <CitoReportExport />
+        </TabsContent>
+
+        <TabsContent value="coverage" className="mt-4">
+          <CoverageAnalytics />
+        </TabsContent>
+
+        <TabsContent value="wialon" className="mt-4">
+          <WialonIntegration />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -44,6 +44,7 @@ import OmniInbox from '@/pages/OmniInbox';
 import ReportingDashboard from '@/pages/ReportingDashboard';
 import WasteBank from '@/pages/WasteBank';
 import WialonIntegration from '@/pages/WialonIntegration';
+import IntegrationsHub from '@/pages/IntegrationsHub';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -105,6 +106,7 @@ const AuthenticatedApp = () => {
         <Route path="/reporting" element={<ReportingDashboard />} />
         <Route path="/waste-bank" element={<WasteBank />} />
         <Route path="/wialon" element={<WialonIntegration />} />
+        <Route path="/integrations-hub" element={<IntegrationsHub />} />
       </Route>
       <Route path="/field-app" element={<FieldApp />} />
       <Route path="/customer-shop" element={<CustomerShop />} />
