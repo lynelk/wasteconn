@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CreditCard, Search, CheckCircle } from 'lucide-react';
+import { Plus, CreditCard, Search, CheckCircle, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PaymentForm from '@/components/payments/PaymentForm';
+import YoPaymentPanel from '@/components/payments/YoPaymentPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 
 const statusColor = {
@@ -16,7 +18,7 @@ const statusColor = {
   failed: 'bg-red-100 text-red-800',
   refunded: 'bg-gray-100 text-gray-600',
 };
-const methodIcons = { mtn_momo: '📱 MTN MoMo', airtel_money: '📱 Airtel', cash: '💵 Cash', bank_transfer: '🏦 Bank' };
+const methodIcons = { mtn_momo: '📱 MTN MoMo', airtel_money: '📱 Airtel', cash: '💵 Cash', bank_transfer: '🏦 Bank', yo_payments: '📲 Yo! Payments' };
 
 export default function Payments() {
   const qc = useQueryClient();
@@ -57,6 +59,17 @@ export default function Payments() {
         </Button>
       </div>
 
+      <Tabs defaultValue="list">
+        <TabsList>
+          <TabsTrigger value="list"><CreditCard className="w-3.5 h-3.5 mr-1.5" />Payment Log</TabsTrigger>
+          <TabsTrigger value="yo"><Smartphone className="w-3.5 h-3.5 mr-1.5" />Yo! Payments</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="yo" className="mt-4">
+          <YoPaymentPanel onPaymentCreated={() => qc.invalidateQueries({ queryKey: ['payments'] })} />
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-4 space-y-4">
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -111,6 +124,9 @@ export default function Payments() {
           })}
         </div>
       )}
+
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">

@@ -52,7 +52,7 @@ export default function PaymentForm({ onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Payment Method</Label>
-          <MobileSelect value={form.payment_method} onChange={v => set('payment_method', v)} options={[{value:'cash',label:'Cash'},{value:'mtn_momo',label:'MTN MoMo'},{value:'airtel_money',label:'Airtel Money'},{value:'bank_transfer',label:'Bank Transfer'}]} />
+          <MobileSelect value={form.payment_method} onChange={v => set('payment_method', v)} options={[{value:'cash',label:'Cash'},{value:'mtn_momo',label:'MTN MoMo'},{value:'airtel_money',label:'Airtel Money'},{value:'bank_transfer',label:'Bank Transfer'},{value:'yo_payments',label:'Yo! Payments'}]} />
         </div>
         <div className="space-y-1.5">
           <Label>Status</Label>
@@ -62,7 +62,7 @@ export default function PaymentForm({ onClose }) {
           <Label>Transaction Reference</Label>
           <Input value={form.transaction_ref} onChange={e => set('transaction_ref', e.target.value)} placeholder="Mobile money or bank ref..." />
         </div>
-        {(form.payment_method === 'mtn_momo' || form.payment_method === 'airtel_money') && (
+        {(form.payment_method === 'mtn_momo' || form.payment_method === 'airtel_money' || form.payment_method === 'yo_payments') && (
           <div className="col-span-2 space-y-1.5">
             <Label>Mobile Money Number</Label>
             <Input value={form.mobile_money_number} onChange={e => set('mobile_money_number', e.target.value)} placeholder="+256..." />
