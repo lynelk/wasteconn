@@ -7,6 +7,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  * Phone: phone OR phone_number
  * Amount: amount_ugx OR amount
  */
+
+function detectNetwork(phone: string): 'mtn_momo' | 'airtel_money' {
+  // Normalise to local format (strip +256 or 256 country code, strip leading 0)
+  const n = phone.replace(/^\+?256/, '').replace(/^0/, '');
+  // MTN Uganda: 077x, 078x, 039x (039 is MTN virtual)
+  // Airtel Uganda: 070x, 075x, 074x
+  if (['77', '78', '39'].some(p => n.startsWith(p))) return 'mtn_momo';
+  return 'airtel_money';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -40,6 +50,26 @@ Deno.serve(async (req) => {
 
     if (!phone) return Response.json({ error: 'phone / phone_number required' }, { status: 400 });
 
+    // --- Idempotency check ---
+    // Prevent double-charging the same customer the same amount within 5 minutes
+    if (customer_id) {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const recent = await base44.asServiceRole.entities.Payment.filter({ customer_id, status: 'pending' });
+      const duplicate = recent.find(p =>
+        p.amount_ugx === parseFloat(amount) &&
+        (p.created_date || '') >= fiveMinAgo
+      );
+      if (duplicate) {
+        return Response.json({
+          success: true,
+          duplicate: true,
+          message: 'A pending payment for this customer and amount was initiated recently.',
+          payment_reference: duplicate.transaction_ref,
+          customer_id,
+        });
+      }
+    }
+
     const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
 <AutoCreate>
   <Request>
@@ -68,17 +98,30 @@ Deno.serve(async (req) => {
     if (order_id) {
       await base44.asServiceRole.entities.CustomerOrder.update(order_id, { payment_status: paid ? 'paid' : 'pending', payment_reference: transRef || reference });
     }
-    if (customer_id && paid) {
-      // Record payment entity
-      await base44.asServiceRole.entities.Payment.create({
-        customer_id,
-        amount_ugx: parseFloat(amount),
-        payment_method: phone.startsWith('077') ? 'mtn_momo' : 'airtel_money',
-        transaction_ref: transRef || reference,
-        status: 'completed',
-        payment_date: new Date().toISOString().slice(0, 10),
-        notes: narration,
-      });
+    if (customer_id) {
+      const network = detectNetwork(phone);
+      if (paid) {
+        await base44.asServiceRole.entities.Payment.create({
+          customer_id,
+          amount_ugx: parseFloat(amount),
+          payment_method: network,
+          transaction_ref: transRef || reference,
+          status: 'completed',
+          payment_date: new Date().toISOString().slice(0, 10),
+          notes: narration,
+        });
+      } else {
+        // Record as pending so idempotency + polling can track it
+        await base44.asServiceRole.entities.Payment.create({
+          customer_id,
+          amount_ugx: parseFloat(amount),
+          payment_method: network,
+          transaction_ref: transRef || reference,
+          status: 'pending',
+          payment_date: new Date().toISOString().slice(0, 10),
+          notes: narration,
+        });
+      }
     }
 
     return Response.json({ success: true, paid, status, payment_reference: transRef || reference, customer_id, order_id });

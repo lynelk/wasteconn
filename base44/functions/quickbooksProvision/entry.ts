@@ -12,11 +12,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 //   - QBO_CLIENT_SECRET
 //   - QBO_REFRESH_TOKEN
 //   - QBO_REALM_ID
-//
-// OAuth flow must be completed via the QuickBooks connector once available.
 
 const QBO_BASE_URL = 'https://quickbooks.api.intuit.com';
 const QBO_AUTH_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+const FALLBACK_UGX_USD = 3700;
 
 async function refreshQboToken() {
   const clientId = Deno.env.get('QBO_CLIENT_ID');
@@ -59,6 +58,41 @@ async function qboRequest(accessToken, realmId, method, path, body = null) {
   return res.json();
 }
 
+async function getLiveUgxRate(base44): Promise<number> {
+  // Try to get a cached rate from system config (valid 24h)
+  try {
+    const configs = await base44.asServiceRole.entities.SystemConfig.filter({ key: 'ugx_usd_rate' });
+    const cached = configs?.[0];
+    if (cached && cached.updated_date) {
+      const ageHours = (Date.now() - new Date(cached.updated_date).getTime()) / 3600000;
+      if (ageHours < 24 && cached.value) return parseFloat(cached.value);
+    }
+  } catch {}
+
+  // Fetch from ExchangeRate-API (free, no key needed for basic)
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      const data = await res.json();
+      const rate = data?.rates?.UGX;
+      if (rate && rate > 1000) {
+        // Cache in SystemConfig
+        try {
+          const configs = await base44.asServiceRole.entities.SystemConfig.filter({ key: 'ugx_usd_rate' });
+          if (configs?.[0]) {
+            await base44.asServiceRole.entities.SystemConfig.update(configs[0].id, { value: String(rate) });
+          } else {
+            await base44.asServiceRole.entities.SystemConfig.create({ key: 'ugx_usd_rate', value: String(rate) });
+          }
+        } catch {}
+        return rate;
+      }
+    }
+  } catch {}
+
+  return FALLBACK_UGX_USD;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -75,6 +109,7 @@ Deno.serve(async (req) => {
     }
 
     const accessToken = await refreshQboToken();
+    const ugxToUsd = await getLiveUgxRate(base44);
 
     if (action === 'push_invoice') {
       const invoices = await base44.asServiceRole.entities.Invoice.filter({ id: invoice_id });
@@ -92,18 +127,18 @@ Deno.serve(async (req) => {
         Line: (invoice.items || []).map((item, i) => ({
           Id: String(i + 1),
           LineNum: i + 1,
-          Amount: (item.total_ugx || 0) / 3700, // Convert UGX to USD approximately
+          Amount: (item.total_ugx || 0) / ugxToUsd,
           DetailType: 'SalesItemLineDetail',
           SalesItemLineDetail: {
             ItemRef: { value: '1', name: item.description },
             Qty: item.quantity || 1,
-            UnitPrice: (item.unit_price_ugx || 0) / 3700,
+            UnitPrice: (item.unit_price_ugx || 0) / ugxToUsd,
           },
         })),
       };
 
       const result = await qboRequest(accessToken, realmId, 'POST', '/invoice', { Invoice: qboInvoice });
-      return Response.json({ success: true, qbo_invoice_id: result.Invoice?.Id });
+      return Response.json({ success: true, qbo_invoice_id: result.Invoice?.Id, rate_used: ugxToUsd });
     }
 
     if (action === 'pull_invoices') {
@@ -123,7 +158,11 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, qbo_payment_id: result.Payment?.Id });
     }
 
-    return Response.json({ error: 'Unknown action. Use: push_invoice, pull_invoices, push_payment' }, { status: 400 });
+    if (action === 'get_rate') {
+      return Response.json({ success: true, ugx_usd_rate: ugxToUsd });
+    }
+
+    return Response.json({ error: 'Unknown action. Use: push_invoice, pull_invoices, push_payment, get_rate' }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
