@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import viteImagemin from 'vite-plugin-imagemin';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => ({
   logLevel: 'error',
@@ -22,6 +26,11 @@ export default defineConfig(({ mode }) => ({
     }),
     ...(mode === 'analyze' ? [visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true })] : [])
   ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom',
