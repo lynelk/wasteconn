@@ -37,22 +37,23 @@ const AuthenticatedApp = () => {
     }
   }
 
+  const layoutRoutes = [...authenticatedRoutes, ...adminRoutes, ...fieldOperationsRoutes.filter((route) => route.path !== '/field-app')];
+  const standaloneFieldRoutes = fieldOperationsRoutes.filter((route) => route.path === '/field-app');
+
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route element={<Layout />}>
-          {[...authenticatedRoutes, ...adminRoutes, ...fieldOperationsRoutes.filter((route) => route.path !== '/field-app')].map((route) => (
+          {layoutRoutes.map((route) => (
             <Route key={route.path} path={route.path} element={<route.component />} />
           ))}
         </Route>
         {publicRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={<route.component />} />
         ))}
-        {fieldOperationsRoutes
-          .filter((route) => route.path === '/field-app')
-          .map((route) => (
-            <Route key={route.path} path={route.path} element={<route.component />} />
-          ))}
+        {standaloneFieldRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={<route.component />} />
+        ))}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>

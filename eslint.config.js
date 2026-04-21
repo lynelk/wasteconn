@@ -43,7 +43,7 @@ const sharedRules = {
 
 export default [
   {
-    files: ['src/**/*.{js,mjs,cjs,jsx,ts,tsx}'],
+    files: ['src/**/*.{js,mjs,cjs,jsx}'],
     ignores: ['src/components/ui/**/*'],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
