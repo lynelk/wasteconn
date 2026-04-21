@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { subDays, format, parseISO, isAfter } from 'date-fns';
+import { subDays, format, parseISO, isAfter, differenceInDays } from 'date-fns';
+import { TrendingUp, Clock, AlertCircle, Users } from 'lucide-react';
 
 const METHOD_COLORS = {
   cash: '#22c55e',
@@ -19,7 +20,7 @@ const METHOD_LABELS = {
   yo_payments: 'Yo! Payments',
 };
 
-export default function CollectionsDashboard({ payments = [] }) {
+export default function CollectionsDashboard({ payments = [], invoices = [] }) {
   const [range, setRange] = useState('30');
 
   const completed = useMemo(() => {
@@ -55,7 +56,33 @@ export default function CollectionsDashboard({ payments = [] }) {
     }));
   }, [completed]);
 
-  const totalCollected = completed.reduce((s, p) => s + (p.amount_ugx || 0), 0);
+  // --- KPIs ---
+  const kpis = useMemo(() => {
+    const totalCollected = completed.reduce((s, p) => s + (p.amount_ugx || 0), 0);
+
+    // Collection rate: collected / invoiced in same period
+    const cutoff = subDays(new Date(), parseInt(range));
+    const rangeInvoices = invoices.filter(inv => inv.issue_date && isAfter(parseISO(inv.issue_date), cutoff));
+    const totalInvoiced = rangeInvoices.reduce((s, i) => s + (i.amount_ugx || 0), 0);
+    const collectionRate = totalInvoiced > 0 ? Math.round((totalCollected / totalInvoiced) * 100) : null;
+
+    // Average days to pay: invoice issue_date → payment date (for paid invoices)
+    const paidInvoices = rangeInvoices.filter(i => i.status === 'paid' && i.issue_date && i.paid_date);
+    const avgDaysToPay = paidInvoices.length > 0
+      ? Math.round(paidInvoices.reduce((s, i) => s + differenceInDays(new Date(i.paid_date), new Date(i.issue_date)), 0) / paidInvoices.length)
+      : null;
+
+    // Top debtor by outstanding balance
+    const debtorMap: Record<string, number> = {};
+    invoices
+      .filter(i => ['issued', 'overdue', 'partially_paid'].includes(i.status))
+      .forEach(i => {
+        debtorMap[i.customer_id] = (debtorMap[i.customer_id] || 0) + (i.amount_ugx || 0);
+      });
+    const topDebtorAmount = Math.max(0, ...Object.values(debtorMap));
+
+    return { totalCollected, totalInvoiced, collectionRate, avgDaysToPay, topDebtorAmount, paidCount: completed.length };
+  }, [completed, invoices, range]);
 
   const formatUGX = (v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v);
 
@@ -65,7 +92,7 @@ export default function CollectionsDashboard({ payments = [] }) {
         <div>
           <h2 className="text-base font-semibold font-jakarta">Collections Overview</h2>
           <p className="text-xs text-muted-foreground">
-            Total: <span className="font-semibold text-primary">{totalCollected.toLocaleString()} UGX</span> · {completed.length} payments
+            Total: <span className="font-semibold text-primary">{kpis.totalCollected.toLocaleString()} UGX</span> · {kpis.paidCount} payments
           </p>
         </div>
         <Select value={range} onValueChange={setRange}>
@@ -76,6 +103,59 @@ export default function CollectionsDashboard({ payments = [] }) {
             <SelectItem value="90">Last 90 days</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="border-border/60">
+          <CardContent className="pt-3 pb-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs text-muted-foreground">Collection Rate</span>
+            </div>
+            <div className="text-xl font-bold font-jakarta text-green-600">
+              {kpis.collectionRate !== null ? `${kpis.collectionRate}%` : '—'}
+            </div>
+            <div className="text-[10px] text-muted-foreground">vs {formatUGX(kpis.totalInvoiced)} UGX invoiced</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="pt-3 pb-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-xs text-muted-foreground">Avg Days to Pay</span>
+            </div>
+            <div className="text-xl font-bold font-jakarta text-blue-600">
+              {kpis.avgDaysToPay !== null ? `${kpis.avgDaysToPay}d` : '—'}
+            </div>
+            <div className="text-[10px] text-muted-foreground">invoice to payment</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="pt-3 pb-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-xs text-muted-foreground">Largest Debtor</span>
+            </div>
+            <div className="text-xl font-bold font-jakarta text-orange-600">
+              {kpis.topDebtorAmount > 0 ? formatUGX(kpis.topDebtorAmount) : '—'}
+            </div>
+            <div className="text-[10px] text-muted-foreground">UGX outstanding</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="pt-3 pb-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-3.5 h-3.5 text-purple-500" />
+              <span className="text-xs text-muted-foreground">Transactions</span>
+            </div>
+            <div className="text-xl font-bold font-jakarta text-purple-600">{kpis.paidCount}</div>
+            <div className="text-[10px] text-muted-foreground">completed in period</div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -108,7 +188,7 @@ export default function CollectionsDashboard({ payments = [] }) {
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie data={methodData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={60} paddingAngle={2}>
-                    {methodData.map((entry, i) => (
+                    {methodData.map((entry) => (
                       <Cell key={entry.method} fill={METHOD_COLORS[entry.method] || '#94a3b8'} />
                     ))}
                   </Pie>

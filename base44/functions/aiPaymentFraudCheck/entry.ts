@@ -4,6 +4,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Uses statistical anomaly scoring on payment patterns.
 // Flags transactions with: unusual amounts, off-hours timing,
 // mismatched customer history, rapid duplicate amounts.
+// High-risk payments (score >= 60) are placed under_review and escalated to ExceptionQueue.
 
 Deno.serve(async (req) => {
   try {
@@ -48,8 +49,12 @@ Deno.serve(async (req) => {
       : globalMean * 0.5;
 
     const flagged = [];
+    let escalated = 0;
 
     for (const payment of recentPayments) {
+      // Skip payments already under review or that aren't active
+      if (payment.status === 'under_review') continue;
+
       const anomalies = [];
       let fraudScore = 0;
 
@@ -91,6 +96,31 @@ Deno.serve(async (req) => {
       fraudScore = Math.min(100, fraudScore);
 
       if (fraudScore >= 20) {
+        const riskLevel = fraudScore >= 60 ? 'high' : fraudScore >= 35 ? 'medium' : 'low';
+
+        // --- Escalate high-risk payments to ExceptionQueue and hold payment ---
+        if (riskLevel === 'high' && payment.status === 'completed') {
+          await base44.asServiceRole.entities.Payment.update(payment.id, {
+            status: 'under_review',
+            fraud_score: fraudScore,
+            fraud_notes: anomalies.join('; '),
+          });
+
+          await base44.asServiceRole.entities.ExceptionQueue.create({
+            exception_type: 'fraud_risk',
+            severity: 'high',
+            entity_type: 'Payment',
+            entity_id: payment.id,
+            title: `High-risk payment flagged — score ${fraudScore}/100`,
+            description: `Customer ${payment.customer_id} · UGX ${(payment.amount_ugx || 0).toLocaleString()} · ${anomalies.join('; ')}`,
+            status: 'open',
+            created_at: new Date().toISOString(),
+            metadata: JSON.stringify({ fraud_score: fraudScore, anomalies, payment_method: payment.payment_method, transaction_ref: payment.transaction_ref }),
+          });
+
+          escalated++;
+        }
+
         flagged.push({
           payment_id: payment.id,
           customer_id: payment.customer_id,
@@ -100,7 +130,8 @@ Deno.serve(async (req) => {
           payment_date: payment.payment_date || payment.created_date,
           fraud_score: fraudScore,
           anomalies,
-          risk_level: fraudScore >= 60 ? 'high' : fraudScore >= 35 ? 'medium' : 'low',
+          risk_level: riskLevel,
+          escalated: riskLevel === 'high',
         });
       }
     }
@@ -111,6 +142,7 @@ Deno.serve(async (req) => {
       success: true,
       total_analysed: recentPayments.length,
       flagged_count: flagged.length,
+      escalated_count: escalated,
       flagged,
       analysed_at: new Date().toISOString(),
     });

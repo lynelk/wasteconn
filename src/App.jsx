@@ -47,6 +47,7 @@ import WialonIntegration from '@/pages/WialonIntegration';
 import IntegrationsHub from '@/pages/IntegrationsHub';
 import MarketingHub from '@/pages/MarketingHub';
 import PreLaunchDashboard from '@/pages/PreLaunchDashboard';
+import PayPage from '@/pages/PayPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -115,6 +116,7 @@ const AuthenticatedApp = () => {
       <Route path="/field-app" element={<FieldApp />} />
       <Route path="/customer-shop" element={<CustomerShop />} />
       <Route path="/customer-app" element={<CustomerApp />} />
+      <Route path="/pay/:token" element={<PayPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

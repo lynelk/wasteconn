@@ -2,13 +2,72 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Payment Webhook Handler — idempotent, signature-verified
 // Handles inbound webhook events from Yo Payments / MTN MoMo / Airtel Money
-// Implements: idempotency key dedup, exponential backoff queue entry, receipt generation
+// Implements: idempotency key dedup, exponential backoff queue entry, receipt generation,
+//             partial payment tracking, WhatsApp/SMS receipt dispatch
+
+const CITO_BASE_URL = (() => {
+  const url = Deno.env.get('CITOCONNECT_API_URL') || '';
+  return url.startsWith('http') ? url.replace(/\/$/, '') : '';
+})();
 
 async function hmacSHA256(secret, data) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sendReceiptSms(phone: string, message: string) {
+  const apiKey = Deno.env.get('CITOCONNECT_API_KEY');
+  if (!apiKey || !CITO_BASE_URL) return;
+  await fetch(`${CITO_BASE_URL}/v1/sms/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'X-API-Key': apiKey,
+    },
+    body: JSON.stringify({ to: phone, message }),
+  }).catch(() => {}); // non-blocking
+}
+
+async function applyPaymentToInvoices(base44, customer_id: string, amount_paid: number, payment_id: string) {
+  // Find unpaid/partially-paid invoices for this customer sorted oldest first
+  const allInvoices = await base44.asServiceRole.entities.Invoice.filter({ customer_id });
+  const unpaid = allInvoices
+    .filter(i => ['issued', 'overdue', 'partially_paid'].includes(i.status))
+    .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+
+  let remaining = amount_paid;
+  for (const inv of unpaid) {
+    if (remaining <= 0) break;
+
+    // Sum all completed payments already applied to this invoice
+    const allPayments = await base44.asServiceRole.entities.Payment.filter({ customer_id, status: 'completed' });
+    const alreadyPaid = allPayments
+      .filter(p => p.id !== payment_id)
+      .reduce((s, p) => s + (p.amount_ugx || 0), 0);
+
+    // This is a simplification — in a real system payments would link to invoices directly.
+    // Here we apply chronologically across oldest unpaid invoices.
+    const invoiceAmount = inv.amount_ugx || 0;
+    if (remaining >= invoiceAmount) {
+      await base44.asServiceRole.entities.Invoice.update(inv.id, {
+        status: 'paid',
+        paid_date: new Date().toISOString(),
+        amount_paid: invoiceAmount,
+        balance_due: 0,
+      });
+      remaining -= invoiceAmount;
+    } else {
+      await base44.asServiceRole.entities.Invoice.update(inv.id, {
+        status: 'partially_paid',
+        amount_paid: remaining,
+        balance_due: invoiceAmount - remaining,
+      });
+      remaining = 0;
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -26,7 +85,6 @@ Deno.serve(async (req) => {
     if (webhookSecret && signature) {
       const expected = await hmacSHA256(webhookSecret, `${transaction_ref}:${amount}:${timestamp}`);
       if (expected !== signature) {
-        // Log failed verification attempt
         await base44.asServiceRole.entities.IntegrationQueue.create({
           event_type: 'payment_webhook',
           direction: 'inbound',
@@ -79,6 +137,11 @@ Deno.serve(async (req) => {
           transaction_ref: transaction_ref || payment.transaction_ref,
         });
 
+        // --- Apply payment to unpaid invoices (partial payment tracking) ---
+        if (payment.customer_id) {
+          await applyPaymentToInvoices(base44, payment.customer_id, payment.amount_ugx || amount, payment.id);
+        }
+
         // Generate receipt
         const receiptNum = `REC-${Date.now().toString(36).toUpperCase()}`;
         await base44.asServiceRole.entities.Receipt.create({
@@ -91,6 +154,16 @@ Deno.serve(async (req) => {
           payment_reference: transaction_ref,
           issued_at: new Date().toISOString(),
         });
+
+        // --- WhatsApp / SMS receipt ---
+        if (payment.customer_id) {
+          const customers = await base44.asServiceRole.entities.Customer.filter({ id: payment.customer_id });
+          const customer = customers?.[0];
+          if (customer?.phone) {
+            const receiptMsg = `✅ NLSWMS: Payment received — UGX ${(payment.amount_ugx || 0).toLocaleString()}. Receipt: ${receiptNum}. Thank you, ${customer.full_name || 'Customer'}!`;
+            await sendReceiptSms(customer.phone, receiptMsg);
+          }
+        }
       }
 
       // Update queue entry to success
