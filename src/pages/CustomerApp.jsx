@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
-import { FileText, Calendar, Plus, LogOut, Download, Truck, CheckCircle2, Clock, AlertCircle, MapPin } from 'lucide-react';
+import { FileText, Calendar, Plus, LogOut, Download, Truck, CheckCircle2, Clock, AlertCircle, MapPin, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
 import SurveyModal from '@/components/customer/SurveyModal';
 import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
 import SupportChatWidget from '@/components/customer/SupportChatWidget';
+import CustomerStatementModal from '@/components/payments/CustomerStatementModal';
 import { Star } from 'lucide-react';
 
 const statusColor = {
@@ -31,6 +32,7 @@ export default function CustomerApp() {
   const [activeTab, setActiveTab] = useState('history');
   const [activeSurvey, setActiveSurvey] = useState(null);
   const [trackingPickup, setTrackingPickup] = useState(null);
+  const [statementOpen, setStatementOpen] = useState(false);
 
   const { data: customer } = useQuery({
     queryKey: ['my-customer', user?.email],
@@ -64,6 +66,12 @@ export default function CustomerApp() {
     enabled: !!customer?.id,
   });
 
+  const { data: myPayments = [], isLoading: loadingPayments } = useQuery({
+    queryKey: ['my-payments', customer?.id],
+    queryFn: () => base44.entities.Payment.filter({ customer_id: customer?.id }),
+    enabled: !!customer?.id,
+  });
+
   const requestPickupMutation = useMutation({
     mutationFn: (data) => base44.entities.PickupRequest.create({
       ...data,
@@ -81,6 +89,7 @@ export default function CustomerApp() {
   const tabs = [
     { key: 'history', label: 'Collection History', icon: Truck },
     { key: 'invoices', label: 'Invoices', icon: FileText },
+    { key: 'payments', label: 'Payments', icon: CreditCard },
   ];
 
   const handleRefresh = async () => {
@@ -88,8 +97,20 @@ export default function CustomerApp() {
       queryClient.invalidateQueries({ queryKey: ['my-pickups'] }),
       queryClient.invalidateQueries({ queryKey: ['my-invoices'] }),
       queryClient.invalidateQueries({ queryKey: ['my-service-points'] }),
+      queryClient.invalidateQueries({ queryKey: ['my-payments'] }),
     ]);
   };
+
+  const paymentStatusColor = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    completed: 'bg-green-100 text-green-700',
+    failed: 'bg-red-100 text-red-700',
+    refunded: 'bg-gray-100 text-gray-600',
+    expired: 'bg-gray-100 text-gray-500',
+    under_review: 'bg-orange-100 text-orange-700',
+  };
+  const methodLabel = { mtn_momo: 'MTN MoMo', airtel_money: 'Airtel', cash: 'Cash', bank_transfer: 'Bank', yo_payments: 'Yo! Payments' };
+  const totalPaid = myPayments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount_ugx || 0), 0);
 
   const { pulling, pullDistance, refreshing } = usePullToRefresh({ onRefresh: handleRefresh });
 
@@ -121,18 +142,22 @@ export default function CustomerApp() {
           </div>
 
           {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             <div className="bg-white/10 rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold font-jakarta">{completedCount}</div>
-              <div className="text-xs text-white/70">Completed</div>
+              <div className="text-xl font-bold font-jakarta">{completedCount}</div>
+              <div className="text-xs text-white/70">Pickups</div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold font-jakarta">{pendingCount}</div>
+              <div className="text-xl font-bold font-jakarta">{pendingCount}</div>
               <div className="text-xs text-white/70">Pending</div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold font-jakarta">{invoices.filter(i => i.status === 'issued' || i.status === 'overdue').length}</div>
+              <div className="text-xl font-bold font-jakarta">{invoices.filter(i => i.status === 'issued' || i.status === 'overdue').length}</div>
               <div className="text-xs text-white/70">Due Invoices</div>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3 text-center">
+              <div className="text-xl font-bold font-jakarta">{myPayments.filter(p => p.status === 'completed').length}</div>
+              <div className="text-xs text-white/70">Paid</div>
             </div>
           </div>
         </div>
@@ -263,6 +288,50 @@ export default function CustomerApp() {
             )}
           </div>
         )}
+
+        {activeTab === 'payments' && (
+          <div className="space-y-3 pb-8">
+            {/* Summary */}
+            <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total paid</p>
+                <p className="text-lg font-bold font-jakarta text-primary">{totalPaid.toLocaleString()} UGX</p>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setStatementOpen(true)}>
+                <Download className="w-3.5 h-3.5" /> Statement
+              </Button>
+            </div>
+
+            {loadingPayments ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />)}
+              </div>
+            ) : myPayments.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No payment history yet.</p>
+              </div>
+            ) : (
+              [...myPayments]
+                .sort((a, b) => new Date(b.payment_date || b.created_date) - new Date(a.payment_date || a.created_date))
+                .map(p => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card">
+                    <div>
+                      <p className="text-sm font-semibold">{(p.amount_ugx || 0).toLocaleString()} UGX</p>
+                      <p className="text-xs text-muted-foreground">
+                        {methodLabel[p.payment_method] || p.payment_method || '—'}
+                        {p.payment_date ? ` · ${format(new Date(p.payment_date), 'MMM d, yyyy')}` : ''}
+                      </p>
+                      {p.transaction_ref && <p className="text-[10px] text-muted-foreground font-mono">Ref: {p.transaction_ref}</p>}
+                    </div>
+                    <Badge className={`text-xs ${paymentStatusColor[p.status] || 'bg-muted text-muted-foreground'}`} variant="secondary">
+                      {p.status?.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Survey Modal */}
@@ -278,6 +347,13 @@ export default function CustomerApp() {
       {trackingPickup && (
         <TrackDispatchModal pickup={trackingPickup} onClose={() => setTrackingPickup(null)} />
       )}
+
+      {/* Customer Statement Download */}
+      <CustomerStatementModal
+        open={statementOpen}
+        onClose={() => setStatementOpen(false)}
+        customers={customer ? [customer] : []}
+      />
 
       {/* AI Support Chat */}
       <SupportChatWidget customer={customer} />

@@ -1,7 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Sends payment reminders based on ServicePlan reminder settings.
-// Checks invoices due in X days and sends email reminders.
+// Sends payment reminders via email AND SMS (CitoConnect).
+// Checks invoices due in X days (per ServicePlan settings) and fires both channels.
+
+const CITO_BASE_URL = (() => {
+  const url = Deno.env.get('CITOCONNECT_API_URL') || '';
+  return url.startsWith('http') ? url.replace(/\/$/, '') : '';
+})();
+
+async function sendSms(phone: string, message: string) {
+  const apiKey = Deno.env.get('CITOCONNECT_API_KEY');
+  if (!apiKey || !CITO_BASE_URL) return; // provisioned mode — skip silently
+  await fetch(`${CITO_BASE_URL}/v1/sms/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'X-API-Key': apiKey,
+    },
+    body: JSON.stringify({ to: phone, message }),
+  }).catch(() => {}); // non-blocking; email is the primary channel
+}
 
 Deno.serve(async (req) => {
   try {
@@ -15,6 +34,7 @@ Deno.serve(async (req) => {
     const invoices = await base44.asServiceRole.entities.Invoice.filter({ status: 'issued' });
 
     let sent = 0;
+    let smsSent = 0;
 
     for (const invoice of invoices) {
       if (!invoice.due_date) continue;
@@ -38,7 +58,13 @@ Deno.serve(async (req) => {
       // Get customer info
       const customers = await base44.asServiceRole.entities.Customer.filter({ id: invoice.customer_id });
       const customer = customers?.[0];
-      if (!customer?.email) continue;
+      if (!customer) continue;
+
+      const dueLine = daysUntilDue === 0
+        ? 'due today'
+        : daysUntilDue < 0
+          ? 'overdue'
+          : `due in ${daysUntilDue} days (${invoice.due_date})`;
 
       const subject = daysUntilDue === 0
         ? `Payment Due Today - Invoice ${invoice.invoice_number}`
@@ -46,38 +72,65 @@ Deno.serve(async (req) => {
           ? `Overdue Payment - Invoice ${invoice.invoice_number}`
           : `Payment Reminder - Invoice ${invoice.invoice_number} due in ${daysUntilDue} days`;
 
-      const body = `Dear ${customer.full_name || 'Customer'},\n\nThis is a reminder that invoice ${invoice.invoice_number} for ${(invoice.amount_ugx || 0).toLocaleString()} UGX is ${daysUntilDue === 0 ? 'due today' : daysUntilDue < 0 ? 'overdue' : `due in ${daysUntilDue} days (${invoice.due_date})`}.\n\nPlease log in to your customer portal to view and pay your invoice.\n\nThank you.`;
+      const emailBody = `Dear ${customer.full_name || 'Customer'},\n\nThis is a reminder that invoice ${invoice.invoice_number} for ${(invoice.amount_ugx || 0).toLocaleString()} UGX is ${dueLine}.\n\nPlease log in to your customer portal to view and pay your invoice.\n\nThank you.`;
 
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: customer.email,
-        subject,
-        body,
-      });
+      // --- Email ---
+      if (customer.email) {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: customer.email,
+          subject,
+          body: emailBody,
+        });
 
-      // Create notification record
-      await base44.asServiceRole.entities.Notification.create({
-        tenant_id: invoice.tenant_id,
-        customer_id: invoice.customer_id,
-        recipient_email: customer.email,
-        channel: 'email',
-        template_type: daysUntilDue < 0 ? 'invoice_overdue' : 'invoice_issued',
-        subject,
-        body,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        related_entity_type: 'Invoice',
-        related_entity_id: invoice.id,
-      });
+        await base44.asServiceRole.entities.Notification.create({
+          tenant_id: invoice.tenant_id,
+          customer_id: invoice.customer_id,
+          recipient_email: customer.email,
+          channel: 'email',
+          template_type: daysUntilDue < 0 ? 'invoice_overdue' : 'invoice_issued',
+          subject,
+          body: emailBody,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          related_entity_type: 'Invoice',
+          related_entity_id: invoice.id,
+        });
+
+        sent++;
+      }
+
+      // --- SMS (East Africa is SMS-first; send even without email) ---
+      if (customer.phone) {
+        const smsText = daysUntilDue < 0
+          ? `NLSWMS: Invoice ${invoice.invoice_number} of UGX ${(invoice.amount_ugx || 0).toLocaleString()} is OVERDUE. Pay now via MoMo. Acct: ${customer.account_number || customer.id.slice(0, 8)}`
+          : `NLSWMS: Invoice ${invoice.invoice_number} of UGX ${(invoice.amount_ugx || 0).toLocaleString()} is due ${invoice.due_date}. Pay via MoMo. Acct: ${customer.account_number || customer.id.slice(0, 8)}`;
+
+        await sendSms(customer.phone, smsText);
+
+        await base44.asServiceRole.entities.Notification.create({
+          tenant_id: invoice.tenant_id,
+          customer_id: invoice.customer_id,
+          recipient_phone: customer.phone,
+          channel: 'sms',
+          template_type: daysUntilDue < 0 ? 'invoice_overdue' : 'invoice_issued',
+          subject: `SMS: ${subject}`,
+          body: smsText,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          related_entity_type: 'Invoice',
+          related_entity_id: invoice.id,
+        });
+
+        smsSent++;
+      }
 
       // Update invoice status to overdue if past due
       if (daysUntilDue < 0 && invoice.status === 'issued') {
         await base44.asServiceRole.entities.Invoice.update(invoice.id, { status: 'overdue' });
       }
-
-      sent++;
     }
 
-    return Response.json({ success: true, sent });
+    return Response.json({ success: true, sent, sms_sent: smsSent });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
