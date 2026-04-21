@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { logger } from '@/lib/logger';
 import { RefreshCw, Zap, TrendingDown, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,7 +70,7 @@ export default function CollectionsRiskPanel() {
       const res = await base44.functions.invoke('aiCollectionsRisk', {});
       setResults(res.data);
     } catch (e) {
-      console.error(e);
+      logger.error('collections.riskPanel.error', { message: e?.message });
     } finally {
       setRunning(false);
     }

@@ -4,6 +4,7 @@
  */
 import { useEffect, useCallback, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { logger } from '@/lib/logger';
 import {
   getPendingWBTransactions,
   markWBTransactionSynced,
@@ -17,17 +18,21 @@ export function useSyncManager() {
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [syncError, setSyncError] = useState(null);
 
   const countPending = useCallback(async () => {
     try {
       const [wbt, actions] = await Promise.all([getPendingWBTransactions(), getPendingActions()]);
       setPendingCount(wbt.length + actions.length);
-    } catch {}
+    } catch (err) {
+      logger.warn('sync.countPending.error', { message: err?.message });
+    }
   }, []);
 
   const syncAll = useCallback(async () => {
     if (!navigator.onLine) return;
     setSyncing(true);
+    setSyncError(null);
     try {
       // 1. Sync waste bank transactions
       const pendingWBT = await getPendingWBTransactions();
@@ -55,7 +60,8 @@ export function useSyncManager() {
       setLastSyncAt(new Date());
       await countPending();
     } catch (err) {
-      console.error('Sync failed:', err);
+      logger.error('sync.syncAll.error', { message: err?.message });
+      setSyncError({ message: err?.message || 'Sync failed', timestamp: new Date().toISOString() });
     } finally {
       setSyncing(false);
     }
@@ -76,5 +82,5 @@ export function useSyncManager() {
     };
   }, [syncAll, countPending]);
 
-  return { isOnline, pendingCount, syncing, lastSyncAt, syncNow: syncAll };
+  return { isOnline, pendingCount, syncing, lastSyncAt, syncNow: syncAll, syncError };
 }

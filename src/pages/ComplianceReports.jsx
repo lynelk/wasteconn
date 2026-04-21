@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { FileText, Download, Plus, Shield, CheckCircle, Clock, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,7 @@ export default function ComplianceReports() {
       // Try to download if we got a blob back (direct call won't work through SDK like this — show success)
       queryClient.invalidateQueries({ queryKey: ['compliance-reports'] });
     } catch (err) {
-      console.error(err);
+      logger.error('compliance.generateReport.error', { message: err?.message });
     }
     setGenerating(false);
   };

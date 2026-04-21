@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { logger } from '@/lib/logger';
 
 const AuthContext = createContext();
 
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
         }
         setIsLoadingPublicSettings(false);
       } catch (appError) {
-        console.error('App state check failed:', appError);
+        logger.error('auth.appState.failed', { message: appError?.message, status: appError?.status });
         
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
+      logger.error('auth.checkAppState.unexpected', { message: error?.message });
       setAuthError({
         type: 'unknown',
         message: error.message || 'An unexpected error occurred'
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } catch (error) {
-      console.error('User auth check failed:', error);
+      logger.error('auth.checkUserAuth.failed', { message: error?.message, status: error?.status });
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       

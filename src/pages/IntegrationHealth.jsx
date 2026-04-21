@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import {
   Activity, AlertTriangle, CheckCircle, RefreshCw, Zap,
@@ -90,7 +91,7 @@ export default function IntegrationHealth() {
       const res = await base44.functions.invoke('aiPaymentFraudCheck', { lookback_days: 30 });
       setFraudResults(res.data);
     } catch (e) {
-      console.error(e);
+      logger.error('integrationHealth.fraudCheck.error', { message: e?.message });
     } finally {
       setFraudRunning(false);
     }

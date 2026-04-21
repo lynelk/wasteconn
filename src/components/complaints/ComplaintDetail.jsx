@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +43,7 @@ export default function ComplaintDetail({ complaint, customerMap, onClose }) {
       setAiResult(res.data?.classification);
       qc.invalidateQueries({ queryKey: ['complaints'] });
     } catch (e) {
-      console.error(e);
+      logger.error('complaint.classify.error', { message: e?.message });
     } finally {
       setClassifying(false);
     }
