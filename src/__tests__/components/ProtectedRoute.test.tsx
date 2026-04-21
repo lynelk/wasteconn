@@ -18,7 +18,7 @@ const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function renderProtectedRoute(authState: object, unauthElement = <p>login</p>) {
+function renderProtectedRoute(unauthElement = <p>login</p>) {
   return render(
     <MemoryRouter initialEntries={['/protected']}>
       <Routes>
@@ -44,7 +44,7 @@ describe('ProtectedRoute', () => {
       checkUserAuth: vi.fn(),
     });
 
-    const { container } = renderProtectedRoute({});
+    const { container } = renderProtectedRoute();
     // The default fallback renders the spinner div, not the route content
     expect(screen.queryByText('protected content')).not.toBeInTheDocument();
     expect(container.querySelector('.animate-spin')).toBeTruthy();
@@ -59,7 +59,7 @@ describe('ProtectedRoute', () => {
       checkUserAuth: vi.fn(),
     });
 
-    renderProtectedRoute({});
+    renderProtectedRoute();
     expect(screen.getByText('protected content')).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('ProtectedRoute', () => {
       checkUserAuth: vi.fn(),
     });
 
-    renderProtectedRoute({});
+    renderProtectedRoute();
     expect(screen.getByText('login')).toBeInTheDocument();
     expect(screen.queryByText('protected content')).not.toBeInTheDocument();
   });
@@ -86,7 +86,7 @@ describe('ProtectedRoute', () => {
       checkUserAuth: vi.fn(),
     });
 
-    renderProtectedRoute({});
+    renderProtectedRoute();
     expect(screen.getByText('not-registered')).toBeInTheDocument();
   });
 
@@ -99,7 +99,7 @@ describe('ProtectedRoute', () => {
       checkUserAuth: vi.fn(),
     });
 
-    renderProtectedRoute({});
+    renderProtectedRoute();
     expect(screen.getByText('login')).toBeInTheDocument();
   });
 });
