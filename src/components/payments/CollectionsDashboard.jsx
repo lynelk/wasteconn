@@ -73,7 +73,7 @@ export default function CollectionsDashboard({ payments = [], invoices = [] }) {
       : null;
 
     // Top debtor by outstanding balance
-    const debtorMap = {};
+    const debtorMap: Record<string, number> = {};
     invoices
       .filter(i => ['issued', 'overdue', 'partially_paid'].includes(i.status))
       .forEach(i => {
