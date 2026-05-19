@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { FileText, Download, Plus, Shield, CheckCircle, Clock, Archive } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,7 @@ const statusColors = {
 
 export default function ComplianceReports() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [reportType, setReportType] = useState('route_completion');
   const [periodFrom, setPeriodFrom] = useState(format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd'));
   const [periodTo, setPeriodTo] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -36,16 +38,16 @@ export default function ComplianceReports() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const response = await base44.functions.invoke('generateComplianceReport', {
+      await base44.functions.invoke('generateComplianceReport', {
         report_type: reportType,
         period_from: periodFrom,
         period_to: periodTo,
       });
-
-      // Try to download if we got a blob back (direct call won't work through SDK like this — show success)
       queryClient.invalidateQueries({ queryKey: ['compliance-reports'] });
+      toast({ title: 'Report generated', description: `${reportType.replace(/_/g,' ')} report archived successfully.` });
     } catch (err) {
       logger.error('compliance.generateReport.error', { message: err?.message });
+      toast({ title: 'Generation failed', description: err?.message, variant: 'destructive' });
     }
     setGenerating(false);
   };

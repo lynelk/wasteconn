@@ -23,7 +23,7 @@ export default function ReportingDashboard() {
   const [period, setPeriod] = useState('monthly');
   const [generating, setGenerating] = useState(false);
 
-  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-route_date', 1000) });
+  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-scheduled_date', 1000) });
   const { data: invoices = [] } = useQuery({ queryKey: ['invoices'], queryFn: () => base44.entities.Invoice.list('-created_date', 500) });
   const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
   const { data: zones = [] } = useQuery({ queryKey: ['zones'], queryFn: () => base44.entities.ServiceZone.list() });
@@ -40,8 +40,8 @@ export default function ReportingDashboard() {
   const trendData = useMemo(() => {
     const grouped = {};
     pickups.slice(0, 500).forEach(p => {
-      if (!p.route_date) return;
-      const d = new Date(p.route_date);
+      if (!p.scheduled_date) return;
+      const d = new Date(p.scheduled_date);
       const key = period === 'weekly'
         ? `W${Math.ceil(d.getDate() / 7)} ${d.toLocaleString('default', { month: 'short' })}`
         : d.toLocaleString('default', { month: 'short', year: '2-digit' });
