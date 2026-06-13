@@ -1,0 +1,66 @@
+{
+  "name": "DepositItem",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Product/container barcode (EAN/UPC) eligible for deposit return"
+    },
+    "name": {
+      "type": "string"
+    },
+    "material": {
+      "type": "string",
+      "enum": [
+        "plastic",
+        "glass",
+        "metal",
+        "carton",
+        "other"
+      ],
+      "default": "plastic"
+    },
+    "waste_category": {
+      "type": "string",
+      "enum": [
+        "plastic",
+        "paper",
+        "glass",
+        "metal",
+        "organic",
+        "e_waste",
+        "textile",
+        "mixed"
+      ],
+      "default": "plastic",
+      "description": "Maps to WasteBankTransaction.waste_category for accounting"
+    },
+    "deposit_value_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Refund credited to the customer wallet per accepted item"
+    },
+    "loyalty_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Loyalty points awarded per accepted item"
+    },
+    "unit_weight_kg": {
+      "type": "number",
+      "default": 0.03,
+      "description": "Estimated weight per item for diversion accounting"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "tenant_id",
+    "name",
+    "material"
+  ]
+}

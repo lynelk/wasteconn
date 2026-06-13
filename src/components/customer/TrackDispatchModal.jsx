@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from 'react-leaflet';
 import { base44 } from '@/api/base44Client';
 import { X, Navigation, Clock, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,6 +19,13 @@ const driverIcon = L.divIcon({
   className: '',
   iconSize: [22, 22],
   iconAnchor: [11, 11],
+});
+
+const destinationIcon = L.divIcon({
+  html: `<div style="background:#ef4444;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);width:20px;height:20px;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
+  className: '',
+  iconSize: [20, 20],
+  iconAnchor: [10, 20],
 });
 
 const DEFAULT_CENTER = [0.3476, 32.5825];
@@ -60,6 +67,9 @@ export default function TrackDispatchModal({ pickup, onClose }) {
   const mapCenter = driverLocation
     ? [driverLocation.latitude, driverLocation.longitude]
     : DEFAULT_CENTER;
+  const destination = (pickup?.latitude != null && pickup?.longitude != null)
+    ? [pickup.latitude, pickup.longitude]
+    : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60">
@@ -120,6 +130,20 @@ export default function TrackDispatchModal({ pickup, onClose }) {
                     radius={driverLocation.accuracy_meters || 200}
                     pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.1, weight: 1 }}
                   />
+                  {destination && (
+                    <Marker position={destination} icon={destinationIcon}>
+                      <Popup>
+                        <div className="text-sm font-medium">Pickup location</div>
+                        <div className="text-xs text-gray-500">{pickup?.address || 'Your address'}</div>
+                      </Popup>
+                    </Marker>
+                  )}
+                  {destination && (
+                    <Polyline
+                      positions={[mapCenter, destination]}
+                      pathOptions={{ color: '#22c55e', weight: 3, dashArray: '6 8', opacity: 0.7 }}
+                    />
+                  )}
                 </MapContainer>
               </div>
 

@@ -26,6 +26,9 @@ const WialonIntegration = lazy(() => import('@/pages/WialonIntegration'));
 const IntegrationsHub = lazy(() => import('@/pages/IntegrationsHub'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const PreLaunchDashboard = lazy(() => import('@/pages/PreLaunchDashboard'));
+const SmartBins = lazy(() => import('@/pages/SmartBins'));
+const ServiceCatalog = lazy(() => import('@/pages/ServiceCatalog'));
+const SustainabilityDashboard = lazy(() => import('@/pages/SustainabilityDashboard'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -53,5 +56,8 @@ export const authenticatedRoutes = [
   { path: '/wialon', component: WialonIntegration, domain: 'Integrations' },
   { path: '/integrations-hub', component: IntegrationsHub, domain: 'Integrations' },
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
-  { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' }
+  { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' },
+  { path: '/smart-bins', component: SmartBins, domain: 'Operations' },
+  { path: '/service-catalog', component: ServiceCatalog, domain: 'Operations' },
+  { path: '/sustainability', component: SustainabilityDashboard, domain: 'Operations' }
 ];

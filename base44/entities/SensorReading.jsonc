@@ -1,0 +1,60 @@
+{
+  "name": "SensorReading",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "bin_id": {
+      "type": "string",
+      "description": "SmartBin this reading belongs to"
+    },
+    "sensor_id": {
+      "type": "string"
+    },
+    "fill_level_pct": {
+      "type": "number",
+      "description": "Measured fill level 0-100"
+    },
+    "distance_cm": {
+      "type": "number",
+      "description": "Raw ultrasonic distance from sensor to waste surface"
+    },
+    "battery_pct": {
+      "type": "number"
+    },
+    "temperature_c": {
+      "type": "number"
+    },
+    "tilt_detected": {
+      "type": "boolean",
+      "default": false
+    },
+    "fire_detected": {
+      "type": "boolean",
+      "default": false
+    },
+    "measured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp the sensor captured the reading"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "ultrasonic",
+        "webhook",
+        "manual"
+      ],
+      "default": "ultrasonic"
+    },
+    "raw_payload": {
+      "type": "string",
+      "description": "Original JSON payload for audit/debug"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "bin_id"
+  ]
+}
