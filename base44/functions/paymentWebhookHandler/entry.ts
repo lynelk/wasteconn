@@ -3,12 +3,91 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Payment Webhook Handler — idempotent, signature-verified
 // Handles inbound webhook events from Yo Payments / MTN MoMo / Airtel Money
 // Implements: idempotency key dedup, exponential backoff queue entry, receipt generation,
-//             partial payment tracking, WhatsApp/SMS receipt dispatch
+//             partial payment tracking, WhatsApp/SMS receipt dispatch, loyalty points,
+//             and referral reward triggering
 
 const CITO_BASE_URL = (() => {
   const url = Deno.env.get('CITOCONNECT_API_URL') || '';
   return url.startsWith('http') ? url.replace(/\/$/, '') : '';
 })();
+
+const LOYALTY_POINTS_PER_UGX = 1000; // 1 point per 1,000 UGX paid
+
+function loyaltyTierFor(lifetimePoints: number): string {
+  if (lifetimePoints >= 5000) return 'platinum';
+  if (lifetimePoints >= 2000) return 'gold';
+  if (lifetimePoints >= 500) return 'silver';
+  return 'bronze';
+}
+
+async function awardLoyaltyPoints(base44, customerId: string, tenantId: string, amountUgx: number) {
+  if (!customerId || !amountUgx) return;
+  const points = Math.floor(amountUgx / LOYALTY_POINTS_PER_UGX);
+  if (points <= 0) return;
+  const accounts = await base44.asServiceRole.entities.LoyaltyAccount.filter({ customer_id: customerId });
+  const now = new Date().toISOString();
+  if (accounts?.length) {
+    const a = accounts[0];
+    const lifetime = (a.lifetime_points || 0) + points;
+    await base44.asServiceRole.entities.LoyaltyAccount.update(a.id, {
+      points: (a.points || 0) + points,
+      lifetime_points: lifetime,
+      tier: loyaltyTierFor(lifetime),
+      last_earned_at: now,
+    });
+  } else {
+    await base44.asServiceRole.entities.LoyaltyAccount.create({
+      tenant_id: tenantId,
+      customer_id: customerId,
+      points,
+      lifetime_points: points,
+      tier: loyaltyTierFor(points),
+      last_earned_at: now,
+    });
+  }
+}
+
+// Reward any pending referral where this customer is the referee, on their first completed payment.
+async function triggerReferralReward(base44, customerId: string) {
+  if (!customerId) return;
+  const completed = await base44.asServiceRole.entities.Payment.filter({ customer_id: customerId, status: 'completed' });
+  // Only fire on the FIRST completed payment to avoid repeat rewards
+  if ((completed?.length || 0) > 1) return;
+  const pending = await base44.asServiceRole.entities.Referral.filter({ referee_customer_id: customerId, status: 'pending' });
+  if (!pending?.length) return;
+  for (const ref of pending) {
+    const reward = ref.reward_ugx || 5000;
+    const wallets = await base44.asServiceRole.entities.CustomerWallet.filter({ customer_id: ref.referrer_customer_id });
+    const now = new Date().toISOString();
+    if (wallets?.length) {
+      const w = wallets[0];
+      await base44.asServiceRole.entities.CustomerWallet.update(w.id, {
+        balance_ugx: (w.balance_ugx || 0) + reward,
+        total_earned_ugx: (w.total_earned_ugx || 0) + reward,
+        last_transaction_at: now,
+      });
+    } else {
+      await base44.asServiceRole.entities.CustomerWallet.create({
+        tenant_id: ref.tenant_id,
+        customer_id: ref.referrer_customer_id,
+        balance_ugx: reward,
+        total_earned_ugx: reward,
+        last_transaction_at: now,
+      });
+    }
+    await base44.asServiceRole.entities.WasteBankTransaction.create({
+      tenant_id: ref.tenant_id,
+      transaction_type: 'payout',
+      customer_id: ref.referrer_customer_id,
+      gross_amount_ugx: reward,
+      net_amount_ugx: reward,
+      payout_method: 'wallet_credit',
+      payment_status: 'completed',
+      notes: `Referral reward — referee ${customerId} made first payment`,
+    });
+    await base44.asServiceRole.entities.Referral.update(ref.id, { status: 'rewarded', rewarded_at: now });
+  }
+}
 
 async function hmacSHA256(secret, data) {
   const enc = new TextEncoder();
@@ -164,6 +243,12 @@ Deno.serve(async (req) => {
             await sendReceiptSms(customer.phone, receiptMsg);
           }
         }
+
+        // --- Loyalty points + referral reward (best-effort, non-blocking) ---
+        try {
+          await awardLoyaltyPoints(base44, payment.customer_id, payment.tenant_id, payment.amount_ugx || amount);
+          await triggerReferralReward(base44, payment.customer_id);
+        } catch { /* engagement rewards must never block payment processing */ }
       }
 
       // Update queue entry to success

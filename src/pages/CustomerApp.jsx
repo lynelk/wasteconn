@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
-import { FileText, Calendar, Plus, LogOut, Download, Truck, CheckCircle2, Clock, AlertCircle, MapPin, CreditCard } from 'lucide-react';
+import { FileText, Plus, LogOut, Download, Truck, MapPin, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,10 @@ import SurveyModal from '@/components/customer/SurveyModal';
 import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
 import SupportChatWidget from '@/components/customer/SupportChatWidget';
 import CustomerStatementModal from '@/components/payments/CustomerStatementModal';
-import { Star } from 'lucide-react';
+import ImpactCard from '@/components/customer/ImpactCard';
+import ReferralCard from '@/components/customer/ReferralCard';
+import { useTranslation, LANGUAGES } from '@/lib/i18n';
+import { Star, Award } from 'lucide-react';
 
 const statusColor = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -72,6 +75,15 @@ export default function CustomerApp() {
     enabled: !!customer?.id,
   });
 
+  const { data: loyalty } = useQuery({
+    queryKey: ['my-loyalty', customer?.id],
+    queryFn: () => base44.entities.LoyaltyAccount.filter({ customer_id: customer?.id }),
+    select: data => data?.[0] || null,
+    enabled: !!customer?.id,
+  });
+
+  const { t, lang, setLang } = useTranslation(customer);
+
   const requestPickupMutation = useMutation({
     mutationFn: (data) => base44.entities.PickupRequest.create({
       ...data,
@@ -87,10 +99,17 @@ export default function CustomerApp() {
   });
 
   const tabs = [
-    { key: 'history', label: 'Collection History', icon: Truck },
-    { key: 'invoices', label: 'Invoices', icon: FileText },
-    { key: 'payments', label: 'Payments', icon: CreditCard },
+    { key: 'history', label: t('tabs.history'), icon: Truck },
+    { key: 'invoices', label: t('tabs.invoices'), icon: FileText },
+    { key: 'payments', label: t('tabs.payments'), icon: CreditCard },
   ];
+
+  const TIER_BADGE = {
+    bronze: 'bg-amber-200/30 text-amber-100',
+    silver: 'bg-slate-200/30 text-slate-100',
+    gold: 'bg-yellow-200/30 text-yellow-100',
+    platinum: 'bg-cyan-200/30 text-cyan-100',
+  };
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -132,32 +151,51 @@ export default function CustomerApp() {
                 {user?.full_name?.[0] || 'C'}
               </div>
               <div>
-                <p className="font-semibold font-jakarta">{user?.full_name || 'Customer'}</p>
-                <p className="text-xs text-white/70">{customer?.account_number ? `Acct: ${customer.account_number}` : 'Customer Portal'}</p>
+                <p className="font-semibold font-jakarta flex items-center gap-2">
+                  {user?.full_name || 'Customer'}
+                  {loyalty?.tier && (
+                    <span className={`flex items-center gap-1 text-[10px] font-semibold capitalize rounded-full px-2 py-0.5 ${TIER_BADGE[loyalty.tier] || 'bg-white/20'}`}>
+                      <Award className="w-3 h-3" /> {loyalty.tier}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-white/70">{customer?.account_number ? `${t('header.account')}: ${customer.account_number}` : t('header.portal')}</p>
               </div>
             </div>
-            <button onClick={() => base44.auth.logout('/')} className="text-white/70 hover:text-white">
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="bg-white/10 text-white text-xs rounded-lg px-2 py-1 border border-white/20 focus:outline-none"
+                aria-label="Language"
+              >
+                {LANGUAGES.map(l => (
+                  <option key={l.code} value={l.code} className="text-foreground">{l.label}</option>
+                ))}
+              </select>
+              <button onClick={() => base44.auth.logout('/')} className="text-white/70 hover:text-white">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Summary stats */}
           <div className="grid grid-cols-4 gap-2">
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xl font-bold font-jakarta">{completedCount}</div>
-              <div className="text-xs text-white/70">Pickups</div>
+              <div className="text-xs text-white/70">{t('stats.pickups')}</div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xl font-bold font-jakarta">{pendingCount}</div>
-              <div className="text-xs text-white/70">Pending</div>
+              <div className="text-xs text-white/70">{t('stats.pending')}</div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xl font-bold font-jakarta">{invoices.filter(i => i.status === 'issued' || i.status === 'overdue').length}</div>
-              <div className="text-xs text-white/70">Due Invoices</div>
+              <div className="text-xs text-white/70">{t('stats.dueInvoices')}</div>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <div className="text-xl font-bold font-jakarta">{myPayments.filter(p => p.status === 'completed').length}</div>
-              <div className="text-xs text-white/70">Paid</div>
+              <div className="text-xs text-white/70">{t('stats.paid')}</div>
             </div>
           </div>
         </div>
@@ -172,8 +210,8 @@ export default function CustomerApp() {
           >
             <Star className="w-5 h-5 text-yellow-500 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Rate your recent pickup</p>
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">{pendingSurveys.length} survey{pendingSurveys.length > 1 ? 's' : ''} awaiting your response</p>
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">{t('survey.rate')}</p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400">{pendingSurveys.length} {t('survey.awaiting')}</p>
             </div>
           </button>
         )}
@@ -184,15 +222,21 @@ export default function CustomerApp() {
           className="w-full mb-4 shadow-lg bg-white text-primary hover:bg-gray-50 border border-primary/20 font-semibold"
           disabled={!customer}
         >
-          <Plus className="w-4 h-4" /> Request Extra Pickup
+          <Plus className="w-4 h-4" /> {t('cta.requestPickup')}
         </Button>
+
+        {/* Environmental impact + loyalty */}
+        <ImpactCard pickups={pickups} loyalty={loyalty} t={t} />
+
+        {/* Referral program */}
+        <ReferralCard customer={customer} t={t} />
 
         {/* Service Points */}
         {servicePoints.length > 0 && (
           <Card className="mb-4 border-border/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" /> My Service Points
+                <MapPin className="w-4 h-4 text-primary" /> {t('servicePoints.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -233,7 +277,7 @@ export default function CustomerApp() {
             ) : recentPickups.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Truck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No collection history yet.</p>
+                <p className="text-sm">{t('history.empty')}</p>
               </div>
             ) : (
               recentPickups.map(pickup => (
@@ -258,7 +302,7 @@ export default function CustomerApp() {
                             onClick={() => setTrackingPickup(pickup)}
                             className="text-xs text-primary hover:underline flex items-center gap-1"
                           >
-                            <MapPin className="w-3 h-3" /> Track Driver
+                            <MapPin className="w-3 h-3" /> {t('history.trackDriver')}
                           </button>
                         )}
                       </div>
@@ -279,7 +323,7 @@ export default function CustomerApp() {
             ) : invoices.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No invoices yet.</p>
+                <p className="text-sm">{t('invoices.empty')}</p>
               </div>
             ) : (
               invoices.map(invoice => (
@@ -294,11 +338,11 @@ export default function CustomerApp() {
             {/* Summary */}
             <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total paid</p>
+                <p className="text-xs text-muted-foreground">{t('payments.totalPaid')}</p>
                 <p className="text-lg font-bold font-jakarta text-primary">{totalPaid.toLocaleString()} UGX</p>
               </div>
               <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setStatementOpen(true)}>
-                <Download className="w-3.5 h-3.5" /> Statement
+                <Download className="w-3.5 h-3.5" /> {t('payments.statement')}
               </Button>
             </div>
 
@@ -309,7 +353,7 @@ export default function CustomerApp() {
             ) : myPayments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No payment history yet.</p>
+                <p className="text-sm">{t('payments.empty')}</p>
               </div>
             ) : (
               [...myPayments]

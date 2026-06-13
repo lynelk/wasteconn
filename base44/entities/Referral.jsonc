@@ -1,0 +1,42 @@
+{
+  "name": "Referral",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "referrer_customer_id": {
+      "type": "string",
+      "description": "Customer who shared the code"
+    },
+    "referee_customer_id": {
+      "type": "string",
+      "description": "Customer who redeemed the code"
+    },
+    "code": {
+      "type": "string",
+      "description": "Shareable referral code"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "rewarded"
+      ],
+      "default": "pending"
+    },
+    "reward_ugx": {
+      "type": "number",
+      "default": 0
+    },
+    "rewarded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "referrer_customer_id",
+    "code"
+  ]
+}
