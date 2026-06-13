@@ -22,6 +22,7 @@ const CoverageAnalytics = lazy(() => import('@/pages/CoverageAnalytics'));
 const OmniInbox = lazy(() => import('@/pages/OmniInbox'));
 const ReportingDashboard = lazy(() => import('@/pages/ReportingDashboard'));
 const WasteBank = lazy(() => import('@/pages/WasteBank'));
+const SmartBins = lazy(() => import('@/pages/SmartBins'));
 const WialonIntegration = lazy(() => import('@/pages/WialonIntegration'));
 const IntegrationsHub = lazy(() => import('@/pages/IntegrationsHub'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
@@ -50,6 +51,7 @@ export const authenticatedRoutes = [
   { path: '/omni-inbox', component: OmniInbox, domain: 'Operations' },
   { path: '/reporting', component: ReportingDashboard, domain: 'Finance' },
   { path: '/waste-bank', component: WasteBank, domain: 'Finance' },
+  { path: '/smart-bins', component: SmartBins, domain: 'Operations' },
   { path: '/wialon', component: WialonIntegration, domain: 'Integrations' },
   { path: '/integrations-hub', component: IntegrationsHub, domain: 'Integrations' },
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
