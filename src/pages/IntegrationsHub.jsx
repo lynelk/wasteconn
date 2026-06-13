@@ -6,47 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, XCircle, Send, CreditCard, Zap, Radio, PlugZap, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Send, CreditCard, Zap, PlugZap, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-
-const INTEGRATIONS = [
-  {
-    id: 'citoconnect',
-    name: 'CitoConnect',
-    description: 'Payment gateway & SMS service — MTN MoMo, Airtel Money, Yo! Payments, bulk SMS via CitoConnect.',
-    logo: '🔗',
-    features: ['SMS Sending', 'Payment Collection', 'Fund Disbursement', 'KYC-Gated Payouts', 'Webhooks'],
-    status: 'active',
-    docsUrl: 'https://citoconnect.base44.app/api-docs',
-  },
-  {
-    id: 'wialon',
-    name: 'Wialon Telematics',
-    description: 'Real-time vehicle GPS tracking, route deviations, idling alerts and telemetry sync.',
-    logo: '📡',
-    features: ['GPS Tracking', 'Route Telemetry', 'Idling Alerts', 'Deviation Alerts'],
-    status: 'active',
-    docsUrl: null,
-  },
-  {
-    id: 'merx365',
-    name: 'Merx365',
-    description: 'External data integration for extended operational reporting.',
-    logo: '📊',
-    features: ['Data Sync', 'Reporting'],
-    status: 'active',
-    docsUrl: null,
-  },
-  {
-    id: 'yopayments',
-    name: 'Yo! Payments',
-    description: 'Direct Yo! Payments integration for mobile money collection.',
-    logo: '💳',
-    features: ['MoMo Collection', 'Payment Status'],
-    status: 'active',
-    docsUrl: null,
-  },
-];
+import { INTEGRATIONS } from '@/lib/integrationsMeta';
 
 function CitoConnectTestPanel() {
   const { toast } = useToast();

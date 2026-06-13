@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Shield, AlertTriangle, Activity, Brain, RefreshCw, CheckCircle, Lock, XCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const severityColors = {
@@ -24,12 +24,18 @@ const alertTypeLabels = {
   quarantine_triggered: 'Quarantine',
 };
 
+const currentPeriod = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
 export default function TenantHealthMonitor() {
   const qc = useQueryClient();
   const [scanHours, setScanHours] = useState('24');
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [computingUsage, setComputingUsage] = useState(false);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ['tenant-health-alerts'],
@@ -40,6 +46,24 @@ export default function TenantHealthMonitor() {
     queryKey: ['tenants'],
     queryFn: () => base44.entities.Tenant.list(),
   });
+
+  const period = currentPeriod();
+  const { data: usage = [] } = useQuery({
+    queryKey: ['tenant-usage', period],
+    queryFn: () => base44.entities.TenantUsage.filter({ period }),
+  });
+
+  const tenantNameById = Object.fromEntries(tenants.map(t => [t.id, t.company_name]));
+
+  const computeUsage = async () => {
+    setComputingUsage(true);
+    try {
+      await base44.functions.invoke('computeTenantUsage', {});
+      qc.invalidateQueries({ queryKey: ['tenant-usage'] });
+    } finally {
+      setComputingUsage(false);
+    }
+  };
 
   const resolveMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.TenantHealthAlert.update(id, { status }),
@@ -180,6 +204,51 @@ export default function TenantHealthMonitor() {
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* Tenant Usage Metering */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold font-jakarta flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" /> Usage Metering — {period}
+          </h3>
+          <Button size="sm" variant="outline" onClick={computeUsage} disabled={computingUsage} className="gap-2 h-8 text-xs">
+            <RefreshCw className={`w-3.5 h-3.5 ${computingUsage ? 'animate-spin' : ''}`} />
+            {computingUsage ? 'Computing…' : 'Recompute'}
+          </Button>
+        </div>
+        {usage.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border/60 rounded-xl">
+            No usage computed for {period} yet. Click Recompute to generate this month's metrics.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/60">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border/60">
+                  {['Tenant', 'Customers', 'Pickups', 'Payments', 'Revenue (UGX)', 'SMS'].map(h => (
+                    <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {usage
+                  .slice()
+                  .sort((a, b) => (b.payments_ugx || 0) - (a.payments_ugx || 0))
+                  .map(u => (
+                    <tr key={u.id} className="border-b border-border/40 hover:bg-muted/20">
+                      <td className="px-4 py-2.5 text-sm font-medium">{tenantNameById[u.tenant_id] || u.tenant_id}</td>
+                      <td className="px-4 py-2.5 text-sm">{u.customers_count ?? 0}</td>
+                      <td className="px-4 py-2.5 text-sm">{u.pickups_count ?? 0}</td>
+                      <td className="px-4 py-2.5 text-sm">{u.payments_count ?? 0}</td>
+                      <td className="px-4 py-2.5 text-sm font-semibold">{(u.payments_ugx || 0).toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-sm">{u.sms_count ?? 0}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Alerts List */}

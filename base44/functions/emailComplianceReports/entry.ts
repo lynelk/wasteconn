@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       if (!to) { skipped.push({ report_id: report.id, reason: 'No tenant contact email' }); continue; }
 
       const subject = `NLSWMS Compliance Report — ${report.report_type} (${report.period_from} to ${report.period_to})`;
-      const reportBody = `Dear ${tenant.name || 'Partner'},\n\n`
+      const reportBody = `Dear ${tenant.company_name || 'Partner'},\n\n`
         + `Your ${report.report_type.replace(/_/g, ' ')} compliance report for the period `
         + `${report.period_from} to ${report.period_to} is ready.\n\n`
         + `Download it here: ${report.pdf_url}\n\n`

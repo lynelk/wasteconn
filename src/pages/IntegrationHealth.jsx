@@ -5,12 +5,13 @@ import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import {
   Activity, AlertTriangle, CheckCircle, RefreshCw, Zap,
-  XCircle, Clock, TrendingUp, Wifi, WifiOff, ChevronDown, ChevronUp
+  XCircle, TrendingUp, Wifi, WifiOff, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { INTEGRATIONS, freshnessStatus, STATUS_META } from '@/lib/integrationsMeta';
 
 const severityColors = {
   critical: 'bg-red-100 text-red-700 border-red-200',
@@ -80,6 +81,16 @@ export default function IntegrationHealth() {
     queryFn: () => base44.entities.VehicleTelematics.list('-timestamp', 20),
   });
 
+  const { data: recentPayments = [] } = useQuery({
+    queryKey: ['payments-recent-health'],
+    queryFn: () => base44.entities.Payment.list('-created_date', 100),
+  });
+
+  const { data: integrationQueue = [] } = useQuery({
+    queryKey: ['integration-queue-health'],
+    queryFn: () => base44.entities.IntegrationQueue.list('-created_date', 100),
+  });
+
   const ackMutation = useMutation({
     mutationFn: id => base44.entities.FleetAlert.update(id, { status: 'acknowledged', acknowledged_at: new Date().toISOString() }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fleet-alerts'] }),
@@ -101,6 +112,26 @@ export default function IntegrationHealth() {
   const criticalAlerts = fleetAlerts.filter(a => a.severity === 'critical' && a.status !== 'resolved');
   const flaggedLogs = auditLogs.filter(l => l.flagged);
   const activeTelematics = telematics.filter(t => t.is_active);
+
+  // --- Per-integration health from the freshness of the data each one produces ---
+  const latestPaymentByMethods = (methods) => {
+    const matches = recentPayments
+      .filter(p => methods.includes(p.payment_method) && p.status === 'completed')
+      .map(p => p.payment_date || p.created_date)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a));
+    return matches[0] || null;
+  };
+  const deadLetterCount = integrationQueue.filter(q => q.status === 'failed' || q.status === 'dead_letter').length;
+  const latestQueueEvent = integrationQueue.map(q => q.created_date).filter(Boolean).sort((a, b) => new Date(b) - new Date(a))[0] || null;
+
+  const integrationStatus = {
+    wialon: { last: telematics[0]?.timestamp || null, detail: `${activeTelematics.length} active vehicles` },
+    citoconnect: { last: latestPaymentByMethods(['mtn_momo', 'airtel_money']), detail: deadLetterCount > 0 ? `${deadLetterCount} queued failures` : 'No queued failures' },
+    yopayments: { last: latestPaymentByMethods(['yo_payments']), detail: 'Last successful collection' },
+    quickbooks: { last: latestQueueEvent, detail: 'Last queue activity' },
+    merx365: { last: latestQueueEvent, detail: 'Last queue activity' },
+  };
 
   return (
     <div className="space-y-6">
@@ -138,6 +169,40 @@ export default function IntegrationHealth() {
           </Card>
         ))}
       </div>
+
+      {/* Unified Integration Status */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <PlugZap className="w-4 h-4" /> Integration Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {INTEGRATIONS.map(intg => {
+              const info = integrationStatus[intg.id] || {};
+              const status = freshnessStatus(info.last);
+              const meta = STATUS_META[status];
+              return (
+                <div key={intg.id} className="flex items-center gap-3 rounded-xl border border-border/60 p-3">
+                  <span className="text-xl">{intg.logo}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold font-jakarta truncate">{intg.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {info.last ? `Last event ${format(new Date(info.last), 'MMM d, HH:mm')}` : 'No recent activity'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">{info.detail}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+                    <span className={`text-[11px] font-medium ${meta.text}`}>{meta.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="fleet">
         <TabsList>
