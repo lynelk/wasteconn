@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 // Lightweight i18n for customer-facing surfaces (CustomerApp, PayPage).
 // Admin UI remains English. Languages: English (en), Luganda (lg), Swahili (sw).
@@ -173,8 +173,21 @@ export function translate(lang, key) {
   return translations[lang]?.[key] ?? translations.en[key] ?? key;
 }
 
+function hasStoredOverride() {
+  try { return !!localStorage.getItem(STORAGE_KEY); } catch { return false; }
+}
+
 export function useTranslation(customer) {
   const [lang, setLangState] = useState(() => resolveLanguage(customer));
+
+  // When the customer record loads after mount, adopt their preferred language
+  // unless the user has explicitly chosen one (localStorage override).
+  const preferred = customer?.preferred_language;
+  useEffect(() => {
+    if (!preferred || hasStoredOverride()) return;
+    setLangState(resolveLanguage(customer));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferred]);
 
   const setLang = useCallback((code) => {
     setLangState(code);
