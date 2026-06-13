@@ -10,7 +10,7 @@ import {
   Building2, ClipboardList, BarChart3, User, ChevronLeft, ChevronDown,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
-  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket
+  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ const navGroups = [
     items: [
       { label: 'Pickup Requests', icon: Calendar, path: '/pickups', roles: ['admin', 'super_admin', 'dispatcher', 'driver'] },
       { label: 'Dispatch', icon: Radio, path: '/dispatch', roles: ['admin', 'super_admin', 'dispatcher'] },
+      { label: 'Smart Bins', icon: Trash2, path: '/smart-bins', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Omni-Inbox', icon: Inbox, path: '/omni-inbox', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Communications', icon: Send, path: '/communications', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Waste Bank', icon: Scale, path: '/waste-bank', roles: ['admin', 'super_admin', 'dispatcher'] },
