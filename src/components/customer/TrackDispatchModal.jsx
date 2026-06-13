@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { base44 } from '@/api/base44Client';
-import { X, Navigation, Clock } from 'lucide-react';
+import { X, Navigation, Clock, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -47,6 +48,14 @@ export default function TrackDispatchModal({ pickup, onClose }) {
     return () => unsub();
   }, [pickup?.assigned_driver_id]);
 
+  const { data: eta } = useQuery({
+    queryKey: ['pickup-eta', pickup?.id],
+    queryFn: () => base44.functions.invoke('computeEta', { pickup_id: pickup.id }),
+    enabled: !!pickup?.id && !!pickup?.assigned_driver_id,
+    refetchInterval: 30000,
+    select: (res) => res?.data || res,
+  });
+
   const isRecent = driverLocation && new Date(driverLocation.timestamp) > new Date(Date.now() - 5 * 60 * 1000);
   const mapCenter = driverLocation
     ? [driverLocation.latitude, driverLocation.longitude]
@@ -82,6 +91,17 @@ export default function TrackDispatchModal({ pickup, onClose }) {
                   {formatDistanceToNow(new Date(driverLocation.timestamp), { addSuffix: true })}
                 </span>
               </div>
+
+              {eta?.available && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-3 py-2">
+                  <Timer className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-primary font-jakarta">
+                    ~{eta.eta_minutes} min away
+                  </span>
+                  <span className="text-xs text-muted-foreground">· {eta.distance_km} km</span>
+                  {eta.stale && <span className="text-[10px] text-yellow-600">(estimate)</span>}
+                </div>
+              )}
 
               <div className="rounded-xl overflow-hidden border border-border/60" style={{ height: 250 }}>
                 <MapContainer center={mapCenter} zoom={14} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>

@@ -66,6 +66,15 @@
       "type": "string",
       "description": "Reference number from municipality"
     },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the report was emailed to the tenant contact"
+    },
+    "submitted_to": {
+      "type": "string",
+      "description": "Email address the report was sent to"
+    },
     "notes": {
       "type": "string"
     }
