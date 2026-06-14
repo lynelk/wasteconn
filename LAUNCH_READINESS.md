@@ -24,6 +24,26 @@ missing features — they are **data-access patterns, observability, and
 load-validation** that must change before high scale. None are architectural
 rewrites; they are systematic hardening passes.
 
+## Remediation progress — Phase 1 (shipped)
+
+Safe, in-repo, fully-validated first slice of the roadmap below:
+
+- **P0.1 foundations:** `src/lib/pagination.js` (bounded-fetch helpers + caps),
+  `src/hooks/useEntitySearch.js` + `src/components/common/EntitySelect.jsx`
+  (scalable async typeahead picker), and an **ESLint guard** that flags any new
+  unbounded `.list()` on a high-cardinality entity. Migrated the worst customer
+  pickers (`ComplaintForm`, `PickupForm`, `PaymentForm`) off `Customer.list()`.
+- **P1 bundle:** lazy-loaded `jspdf` at its two remaining static-import sites
+  (`CustomerInvoiceCard`, `CitoReportExport`); it is now a separate on-demand
+  chunk instead of eager weight in the customer bundle.
+- **P2 foundation:** `src/lib/region.js` centralises currency/locale/map-centre
+  (previously hard-coded UGX / Kampala literals).
+
+Remaining `.list()` migrations, observability vendor wiring, load testing, and
+infra items are tracked below. _Note: an `errorReporter` already exists
+(captures window/rejection/boundary errors, batched to `ClientErrorLog`); what's
+missing is a third-party APM + RUM/Web-Vitals layer._
+
 ## 3. Readiness scorecard
 
 | Area | State | Grade |
@@ -62,8 +82,9 @@ The SDK already supports bounds — `entity.list(sort, limit)` and
   entities (Customer, PickupRequest, Payment, Invoice, ServicePoint, SensorReading).
 
 ### 4.2 Production observability
-There is a custom `logger` and an `ErrorBoundary`, but **no third-party APM /
-error tracking** (no Sentry/Datadog/OpenTelemetry). At scale you need:
+There is a custom `logger`, an `ErrorBoundary`, and an `errorReporter` that
+persists client errors to `ClientErrorLog` — but **no third-party APM / RUM**
+(no Sentry/Datadog/OpenTelemetry, no Web-Vitals). At scale you need:
 - Front-end error + performance monitoring (e.g. Sentry) with release tracking.
 - Real-user metrics (Core Web Vitals, route-level latency).
 - Backend/Base44 function error rates, queue depth, and slow-query dashboards

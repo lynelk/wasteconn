@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 
 const MONTHS = [
   'January','February','March','April','May','June',
@@ -21,7 +20,8 @@ function exportCSV(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
-function exportPDF(transactions, smsLogs, month, year) {
+async function exportPDF(transactions, smsLogs, month, year) {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const title = `CitoConnect Report — ${month} ${year}`;
 
@@ -167,6 +167,7 @@ export default function CitoReportExport() {
   const handleExportPDF = () => {
     if (!stats) return;
     exportPDF(stats.transactions, stats.smsLogs, MONTHS[parseInt(month)], year);
+    // exportPDF lazy-loads jspdf; fire-and-forget keeps the click handler sync.
   };
 
   const years = [String(now.getFullYear()), String(now.getFullYear() - 1)];

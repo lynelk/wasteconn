@@ -3,7 +3,6 @@ import { FileText, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
 
 const statusColor = {
   issued: 'bg-blue-100 text-blue-700',
@@ -17,8 +16,9 @@ export default function CustomerInvoiceCard({ invoice, customer }) {
   const [expanded, setExpanded] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     setDownloading(true);
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
 
