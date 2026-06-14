@@ -28,6 +28,9 @@ const IntegrationsHub = lazy(() => import('@/pages/IntegrationsHub'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const PreLaunchDashboard = lazy(() => import('@/pages/PreLaunchDashboard'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const MyPickups = lazy(() => import('@/pages/MyPickups'));
+const MyPayments = lazy(() => import('@/pages/MyPayments'));
+const MyComplaints = lazy(() => import('@/pages/MyComplaints'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -57,5 +60,8 @@ export const authenticatedRoutes = [
   { path: '/integrations-hub', component: IntegrationsHub, domain: 'Integrations' },
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
   { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' },
-  { path: '/settings', component: Settings, domain: 'Admin' }
+  { path: '/settings', component: Settings, domain: 'Admin' },
+  { path: '/my-pickups', component: MyPickups, domain: 'Public' },
+  { path: '/my-payments', component: MyPayments, domain: 'Finance' },
+  { path: '/my-complaints', component: MyComplaints, domain: 'Public' }
 ];
