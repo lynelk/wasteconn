@@ -41,25 +41,22 @@ outside the admin `Layout`, mirroring `/field-app`) in `App.jsx`.
 Both pages were previously excluded from the build (Vite only bundles imported
 modules); they now compile cleanly into their own chunks.
 
+## Resolved (follow-up pass)
+
+### A. Customer self-service nav links — ✅ FIXED
+`My Pickups` (`/my-pickups`), `My Payments` (`/my-payments`), and `My Complaints`
+(`/my-complaints`) were shown to the `customer` role but had no pages/routes (all
+404'd). Built three in-app pages that render inside `Layout` for the customer
+role, sharing a new `useMyCustomer()` hook (resolves the Customer by signed-in
+email) and reusing existing pieces (`CustomerPickupModal`, `TrackDispatchModal`,
+`CustomerInvoiceCard`, `CustomerStatementModal`). Routes registered in
+`authenticatedRoutes`.
+
+### B. `Fleet.jsx` redundant orphan — ✅ FIXED
+Deleted `Fleet.jsx` (unrouted duplicate of `Vehicles.jsx`). Folded its two unique
+bits — a status filter and a tenant-name column — into `Vehicles.jsx`.
+
 ## Open items (recommendations — need a product decision)
-
-### A. Customer self-service nav links are broken — `MEDIUM`
-`Layout.jsx` shows `My Pickups` (`/my-pickups`), `My Payments` (`/my-payments`),
-and `My Complaints` (`/my-complaints`) to the `customer` role, but **none of
-these routes or pages exist** — all three 404 for any customer user. The real
-customer experience lives in the public `CustomerApp` (`/customer-app`).
-**Recommendation:** either build the in-app customer portal pages, repoint these
-links to the relevant `CustomerApp` sections, or remove the dead entries.
-Left unchanged pending direction (removing customer-facing UI is a product call).
-
-### B. `Fleet.jsx` is a redundant orphan — `LOW`
-`Fleet.jsx` is a complete vehicle-CRUD page but is unrouted and unreferenced. It
-duplicates `Vehicles.jsx` (the routed `/vehicles` page), which is the cleaner
-implementation (React Query, extracted `VehicleForm`, CSV export). `Fleet.jsx`
-uses local `useState` + manual `load()` instead.
-**Recommendation:** delete `Fleet.jsx` as dead code, or fold any unique bits
-(e.g. its tenant-name column / status filter) into `Vehicles.jsx`. Not deleted
-unilaterally — it predates this review.
 
 ### C. Lint debt — `LOW`
 `npm run lint` reports 119 errors, all `unused-imports/no-unused-imports` across
@@ -75,7 +72,7 @@ without a live backend. Recommend a manual smoke pass per domain
 
 ## Page inventory
 
-All **44** routed pages compile and are reachable:
+All **47** routed pages compile and are reachable:
 
 - **Operations:** Dashboard, PickupRequests, Dispatch, SmartBins, OmniInbox,
   Communications, WasteBank, CircularEconomy, Customers, ServiceZones,
@@ -84,10 +81,9 @@ All **44** routed pages compile and are reachable:
   PreLaunchDashboard
 - **Finance:** Payments, BillingPage, Subscriptions, Inventory, ReportingDashboard
 - **Admin:** Tenants, AuditLogs, RBACManagement, TenantHealthMonitor,
-  SchemaEvolution, ZoneHierarchyAdmin, ComplianceReports, Settings _(newly wired)_
+  SchemaEvolution, ZoneHierarchyAdmin, ComplianceReports, Settings
 - **Integrations:** SyncSettingsPage, IntegrationHealth, ExceptionsQueue,
   IntegrationQueuePage, IntegrationsHub, WialonIntegration
-- **Field / standalone:** FieldApp, DriverApp _(newly wired)_
+- **Field / standalone:** FieldApp, DriverApp
 - **Public:** CustomerApp, CustomerShop, PayPage
-
-Unrouted: `Fleet.jsx` (see item B).
+- **Customer self-service:** MyPickups, MyPayments, MyComplaints _(newly built)_
