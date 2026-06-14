@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 const FieldApp = lazy(() => import('@/pages/FieldApp'));
+const DriverApp = lazy(() => import('@/pages/DriverApp'));
 const Dispatch = lazy(() => import('@/pages/Dispatch'));
 const PickupRequests = lazy(() => import('@/pages/PickupRequests'));
 const Vehicles = lazy(() => import('@/pages/Vehicles'));
@@ -9,6 +10,7 @@ const DriverPerformance = lazy(() => import('@/pages/DriverPerformance'));
 
 export const fieldOperationsRoutes = [
   { path: '/field-app', component: FieldApp, domain: 'Operations' },
+  { path: '/driver-app', component: DriverApp, domain: 'Operations' },
   { path: '/dispatch', component: Dispatch, domain: 'Operations' },
   { path: '/pickups', component: PickupRequests, domain: 'Operations' },
   { path: '/vehicles', component: Vehicles, domain: 'Operations' },

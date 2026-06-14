@@ -42,8 +42,9 @@ const AuthenticatedApp = () => {
     }
   }
 
-  const layoutRoutes = [...authenticatedRoutes, ...adminRoutes, ...fieldOperationsRoutes.filter((route) => route.path !== '/field-app')];
-  const standaloneFieldRoutes = fieldOperationsRoutes.filter((route) => route.path === '/field-app');
+  const standalonePaths = ['/field-app', '/driver-app'];
+  const layoutRoutes = [...authenticatedRoutes, ...adminRoutes, ...fieldOperationsRoutes.filter((route) => !standalonePaths.includes(route.path))];
+  const standaloneFieldRoutes = fieldOperationsRoutes.filter((route) => standalonePaths.includes(route.path));
 
   return (
     <Suspense fallback={<Loader />}>
