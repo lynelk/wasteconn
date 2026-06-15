@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import {
-  FileText, Calendar, User, ShieldCheck, AlertTriangle,
+  FileText, Calendar, ShieldCheck, AlertTriangle,
   RotateCcw, Ban, CheckCircle2, Clock, Edit2, ExternalLink
 } from 'lucide-react';
 

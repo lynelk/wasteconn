@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, Loader2, Navigation } from 'lucide-react';
+import { Sparkles, Navigation } from 'lucide-react';
 import DuplicateCheckBanner from '@/components/customers/DuplicateCheckBanner';
 import MobileSelect from '@/components/ui/MobileSelect';
 

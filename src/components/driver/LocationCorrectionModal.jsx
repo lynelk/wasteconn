@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { MapPin, Navigation, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 
 export default function LocationCorrectionModal({ job, onClose }) {
   const [lat, setLat] = useState('');

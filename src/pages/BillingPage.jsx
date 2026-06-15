@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format, endOfMonth, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import {
   CreditCard, RefreshCw, Play, CheckCircle,
   ChevronDown, ChevronUp, FileText, Send, TrendingDown, Plus
@@ -9,7 +9,7 @@ import {
 import AdHocInvoiceModal from '@/components/billing/AdHocInvoiceModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';

@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from 'react-leaflet';
-import { RefreshCw, Layers, Truck, MapPin, Route } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import { formatDistanceToNow } from 'date-fns';
 import 'leaflet/dist/leaflet.css';

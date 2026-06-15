@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
-import { FileText, Download, Plus, Shield, CheckCircle, Clock, Archive } from 'lucide-react';
+import { FileText, Download, Plus, Shield, CheckCircle, Archive } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

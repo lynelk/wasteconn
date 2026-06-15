@@ -7,7 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { TrendingUp, Award, AlertTriangle, Star, Camera, Truck, User } from 'lucide-react';
+import { Award, AlertTriangle, Camera, Truck, User } from 'lucide-react';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertTriangle, X, ExternalLink } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function DuplicateCheckBanner({ fullName, phone, email, onDismiss }) {

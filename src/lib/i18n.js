@@ -186,7 +186,7 @@ export function useTranslation(customer) {
   useEffect(() => {
     if (!preferred || hasStoredOverride()) return;
     setLangState(resolveLanguage(customer));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [preferred]);
 
   const setLang = useCallback((code) => {

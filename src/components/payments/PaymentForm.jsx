@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
+import EntitySelect from '@/components/common/EntitySelect';
 
 export default function PaymentForm({ onClose }) {
   const qc = useQueryClient();
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
 
   const [form, setForm] = useState({
     customer_id: '',
@@ -25,8 +25,7 @@ export default function PaymentForm({ onClose }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleCustomerChange = (id) => {
-    const c = customers.find(c => c.id === id);
+  const handleCustomerChange = (id, c) => {
     setForm(f => ({ ...f, customer_id: id, tenant_id: c?.tenant_id || '', mobile_money_number: c?.mobile_money_number || f.mobile_money_number }));
   };
 
@@ -40,7 +39,7 @@ export default function PaymentForm({ onClose }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Customer *</Label>
-          <MobileSelect value={form.customer_id} onChange={handleCustomerChange} options={customers.map(c => ({ value: c.id, label: `${c.full_name} — ${c.phone}` }))} placeholder="Select customer" />
+          <EntitySelect entity="Customer" value={form.customer_id} onChange={handleCustomerChange} searchFields={['full_name', 'phone']} getLabel={(c) => `${c.full_name} — ${c.phone}`} placeholder="Select customer" />
         </div>
         <div className="space-y-1.5">
           <Label>Amount (UGX) *</Label>

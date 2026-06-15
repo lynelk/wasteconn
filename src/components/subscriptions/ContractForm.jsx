@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format, addMonths } from 'date-fns';
 import { Sparkles, Loader2, Upload, FileText, X } from 'lucide-react';
@@ -11,10 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import EntitySelect from '@/components/common/EntitySelect';
 
 const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 
-export default function ContractForm({ subscription, customers, plans, servicePoints, onClose, onSaved }) {
+export default function ContractForm({ subscription, plans, onClose, onSaved }) {
   const { toast } = useToast();
 
   const [form, setForm] = useState({
@@ -57,7 +59,12 @@ export default function ContractForm({ subscription, customers, plans, servicePo
     }
   }, [form.start_date, form.contract_duration_months]);
 
-  const filteredSPs = servicePoints.filter(sp => sp.customer_id === form.customer_id);
+  // Fetch only the selected customer's service points (not the whole table).
+  const { data: filteredSPs = [] } = useQuery({
+    queryKey: ['service-points', form.customer_id],
+    queryFn: () => base44.entities.ServicePoint.filter({ customer_id: form.customer_id }, undefined, 100),
+    enabled: !!form.customer_id,
+  });
   const selectedPlan = plans.find(p => p.id === form.plan_id);
 
   // AI Recommendation
@@ -148,12 +155,14 @@ export default function ContractForm({ subscription, customers, plans, servicePo
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Customer *</Label>
-          <Select value={form.customer_id} onValueChange={v => { set('customer_id', v); setAiRecs(null); }}>
-            <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
-            <SelectContent>
-              {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.customer_segment || c.customer_type}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <EntitySelect
+            entity="Customer"
+            value={form.customer_id}
+            onChange={(id) => { setForm(f => ({ ...f, customer_id: id, service_point_id: '' })); setAiRecs(null); }}
+            searchFields={['full_name', 'phone']}
+            getLabel={(c) => `${c.full_name}${c.customer_segment || c.customer_type ? ` — ${c.customer_segment || c.customer_type}` : ''}`}
+            placeholder="Select customer..."
+          />
         </div>
 
         <div className="space-y-1.5">
