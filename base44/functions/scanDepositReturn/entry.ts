@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
       totalValue += (item.deposit_value_ugx || 0) * qty;
       totalPoints += (item.loyalty_points || 0) * qty;
       totalWeightKg += (item.unit_weight_kg || 0) * qty;
-      categoryTally[item.waste_category] = (categoryTally[item.waste_category] || 0) + qty;
-    }
+      const category = item.waste_category || 'mixed';
+      categoryTally[category] = (categoryTally[category] || 0) + qty;
 
     if (accepted === 0) {
       return Response.json({ success: false, accepted: 0, rejected, message: 'No eligible deposit items recognised.' });
