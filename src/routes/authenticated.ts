@@ -27,6 +27,8 @@ const WialonIntegration = lazy(() => import('@/pages/WialonIntegration'));
 const IntegrationsHub = lazy(() => import('@/pages/IntegrationsHub'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const PreLaunchDashboard = lazy(() => import('@/pages/PreLaunchDashboard'));
+const ServiceCatalog = lazy(() => import('@/pages/ServiceCatalog'));
+const SustainabilityDashboard = lazy(() => import('@/pages/SustainabilityDashboard'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const MyPickups = lazy(() => import('@/pages/MyPickups'));
 const MyPayments = lazy(() => import('@/pages/MyPayments'));
@@ -60,6 +62,8 @@ export const authenticatedRoutes = [
   { path: '/integrations-hub', component: IntegrationsHub, domain: 'Integrations' },
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
   { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' },
+  { path: '/service-catalog', component: ServiceCatalog, domain: 'Operations' },
+  { path: '/sustainability', component: SustainabilityDashboard, domain: 'Operations' },
   { path: '/settings', component: Settings, domain: 'Admin' },
   { path: '/my-pickups', component: MyPickups, domain: 'Public' },
   { path: '/my-payments', component: MyPayments, domain: 'Finance' },

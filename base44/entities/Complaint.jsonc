@@ -15,12 +15,52 @@
         "driver_behaviour",
         "billing",
         "service_quality",
+        "illegal_dumping",
+        "overflowing_bin",
+        "damaged_bin",
         "other"
       ],
       "default": "other"
     },
     "subject": {
       "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "customer_app",
+        "public_report",
+        "phone",
+        "email"
+      ],
+      "default": "internal",
+      "description": "Channel the report arrived through"
+    },
+    "reporter_name": {
+      "type": "string",
+      "description": "Name supplied by a citizen on a public report (no account required)"
+    },
+    "reporter_contact": {
+      "type": "string",
+      "description": "Phone or email for follow-up on a public report"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Evidence photos attached to the report"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "smart_bin_id": {
+      "type": "string",
+      "description": "SmartBin referenced by an overflow/damage report"
     },
     "description": {
       "type": "string"
@@ -98,7 +138,6 @@
   },
   "required": [
     "tenant_id",
-    "customer_id",
     "category",
     "description"
   ]

@@ -5,11 +5,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
-import { FileText, Plus, LogOut, Download, Truck, MapPin, CreditCard } from 'lucide-react';
+import { FileText, Plus, LogOut, Download, Truck, MapPin, CreditCard, PackagePlus, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CustomerPickupModal from '@/components/customer/CustomerPickupModal';
+import ExtraServiceModal from '@/components/customer/ExtraServiceModal';
+import ScanToEarnModal from '@/components/customer/ScanToEarnModal';
 import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
 import SurveyModal from '@/components/customer/SurveyModal';
 import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
@@ -36,6 +38,8 @@ export default function CustomerApp() {
   const [activeSurvey, setActiveSurvey] = useState(null);
   const [trackingPickup, setTrackingPickup] = useState(null);
   const [statementOpen, setStatementOpen] = useState(false);
+  const [showExtraService, setShowExtraService] = useState(false);
+  const [showScanToEarn, setShowScanToEarn] = useState(false);
 
   const { data: customer } = useQuery({
     queryKey: ['my-customer', user?.email],
@@ -225,6 +229,16 @@ export default function CustomerApp() {
           <Plus className="w-4 h-4" /> {t('cta.requestPickup')}
         </Button>
 
+        {/* Self-service: extra/bulky service + scan-to-earn */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <Button variant="outline" className="gap-2" disabled={!customer} onClick={() => setShowExtraService(true)}>
+            <PackagePlus className="w-4 h-4" /> Extra Service
+          </Button>
+          <Button variant="outline" className="gap-2" disabled={!customer} onClick={() => setShowScanToEarn(true)}>
+            <ScanLine className="w-4 h-4" /> Scan to Earn
+          </Button>
+        </div>
+
         {/* Environmental impact + loyalty */}
         <ImpactCard pickups={pickups} loyalty={loyalty} t={t} />
 
@@ -410,6 +424,23 @@ export default function CustomerApp() {
           onSubmit={(data) => requestPickupMutation.mutate(data)}
           onClose={() => setShowPickupModal(false)}
           isLoading={requestPickupMutation.isPending}
+        />
+      )}
+
+      {/* Extra / bulky service request */}
+      {showExtraService && (
+        <ExtraServiceModal
+          customer={customer}
+          servicePoints={servicePoints}
+          onClose={() => setShowExtraService(false)}
+        />
+      )}
+
+      {/* Deposit-return scan to earn */}
+      {showScanToEarn && (
+        <ScanToEarnModal
+          customer={customer}
+          onClose={() => setShowScanToEarn(false)}
         />
       )}
     </div>

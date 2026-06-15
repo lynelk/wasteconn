@@ -10,7 +10,8 @@ import {
   Building2, ClipboardList, BarChart3, User, ChevronLeft, ChevronDown,
   Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
-  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket, Trash2
+  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket,
+  Trash2, Leaf, PackagePlus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ const navGroups = [
       { label: 'Service Zones', icon: MapPin, path: '/zones', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Zone Hierarchy', icon: GitBranch, path: '/zone-hierarchy', roles: ['admin', 'super_admin'] },
       { label: 'Service Plans', icon: ClipboardList, path: '/plans', roles: ['admin', 'super_admin'] },
+      { label: 'Service Catalog', icon: PackagePlus, path: '/service-catalog', roles: ['admin', 'super_admin'] },
     ]
   },
   {
@@ -89,6 +91,7 @@ const navGroups = [
     items: [
       { label: 'Analytics', icon: BarChart3, path: '/analytics', roles: ['admin', 'super_admin'] },
       { label: 'Reporting', icon: FileBarChart, path: '/reporting', roles: ['admin', 'super_admin'] },
+      { label: 'Sustainability', icon: Leaf, path: '/sustainability', roles: ['admin', 'super_admin'] },
     ]
   },
   {

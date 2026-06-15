@@ -1,0 +1,124 @@
+{
+  "name": "SmartBin",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "bin_code": {
+      "type": "string",
+      "description": "Human-readable container identifier / asset tag"
+    },
+    "sensor_id": {
+      "type": "string",
+      "description": "Unique hardware id reported by the fill-level sensor"
+    },
+    "service_point_id": {
+      "type": "string",
+      "description": "ServicePoint this container is installed at"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "waste_fraction": {
+      "type": "string",
+      "enum": [
+        "mixed",
+        "plastic",
+        "paper",
+        "glass",
+        "metal",
+        "organic",
+        "bio",
+        "hazardous"
+      ],
+      "default": "mixed",
+      "description": "Waste stream this container collects"
+    },
+    "capacity_liters": {
+      "type": "number",
+      "default": 1100,
+      "description": "Container volume in litres"
+    },
+    "fill_level_pct": {
+      "type": "number",
+      "default": 0,
+      "description": "Latest fill level 0-100 from the sensor"
+    },
+    "fill_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "warning",
+        "full",
+        "overflow"
+      ],
+      "default": "ok",
+      "description": "Derived status bucket from fill_level_pct"
+    },
+    "collection_threshold_pct": {
+      "type": "number",
+      "default": 80,
+      "description": "Fill level at which the bin is due for collection"
+    },
+    "avg_fill_rate_pct_per_day": {
+      "type": "number",
+      "description": "Rolling average daily fill rate used for predictive collection"
+    },
+    "predicted_full_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Projected timestamp the bin reaches its threshold"
+    },
+    "battery_pct": {
+      "type": "number",
+      "description": "Sensor battery level 0-100"
+    },
+    "temperature_c": {
+      "type": "number"
+    },
+    "fire_alarm": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sensor temperature/flame alarm active"
+    },
+    "tilt_alarm": {
+      "type": "boolean",
+      "default": false,
+      "description": "Sensor accelerometer detected the container tipped/moved"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "last_reading_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_collected_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "maintenance"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "bin_code"
+  ]
+}

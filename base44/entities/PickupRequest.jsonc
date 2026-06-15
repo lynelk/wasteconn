@@ -150,6 +150,55 @@
     "cv_analysis_notes": {
       "type": "string",
       "description": "AI CV analysis summary"
+    },
+    "sla_breach_flagged": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set by slaBreachMonitor when the pickup passes its SLA window"
+    },
+    "service_add_on_id": {
+      "type": "string",
+      "description": "ServiceAddOn ordered for this on-demand request (bulky item, roll-off, etc.)"
+    },
+    "service_category": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "bulky_item",
+        "extra_pickup",
+        "roll_off",
+        "hazardous",
+        "yard_waste",
+        "other"
+      ],
+      "default": "standard",
+      "description": "Self-service request category from the customer app"
+    },
+    "quoted_price_ugx": {
+      "type": "number",
+      "description": "Upfront price quoted to the customer for a paid add-on service"
+    },
+    "billing_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "quoted",
+        "invoiced",
+        "paid"
+      ],
+      "default": "none",
+      "description": "Billing lifecycle for a paid add-on request"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "customer_app",
+        "smart_bin",
+        "public_report"
+      ],
+      "default": "internal",
+      "description": "Origin of the pickup request"
     }
   },
   "required": [
