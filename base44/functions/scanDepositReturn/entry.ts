@@ -24,6 +24,13 @@ function tierFor(lifetimePoints: number): string {
 // Staff roles allowed to process a redemption on behalf of any customer.
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'dispatcher', 'agent']);
 
+// Anti-abuse caps. Deposit barcodes are product (EAN/UPC) codes, not unique
+// container instances, so without station-side verification we bound how much a
+// single call can mint. Production deployments should additionally verify each
+// returned item at a reverse-vending station.
+const MAX_ITEMS_PER_CALL = 200;
+const MAX_QTY_PER_ITEM = 500;
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -41,10 +48,32 @@ Deno.serve(async (req) => {
       ? body.items
       : body.barcode ? [{ barcode: body.barcode, quantity: body.quantity || 1 }] : [];
     if (!items.length) return Response.json({ error: 'No items supplied' }, { status: 400 });
+    if (items.length > MAX_ITEMS_PER_CALL) {
+      return Response.json({ error: `Too many items in one redemption (max ${MAX_ITEMS_PER_CALL})` }, { status: 400 });
+    }
 
     const customer = await base44.asServiceRole.entities.Customer.get(customerId);
     if (!customer) return Response.json({ error: 'Customer not found' }, { status: 404 });
     const tenantId = customer.tenant_id;
+
+    // Idempotency: clients pass a stable redemption_id so a retried/double-tapped
+    // submission credits the wallet only once. We store it on the transaction's
+    // payment_reference and short-circuit if it already exists.
+    const redemptionId = body.redemption_id ? String(body.redemption_id) : null;
+    if (redemptionId) {
+      const existing = await base44.asServiceRole.entities.WasteBankTransaction.filter({ tenant_id: tenantId, payment_reference: redemptionId });
+      if (existing?.[0]) {
+        const t = existing[0];
+        return Response.json({
+          success: true,
+          idempotent: true,
+          transaction_id: t.id,
+          transaction_number: t.transaction_number,
+          credited_ugx: t.net_amount_ugx || 0,
+          message: 'This redemption was already processed.',
+        });
+      }
+    }
 
     // Authorisation: a customer may only redeem into their own wallet; staff may
     // act on anyone's behalf but not across tenants (super_admin excepted).
@@ -63,7 +92,7 @@ Deno.serve(async (req) => {
     const categoryTally: Record<string, number> = {};
 
     for (const line of items) {
-      const qty = Math.max(1, Math.floor(line.quantity || 1));
+      const qty = Math.min(MAX_QTY_PER_ITEM, Math.max(1, Math.floor(line.quantity || 1)));
       // Scope the catalog lookup to the customer's tenant so a barcode shared
       // across tenants can't pay out another operator's deposit value.
       const matches = await base44.asServiceRole.entities.DepositItem.filter({ tenant_id: tenantId, barcode: line.barcode, active: true });
@@ -97,6 +126,7 @@ Deno.serve(async (req) => {
       payment_method: 'wallet_credit',
       payment_status: 'completed',
       receipt_number: txnNumber,
+      payment_reference: redemptionId || txnNumber,
       notes: `Deposit return: ${accepted} item(s) scanned, ${rejected} rejected.`,
     });
 

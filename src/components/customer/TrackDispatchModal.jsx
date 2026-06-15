@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from 'react-leaflet';
 import { base44 } from '@/api/base44Client';
 import { X, Navigation, Clock, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -29,6 +29,21 @@ const destinationIcon = L.divIcon({
 });
 
 const DEFAULT_CENTER = [0.3476, 32.5825];
+
+// Keep both the driver and the destination in view, re-fitting as the truck
+// moves. Falls back to a centred zoom when only one point is known.
+function FitBounds({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    const valid = points.filter(Boolean);
+    if (valid.length >= 2) {
+      map.fitBounds(valid, { padding: [40, 40], maxZoom: 16 });
+    } else if (valid.length === 1) {
+      map.setView(valid[0], 14);
+    }
+  }, [map, points]);
+  return null;
+}
 
 export default function TrackDispatchModal({ pickup, onClose }) {
   const [driverLocation, setDriverLocation] = useState(null);
@@ -63,13 +78,23 @@ export default function TrackDispatchModal({ pickup, onClose }) {
     select: (res) => res?.data || res,
   });
 
+  // Resolve the destination from the pickup's service point when coordinates
+  // aren't denormalised onto the pickup itself (matches computeEta's fallback).
+  const { data: servicePoint } = useQuery({
+    queryKey: ['pickup-service-point', pickup?.service_point_id],
+    queryFn: () => base44.entities.ServicePoint.get(pickup.service_point_id),
+    enabled: !!pickup?.service_point_id && (pickup?.latitude == null || pickup?.longitude == null),
+  });
+
   const isRecent = driverLocation && new Date(driverLocation.timestamp) > new Date(Date.now() - 5 * 60 * 1000);
   const mapCenter = driverLocation
     ? [driverLocation.latitude, driverLocation.longitude]
     : DEFAULT_CENTER;
   const destination = (pickup?.latitude != null && pickup?.longitude != null)
     ? [pickup.latitude, pickup.longitude]
-    : null;
+    : (servicePoint?.latitude != null && servicePoint?.longitude != null)
+      ? [servicePoint.latitude, servicePoint.longitude]
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60">
@@ -119,6 +144,7 @@ export default function TrackDispatchModal({ pickup, onClose }) {
                     attribution='&copy; OpenStreetMap contributors'
                     url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
+                  <FitBounds points={[mapCenter, destination]} />
                   <Marker position={mapCenter} icon={driverIcon}>
                     <Popup>
                       <div className="text-sm font-medium">{driverLocation.driver_name || 'Your driver'}</div>

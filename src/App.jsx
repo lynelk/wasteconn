@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
+import RoleGuard from '@/components/RoleGuard';
 import { authenticatedRoutes, adminRoutes, fieldOperationsRoutes, publicRoutes } from '@/routes';
 import ErrorBoundary from '@/lib/ErrorBoundary';
 
@@ -51,14 +52,14 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route element={<Layout />}>
           {layoutRoutes.map((route) => (
-            <Route key={route.path} path={route.path} element={<route.component />} />
+            <Route key={route.path} path={route.path} element={<RoleGuard path={route.path}><route.component /></RoleGuard>} />
           ))}
         </Route>
         {publicRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={<route.component />} />
         ))}
         {standaloneFieldRoutes.map((route) => (
-          <Route key={route.path} path={route.path} element={<route.component />} />
+          <Route key={route.path} path={route.path} element={<RoleGuard path={route.path}><route.component /></RoleGuard>} />
         ))}
         <Route path="*" element={<PageNotFound />} />
       </Routes>

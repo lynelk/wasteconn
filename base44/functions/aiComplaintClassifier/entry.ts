@@ -27,7 +27,7 @@ Description: ${description || '(none)'}
 Current Category: ${category || 'not set'}
 
 Provide:
-1. The correct category (choose one: missed_collection, driver_behaviour, billing, service_quality, other)
+1. The correct category (choose one: missed_collection, driver_behaviour, billing, service_quality, illegal_dumping, overflowing_bin, damaged_bin, other)
 2. Priority level (low/medium/high/urgent) based on urgency and impact
 3. Sentiment (positive/neutral/negative)
 4. 2-3 specific pain points identified
@@ -37,7 +37,7 @@ Provide:
       response_json_schema: {
         type: 'object',
         properties: {
-          category: { type: 'string', enum: ['missed_collection', 'driver_behaviour', 'billing', 'service_quality', 'other'] },
+          category: { type: 'string', enum: ['missed_collection', 'driver_behaviour', 'billing', 'service_quality', 'illegal_dumping', 'overflowing_bin', 'damaged_bin', 'other'] },
           priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
           sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
           pain_points: { type: 'array', items: { type: 'string' } },

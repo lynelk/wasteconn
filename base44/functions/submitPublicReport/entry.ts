@@ -19,6 +19,16 @@ const ALLOWED = new Set([
   'other',
 ]);
 
+// Map public-report categories onto the Ticket entity's category enum.
+const TICKET_CATEGORY: Record<string, string> = {
+  missed_collection: 'missed_collection',
+  service_quality: 'service_quality',
+  damaged_bin: 'bin_damage',
+  overflowing_bin: 'service_quality',
+  illegal_dumping: 'other',
+  other: 'other',
+};
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
@@ -62,6 +72,29 @@ Deno.serve(async (req) => {
       photo_urls: Array.isArray(body.photo_urls) ? body.photo_urls : [],
       smart_bin_id: smartBinId,
     });
+
+    // Also raise a Ticket so the report enters the Omni-Inbox triage flow
+    // (which lists Ticket records, not Complaints).
+    const reporter = body.reporter_contact || '';
+    const isEmail = reporter.includes('@');
+    await base44.asServiceRole.entities.Ticket.create({
+      tenant_id: tenantId,
+      source: 'web_form',
+      category: TICKET_CATEGORY[category] || 'other',
+      priority,
+      subject: body.subject || `Public report: ${category.replace(/_/g, ' ')}`,
+      description: String(body.description).trim(),
+      status: 'open',
+      customer_name: body.reporter_name || 'Anonymous (public report)',
+      customer_phone: isEmail ? undefined : (reporter || undefined),
+      customer_email: isEmail ? reporter : undefined,
+      tags: ['public_report'],
+      notes: [
+        `Public report (Complaint ${complaint.id}).`,
+        typeof body.latitude === 'number' ? `Location: ${body.latitude}, ${body.longitude}` : null,
+        smartBinId ? `Bin: ${smartBinId}` : null,
+      ].filter(Boolean).join(' '),
+    }).catch(() => null);
 
     return Response.json({
       success: true,
