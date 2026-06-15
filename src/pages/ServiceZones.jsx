@@ -22,7 +22,14 @@ export default function ServiceZones() {
     queryKey: ['zones'],
     queryFn: () => base44.entities.ServiceZone.list(),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  const { data: zoneCounts = [] } = useQuery({
+    queryKey: ['zone-customer-counts'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('zoneCustomerCounts', {});
+      return res.data?.data || [];
+    },
+  });
+  const zoneCountMap = Object.fromEntries(zoneCounts.map(z => [z.zone_id, z.customer_count]));
 
   const deleteMutation = useMutation({
     mutationFn: id => base44.entities.ServiceZone.delete(id),
@@ -62,7 +69,7 @@ export default function ServiceZones() {
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(z => {
-            const zoneCustomers = customers.filter(c => c.zone_id === z.id).length;
+            const zoneCustomers = zoneCountMap[z.id] || 0;
             return (
               <Card key={z.id} className="border-border/60 hover:shadow-md transition-shadow">
                 <CardContent className="pt-5 pb-4">

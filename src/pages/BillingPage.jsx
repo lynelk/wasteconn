@@ -47,14 +47,8 @@ export default function BillingPage() {
   const { data: stats } = useQuery({
     queryKey: ['billing-stats'],
     queryFn: async () => {
-      const all = await base44.entities.Invoice.list();
-      return {
-        total_issued: all.filter(i => i.status === 'issued').length,
-        total_paid: all.filter(i => i.status === 'paid').length,
-        total_overdue: all.filter(i => i.status === 'overdue').length,
-        revenue_ugx: all.filter(i => i.status === 'paid').reduce((s, i) => s + (i.amount_ugx || 0), 0),
-        outstanding_ugx: all.filter(i => ['issued','overdue','partially_paid'].includes(i.status)).reduce((s, i) => s + (i.amount_ugx || 0), 0),
-      };
+      const res = await base44.functions.invoke('billingSummary', {});
+      return res.data?.data || {};
     },
   });
 

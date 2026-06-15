@@ -19,51 +19,43 @@ export default function MarketingHub() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
-  });
-  const { data: subscriptions = [] } = useQuery({
-    queryKey: ['subscriptions'],
-    queryFn: () => base44.entities.Subscription.list(),
-  });
   const { data: zones = [] } = useQuery({
     queryKey: ['zones'],
     queryFn: () => base44.entities.ServiceZone.list(),
   });
 
-  const subStatusByCustomer = Object.fromEntries(
-    subscriptions.map(s => [s.customer_id, s.status])
-  );
-
-  const filtered = customers.filter(c => {
-    if (zoneFilter !== 'all' && c.zone_id !== zoneFilter) return false;
-    if (statusFilter !== 'all' && subStatusByCustomer[c.id] !== statusFilter) return false;
-    if (tierFilter !== 'all' && c.customer_tier !== tierFilter) return false;
-    return !!c.phone;
+  // Server-side segment count — avoids downloading full customer list
+  const segment = {
+    ...(zoneFilter !== 'all' ? { zone_id: zoneFilter } : {}),
+    ...(tierFilter !== 'all' ? { customer_tier: tierFilter } : {}),
+    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+  };
+  const { data: segmentData } = useQuery({
+    queryKey: ['customer-segment-count', segment],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('customerSegmentCount', { segment });
+      return res.data?.data || { count: 0 };
+    },
   });
+  const audienceCount = segmentData?.count ?? 0;
 
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
     setResult(null);
-    let sent = 0, failed = 0;
-    for (const c of filtered) {
-      try {
-        await base44.functions.invoke('citoConnectService', {
-          action: 'send_sms',
-          to: c.phone,
-          message,
-          sender_id: senderId,
-          reference: `mktg-${c.id}-${Date.now()}`,
-        });
-        sent++;
-      } catch {
-        failed++;
-      }
+    try {
+      const res = await base44.functions.invoke('sendSmsCampaign', {
+        segment,
+        message,
+        sender_id: senderId,
+      });
+      const d = res.data || {};
+      setResult({ sent: d.sent || 0, failed: d.failed || 0, total: d.total || audienceCount });
+    } catch (e) {
+      setResult({ sent: 0, failed: audienceCount, total: audienceCount, error: e.message });
+    } finally {
+      setSending(false);
     }
-    setResult({ sent, failed, total: filtered.length });
-    setSending(false);
   };
 
   return (
@@ -122,9 +114,8 @@ export default function MarketingHub() {
             </div>
 
             <div className="bg-secondary/50 rounded-lg p-3 text-center mt-2">
-              <p className="text-2xl font-bold font-jakarta text-primary">{filtered.length}</p>
+              <p className="text-2xl font-bold font-jakarta text-primary">{audienceCount}</p>
               <p className="text-xs text-muted-foreground">customers matched</p>
-              <p className="text-xs text-muted-foreground">(with phone numbers)</p>
             </div>
           </CardContent>
         </Card>
@@ -156,20 +147,9 @@ export default function MarketingHub() {
               </div>
             </div>
 
-            {/* Preview recipients */}
-            {filtered.length > 0 && (
+            {audienceCount > 0 && (
               <div className="border border-border/60 rounded-lg p-3">
-                <p className="text-xs font-medium mb-2 text-muted-foreground">Preview Recipients ({Math.min(5, filtered.length)} of {filtered.length})</p>
-                <div className="space-y-1">
-                  {filtered.slice(0, 5).map(c => (
-                    <div key={c.id} className="flex items-center gap-2 text-xs">
-                      <span className="font-medium">{c.full_name}</span>
-                      <span className="text-muted-foreground">{c.phone}</span>
-                      {c.zone_id && <Badge variant="secondary" className="text-xs px-1.5 py-0">{zones.find(z => z.id === c.zone_id)?.zone_name || 'Zone'}</Badge>}
-                    </div>
-                  ))}
-                  {filtered.length > 5 && <p className="text-xs text-muted-foreground">…and {filtered.length - 5} more</p>}
-                </div>
+                <p className="text-xs text-muted-foreground">{audienceCount} customers will receive this SMS.</p>
               </div>
             )}
 
@@ -183,11 +163,11 @@ export default function MarketingHub() {
 
             <Button
               onClick={handleSend}
-              disabled={sending || filtered.length === 0 || !message.trim()}
+              disabled={sending || audienceCount === 0 || !message.trim()}
               className="w-full gap-2"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {sending ? `Sending to ${filtered.length} customers...` : `Send to ${filtered.length} Customers`}
+              {sending ? `Sending to ${audienceCount} customers...` : `Send to ${audienceCount} Customers`}
             </Button>
           </CardContent>
         </Card>
