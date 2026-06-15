@@ -24,17 +24,33 @@ function exportCSV(rows, filename) {
   URL.revokeObjectURL(url);
 }
 
+// Page through an entity so lifetime ESG totals aren't silently truncated at a
+// single list page. Capped for safety; the UI discloses when the cap is hit.
+const PAGE = 1000;
+const MAX_RECORDS = 20_000;
+async function fetchAll(entity) {
+  const all = [];
+  for (let skip = 0; skip < MAX_RECORDS; skip += PAGE) {
+    const batch = await entity.filter({}, '-created_date', PAGE, skip);
+    if (!batch?.length) break;
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return all;
+}
+
 export default function SustainabilityDashboard() {
   const { data: pickups = [], isLoading: lp } = useQuery({
     queryKey: ['esg-pickups'],
-    queryFn: () => base44.entities.PickupRequest.list('-created_date', 1000),
+    queryFn: () => fetchAll(base44.entities.PickupRequest),
     staleTime: 120_000,
   });
   const { data: wasteBankTxns = [], isLoading: lw } = useQuery({
     queryKey: ['esg-wastebank'],
-    queryFn: () => base44.entities.WasteBankTransaction.list('-created_date', 1000),
+    queryFn: () => fetchAll(base44.entities.WasteBankTransaction),
     staleTime: 120_000,
   });
+  const capped = pickups.length >= MAX_RECORDS || wasteBankTxns.length >= MAX_RECORDS;
 
   const esg = useMemo(() => computeEsg(pickups, wasteBankTxns), [pickups, wasteBankTxns]);
   const isLoading = lp || lw;
@@ -128,6 +144,7 @@ export default function SustainabilityDashboard() {
 
           <p className="text-[11px] text-muted-foreground">
             Estimates assume 15 kg per collection where weight data is missing and 0.5 kg CO₂e avoided per kg diverted. Connect scale/weighbridge data for audited figures.
+            {capped && ` Showing the most recent ${MAX_RECORDS.toLocaleString()} records per dataset; older records are excluded from these totals.`}
           </p>
         </>
       )}

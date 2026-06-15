@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { AlertTriangle, MapPin, CheckCircle2, Trash2, Send, Loader2 } from 'lucide-react';
+import { AlertTriangle, MapPin, CheckCircle2, Trash2, Send, Loader2, Camera, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const CATEGORIES = [
@@ -22,9 +22,33 @@ export default function PublicReport() {
   const [binCode, setBinCode] = useState('');
   const [coords, setCoords] = useState(null);
   const [locating, setLocating] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+
+  const uploadPhotos = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    setError('');
+    try {
+      const urls = [];
+      for (const file of files.slice(0, 4 - photoUrls.length)) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        if (file_url) urls.push(file_url);
+      }
+      setPhotoUrls(prev => [...prev, ...urls]);
+    } catch (_) {
+      setError('Could not upload photo. You can still submit without one.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removePhoto = (url) => setPhotoUrls(prev => prev.filter(u => u !== url));
 
   const captureLocation = () => {
     if (!navigator.geolocation) return;
@@ -47,6 +71,7 @@ export default function PublicReport() {
         reporter_name: name.trim(),
         reporter_contact: contact.trim(),
         smart_bin_code: binCode.trim() || undefined,
+        photo_urls: photoUrls,
         ...(tenantId ? { tenant_id: tenantId } : {}),
         ...(coords || {}),
       };
@@ -125,6 +150,26 @@ export default function PublicReport() {
               {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
               {coords ? `Location captured (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})` : 'Use my current location'}
             </Button>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Photos (optional, up to 4)</label>
+            <div className="flex flex-wrap gap-2">
+              {photoUrls.map((url) => (
+                <div key={url} className="relative">
+                  <img src={url} alt="Evidence" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                  <button type="button" onClick={() => removePhoto(url)} className="absolute -top-1.5 -right-1.5 bg-background border border-border rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {photoUrls.length < 4 && (
+                <label className="w-16 h-16 rounded-lg border border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50">
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Camera className="w-5 h-5 text-muted-foreground" />}
+                  <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={uploadPhotos} disabled={uploading} />
+                </label>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

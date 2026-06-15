@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -15,6 +15,8 @@ export default function ScanToEarnModal({ customer, onClose }) {
   const [items, setItems] = useState([]); // [{ barcode, quantity }]
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  // Stable per-redemption idempotency key so a retried submit credits once.
+  const redemptionId = useRef(`drs-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
   const addItem = () => {
     const code = barcode.trim();
@@ -31,7 +33,7 @@ export default function ScanToEarnModal({ customer, onClose }) {
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
 
   const submit = useMutation({
-    mutationFn: () => base44.functions.invoke('scanDepositReturn', { customer_id: customer.id, items }),
+    mutationFn: () => base44.functions.invoke('scanDepositReturn', { customer_id: customer.id, items, redemption_id: redemptionId.current }),
     onSuccess: (res) => {
       const data = res?.data || res;
       if (data?.success) {

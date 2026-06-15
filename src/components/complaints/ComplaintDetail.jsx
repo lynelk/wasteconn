@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { Zap, RefreshCw, AlertTriangle, Clock } from 'lucide-react';
+import { Zap, RefreshCw, AlertTriangle, Clock, MapPin, User, Camera } from 'lucide-react';
 
 const statusColor = { open:'bg-red-100 text-red-800', in_review:'bg-yellow-100 text-yellow-800', resolved:'bg-green-100 text-green-800', closed:'bg-gray-100 text-gray-600' };
 
@@ -77,6 +77,39 @@ export default function ComplaintDetail({ complaint, customerMap, onClose }) {
         <p className="text-xs text-muted-foreground mb-1">Description</p>
         <p className="text-sm bg-muted rounded-lg p-3">{complaint.description}</p>
       </div>
+
+      {/* Public / citizen report metadata (no linked customer account) */}
+      {complaint.source === 'public_report' && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 p-4 space-y-2">
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Public Report</p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-muted-foreground" /> {complaint.reporter_name || 'Anonymous'}</div>
+            {complaint.reporter_contact && <div className="text-muted-foreground">{complaint.reporter_contact}</div>}
+          </div>
+          {complaint.latitude != null && complaint.longitude != null && (
+            <a
+              href={`https://www.openstreetmap.org/?mlat=${complaint.latitude}&mlon=${complaint.longitude}#map=18/${complaint.latitude}/${complaint.longitude}`}
+              target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              <MapPin className="w-3.5 h-3.5" /> View location ({complaint.latitude.toFixed(4)}, {complaint.longitude.toFixed(4)})
+            </a>
+          )}
+          {complaint.smart_bin_id && <p className="text-xs text-muted-foreground">Linked bin: {complaint.smart_bin_id}</p>}
+          {complaint.photo_urls?.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {complaint.photo_urls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noreferrer" className="block">
+                  <img src={url} alt={`Evidence ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-border" />
+                </a>
+              ))}
+            </div>
+          )}
+          {!complaint.photo_urls?.length && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Camera className="w-3.5 h-3.5" /> No photos attached</p>
+          )}
+        </div>
+      )}
 
       {/* AI Classification Panel */}
       <div className="bg-muted/40 rounded-xl p-4 space-y-2">

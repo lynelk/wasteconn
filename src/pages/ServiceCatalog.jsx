@@ -25,8 +25,14 @@ const UNITS = [
   { value: 'per_tonne', label: 'Per tonne' },
 ];
 const WASTE_TYPES = ['general', 'recyclable', 'organic', 'hazardous', 'bulky'];
+const CUSTOMER_TYPES = [
+  { value: 'all', label: 'All customers' },
+  { value: 'residential', label: 'Residential' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'industrial', label: 'Industrial' },
+];
 
-const emptyAddOn = { name: '', description: '', category: 'bulky_item', price_ugx: 0, pricing_unit: 'flat', waste_type: 'bulky', requires_photo: false, active: true, sort_order: 0 };
+const emptyAddOn = { name: '', description: '', category: 'bulky_item', price_ugx: 0, pricing_unit: 'flat', waste_type: 'bulky', customer_type: 'all', requires_photo: false, active: true, sort_order: 0 };
 
 export default function ServiceCatalog() {
   const { user } = useAuth();
@@ -131,6 +137,7 @@ export default function ServiceCatalog() {
               <Field label="Price (UGX)"><input type="number" className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm" value={form.price_ugx} onChange={e => setForm(f => ({ ...f, price_ugx: e.target.value }))} /></Field>
               <Field label="Pricing Unit"><MobileSelect value={form.pricing_unit} onChange={v => setForm(f => ({ ...f, pricing_unit: v }))} options={UNITS} /></Field>
             </div>
+            <Field label="Available to"><MobileSelect value={form.customer_type || 'all'} onChange={v => setForm(f => ({ ...f, customer_type: v }))} options={CUSTOMER_TYPES} /></Field>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.requires_photo} onChange={e => setForm(f => ({ ...f, requires_photo: e.target.checked }))} />
               Require a photo when ordering
