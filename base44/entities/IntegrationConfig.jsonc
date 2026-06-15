@@ -1,0 +1,65 @@
+{
+  "name": "IntegrationConfig",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "integration_id": {
+      "type": "string",
+      "description": "Unique identifier matching INTEGRATIONS meta e.g. citoconnect, wialon, yopayments, quickbooks, merx365"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "api_url": {
+      "type": "string",
+      "description": "Base API URL override"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "Primary API key or token"
+    },
+    "api_secret": {
+      "type": "string",
+      "description": "API secret or password (where applicable)"
+    },
+    "username": {
+      "type": "string",
+      "description": "Username credential (where applicable)"
+    },
+    "webhook_secret": {
+      "type": "string",
+      "description": "Shared secret for validating inbound webhooks"
+    },
+    "settings": {
+      "type": "object",
+      "description": "Integration-specific settings e.g. poll_interval_minutes, alert_thresholds",
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "error",
+        "disabled",
+        "unconfigured"
+      ],
+      "default": "unconfigured"
+    },
+    "last_successful_sync_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "integration_id"
+  ]
+}

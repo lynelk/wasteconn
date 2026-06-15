@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, Send, CreditCard, Zap, PlugZap, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import {
+  CheckCircle2, Send, CreditCard, RefreshCw, PlugZap,
+  Settings2, AlertCircle, XCircle, Activity, Zap
+} from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { INTEGRATIONS } from '@/lib/integrationsMeta';
+import ConfigureIntegrationModal from '@/components/integrations/ConfigureIntegrationModal';
 
+// CitoConnect live-test panel (unchanged from original)
 function CitoConnectTestPanel() {
   const { toast } = useToast();
   const [loading, setLoading] = useState('');
@@ -47,13 +53,10 @@ function CitoConnectTestPanel() {
   };
 
   return (
-    <div className="space-y-6 mt-4">
-      {/* SMS Test */}
+    <div className="space-y-4 mt-4">
       <Card className="border-border/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Send className="w-4 h-4 text-primary" /> Test SMS</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-4 space-y-3">
+          <p className="text-sm font-medium flex items-center gap-2"><Send className="w-4 h-4 text-primary" /> Test SMS</p>
           <Input placeholder="Recipient phone (e.g. 256771234567)" value={smsForm.to} onChange={e => setSmsForm(f => ({ ...f, to: e.target.value }))} />
           <Input placeholder="Message (max 480 chars)" value={smsForm.message} onChange={e => setSmsForm(f => ({ ...f, message: e.target.value }))} />
           <Button size="sm" onClick={handleSendSms} disabled={loading === 'sms'} className="gap-2">
@@ -61,13 +64,9 @@ function CitoConnectTestPanel() {
           </Button>
         </CardContent>
       </Card>
-
-      {/* Payment Collection Test */}
       <Card className="border-border/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Test Payment Collection</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-4 space-y-3">
+          <p className="text-sm font-medium flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Test Payment Collection</p>
           <Input placeholder="Phone (e.g. 256771234567)" value={collectForm.phone} onChange={e => setCollectForm(f => ({ ...f, phone: e.target.value }))} />
           <Input placeholder="Amount (UGX)" type="number" value={collectForm.amount} onChange={e => setCollectForm(f => ({ ...f, amount: e.target.value }))} />
           <Input placeholder="Unique reference (e.g. INV-2026-001)" value={collectForm.reference} onChange={e => setCollectForm(f => ({ ...f, reference: e.target.value }))} />
@@ -80,15 +79,60 @@ function CitoConnectTestPanel() {
   );
 }
 
+// Status badge helper
+function StatusBadge({ status }) {
+  const map = {
+    healthy: { label: 'Connected', className: 'bg-green-100 text-green-700', Icon: CheckCircle2 },
+    error: { label: 'Error', className: 'bg-red-100 text-red-700', Icon: AlertCircle },
+    disabled: { label: 'Disabled', className: 'bg-gray-100 text-gray-500', Icon: XCircle },
+    unconfigured: { label: 'Unconfigured', className: 'bg-yellow-100 text-yellow-700', Icon: AlertCircle },
+  };
+  const { label, className, Icon } = map[status] || map.unconfigured;
+  return (
+    <Badge className={`text-[10px] ${className}`} variant="secondary">
+      <Icon className="w-2.5 h-2.5 mr-1" /> {label}
+    </Badge>
+  );
+}
+
 export default function IntegrationsHub() {
-  const [selected, setSelected] = useState(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [configModalIntg, setConfigModalIntg] = useState(null);
+  const [activePanel, setActivePanel] = useState(null);
+
+  const { data: configs = [], isLoading } = useQuery({
+    queryKey: ['integration-configs'],
+    queryFn: () => base44.entities.IntegrationConfig.list(),
+  });
 
   const { data: queueItems = [] } = useQuery({
     queryKey: ['integration-queue-recent'],
     queryFn: () => base44.entities.IntegrationQueue.list('-created_date', 20),
   });
 
+  const getConfig = (id) => configs.find(c => c.integration_id === id);
+
+  const handleToggle = async (intg, newValue) => {
+    const cfg = getConfig(intg.id);
+    if (cfg) {
+      await base44.entities.IntegrationConfig.update(cfg.id, {
+        is_active: newValue,
+        status: newValue ? 'healthy' : 'disabled',
+      });
+    } else {
+      await base44.entities.IntegrationConfig.create({
+        integration_id: intg.id,
+        is_active: newValue,
+        status: newValue ? 'unconfigured' : 'disabled',
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ['integration-configs'] });
+    toast({ title: newValue ? `${intg.name} enabled` : `${intg.name} disabled` });
+  };
+
   const recentWebhooks = queueItems.filter(q => q.direction === 'inbound');
+  const activePanelIntg = INTEGRATIONS.find(i => i.id === activePanel);
 
   return (
     <div className="space-y-6">
@@ -99,50 +143,98 @@ export default function IntegrationsHub() {
         <p className="text-muted-foreground text-sm mt-1">Manage all external service integrations for NLSWMS</p>
       </div>
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-4">
-        {INTEGRATIONS.map(intg => (
-          <Card
-            key={intg.id}
-            className={`border-border/60 cursor-pointer transition-all hover:shadow-md ${selected === intg.id ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setSelected(selected === intg.id ? null : intg.id)}
-          >
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{intg.logo}</span>
-                  <div>
-                    <p className="font-semibold text-sm font-jakarta">{intg.name}</p>
-                    <Badge className="text-[10px] bg-green-100 text-green-700 mt-0.5" variant="secondary">
-                      <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Connected
-                    </Badge>
-                  </div>
-                </div>
-                {intg.docsUrl && (
-                  <a href={intg.docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline" onClick={e => e.stopPropagation()}>
-                    Docs ↗
-                  </a>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">{intg.description}</p>
-              <div className="flex flex-wrap gap-1">
-                {intg.features.map(f => (
-                  <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 gap-4">
+          {[1,2,3,4,5].map(i => <div key={i} className="h-40 rounded-xl bg-muted animate-pulse" />)}
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-4">
+          {INTEGRATIONS.map(intg => {
+            const cfg = getConfig(intg.id);
+            const status = cfg?.status || 'unconfigured';
+            const isActive = cfg?.is_active ?? false;
+            const isPanelOpen = activePanel === intg.id;
 
-      {/* CitoConnect detail panel */}
-      {selected === 'citoconnect' && (
+            return (
+              <Card
+                key={intg.id}
+                className={`border-border/60 transition-all hover:shadow-md ${isPanelOpen ? 'ring-2 ring-primary' : ''}`}
+              >
+                <CardContent className="pt-5 pb-4">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{intg.logo}</span>
+                      <div>
+                        <p className="font-semibold text-sm font-jakarta">{intg.name}</p>
+                        <StatusBadge status={status} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={isActive}
+                        onCheckedChange={(v) => handleToggle(intg, v)}
+                        className="scale-90"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mb-3">{intg.description}</p>
+
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {intg.features.map(f => (
+                      <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
+                    ))}
+                  </div>
+
+                  {/* Action row */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-7 text-xs"
+                      onClick={() => setConfigModalIntg(intg)}
+                    >
+                      <Settings2 className="w-3 h-3" /> Configure
+                    </Button>
+                    {intg.id === 'citoconnect' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => setActivePanel(isPanelOpen ? null : intg.id)}
+                      >
+                        <Zap className="w-3 h-3" /> Test
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 h-7 text-xs"
+                      onClick={() => setActivePanel(isPanelOpen && activePanel !== intg.id + '_logs' ? null : intg.id + '_logs')}
+                    >
+                      <Activity className="w-3 h-3" /> Logs
+                    </Button>
+                    {intg.docsUrl && (
+                      <a href={intg.docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-auto">
+                        Docs ↗
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* CitoConnect test panel */}
+      {activePanel === 'citoconnect' && (
         <Card className="border-primary/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-jakarta flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" /> CitoConnect — Test & Configure
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
+            <p className="font-semibold text-sm font-jakarta flex items-center gap-2 mb-1">
+              <Zap className="w-4 h-4 text-primary" /> CitoConnect — Live Test
+            </p>
             <Tabs defaultValue="test">
               <TabsList>
                 <TabsTrigger value="test">Test Endpoints</TabsTrigger>
@@ -179,6 +271,48 @@ export default function IntegrationsHub() {
             </Tabs>
           </CardContent>
         </Card>
+      )}
+
+      {/* Generic activity log panel for other integrations */}
+      {activePanel && activePanel.endsWith('_logs') && (
+        <Card className="border-primary/30">
+          <CardContent className="pt-5">
+            <p className="font-semibold text-sm font-jakarta flex items-center gap-2 mb-3">
+              <Activity className="w-4 h-4 text-primary" /> Recent Activity — {INTEGRATIONS.find(i => activePanel.startsWith(i.id))?.name}
+            </p>
+            {queueItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No activity recorded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {queueItems.slice(0, 10).map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 text-xs">
+                    <div>
+                      <span className="font-medium text-foreground capitalize">{item.event_type?.replace(/_/g, ' ') || 'Event'}</span>
+                      <span className="ml-2 text-muted-foreground">{item.endpoint || '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className={`text-[10px] ${item.status === 'success' ? 'bg-green-100 text-green-700' : item.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {item.status}
+                      </Badge>
+                      <span className="text-muted-foreground">{item.created_date ? new Date(item.created_date).toLocaleString() : ''}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configure modal */}
+      {configModalIntg && (
+        <ConfigureIntegrationModal
+          integration={configModalIntg}
+          config={getConfig(configModalIntg.id)}
+          open={!!configModalIntg}
+          onClose={() => setConfigModalIntg(null)}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['integration-configs'] })}
+        />
       )}
     </div>
   );
