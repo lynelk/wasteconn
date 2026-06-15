@@ -27,13 +27,19 @@ Deno.serve(async (req) => {
 
     // Bins already queued by a previous run today (avoid duplicates).
     const pendingSmartBinJobs = await base44.asServiceRole.entities.PickupRequest.filter({
+      tenant_id: user.tenant_id,
       status: 'pending',
       source: 'smart_bin',
+      scheduled_date: date,
     });
-    const alreadyQueued = new Set(pendingSmartBinJobs.map((j) => j.service_point_id).filter(Boolean));
+    const alreadyQueuedBinCodes = new Set(
+      pendingSmartBinJobs
+        .map((j) => (typeof j.address === 'string' && j.address.startsWith('Bin ')) ? j.address.slice(4) : null)
+        .filter(Boolean),
+    );
 
     const due = bins.filter((b) => {
-      if (b.service_point_id && alreadyQueued.has(b.service_point_id)) return false;
+      if (b.bin_code && alreadyQueuedBinCodes.has(b.bin_code)) return false;
       const threshold = typeof body.threshold_override === 'number'
         ? body.threshold_override
         : (b.collection_threshold_pct || 80);
