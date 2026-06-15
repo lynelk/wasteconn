@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -57,10 +57,12 @@ export default function AdHocInvoiceModal({ open, onClose, customers, onSaved })
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           <div className="space-y-1.5">
             <Label>Customer *</Label>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
-              <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} — {c.phone}</SelectItem>)}</SelectContent>
-            </Select>
+            <MobileSelect
+              value={customerId}
+              onChange={setCustomerId}
+              placeholder="Select customer..."
+              options={customers.map(c => ({ value: c.id, label: `${c.full_name} — ${c.phone}` }))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -84,12 +86,11 @@ export default function AdHocInvoiceModal({ open, onClose, customers, onSaved })
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Due in (days)</Label>
-              <Select value={String(dueDays)} onValueChange={v => setDueDays(parseInt(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {[7, 14, 30, 60].map(d => <SelectItem key={d} value={String(d)}>{d} days</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MobileSelect
+                value={String(dueDays)}
+                onChange={v => setDueDays(parseInt(v))}
+                options={[7, 14, 30, 60].map(d => ({ value: String(d), label: `${d} days` }))}
+              />
             </div>
             <div className="flex items-center gap-2 pt-6">
               <Switch id="notif" checked={sendNotif} onCheckedChange={setSendNotif} />
