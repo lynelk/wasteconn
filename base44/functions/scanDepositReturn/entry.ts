@@ -20,6 +20,9 @@ function tierFor(lifetimePoints: number): string {
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  }
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -36,8 +39,10 @@ Deno.serve(async (req) => {
 
     const customer = await base44.asServiceRole.entities.Customer.get(customerId);
     if (!customer) return Response.json({ error: 'Customer not found' }, { status: 404 });
+    if (user.role === 'customer' && customer.user_id && customer.user_id !== user.id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const tenantId = customer.tenant_id;
-
     let totalValue = 0;
     let totalPoints = 0;
     let totalWeightKg = 0;
