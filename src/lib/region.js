@@ -30,3 +30,23 @@ export function getMapCenter(tenant) {
   if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
   return REGION.mapCenter;
 }
+
+// Resolve the effective region for a tenant, merging tenant overrides over the
+// platform defaults. This is the seam multi-region rollout builds on: per-tenant
+// currency/locale/country come from tenant settings; everything falls back to
+// REGION. See docs/MULTI_REGION.md.
+export function resolveRegion(tenant) {
+  return {
+    currency: tenant?.currency || REGION.currency,
+    locale: tenant?.locale || REGION.locale,
+    country: tenant?.country || REGION.country,
+    mapCenter: getMapCenter(tenant),
+  };
+}
+
+// Tenant-aware currency formatting (uses the tenant's currency/locale).
+export function formatCurrencyForTenant(amount, tenant) {
+  const { currency, locale } = resolveRegion(tenant);
+  return formatCurrency(amount, { currency, locale });
+}
+

@@ -76,6 +76,35 @@ counts, `ServiceZones` per-zone customer counts, etc.) that need a server-side
 count/aggregation endpoint rather than a client cap — tracked under
 "server-side aggregation" below.
 
+## Remediation progress — Phase 4 (shipped)
+
+Additive infra + ops scaffolding (none change existing screens; the live
+dashboard cutover is held until the backend validates the functions):
+
+- **E2E lane** — Playwright (`e2e/`, `.github/workflows/e2e.yml`).
+- **Aggregation functions** — `dashboardMetrics`, `billingSummary`,
+  `paymentsSummary`, `zoneCustomerCounts`, `zoneCoverageStats`,
+  `customerSegmentCount`, plus `sendSmsCampaign` (bulk, rate-limited) and the
+  generic `entityAggregate` (see `docs/AGGREGATION_SPECS.md`).
+- **Rate limiting** — `RateLimit` entity + fail-open fixed-window limiter,
+  applied to `sendSmsCampaign` (cost control); reusable pattern for other
+  public/AI endpoints.
+- **Data archival** — `archiveStaleRecords` scheduled function + `ArchivedRecord`
+  entity (dry-run by default) to keep high-growth tables small.
+- **Load testing** — k6 scripts (`load-tests/`) with the latency/error
+  thresholds from this doc + a manual-dispatch CI workflow.
+- **Multi-region** — `region.js` tenant resolvers (`resolveRegion`,
+  `formatCurrencyForTenant`) + rollout plan (`docs/MULTI_REGION.md`).
+- **DR** — `docs/DR_RUNBOOK.md` (RTO/RPO, scenarios, backup/restore, drills).
+
+### Still requires a live backend / product decision
+- **Frontend cutover** of the aggregation functions (one screen per PR) — gated
+  on backend validating each against a seeded large tenant (run
+  `load-tests/k6/aggregation-load.js`) and adding indexes.
+- **Backend-backed e2e** happy-path suite against a seeded tenant.
+- Base44 capacity review; data-residency confirmation; production rate-limit
+  tuning; scheduling `archiveStaleRecords` with real retention sign-off.
+
 Remaining `.list()` migrations, observability vendor wiring, load testing, and
 infra items are tracked below. _Note: an `errorReporter` already exists
 (captures window/rejection/boundary errors, batched to `ClientErrorLog`); what's

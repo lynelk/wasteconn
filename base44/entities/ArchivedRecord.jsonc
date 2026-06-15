@@ -1,0 +1,33 @@
+{
+  "name": "ArchivedRecord",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "source_entity": {
+      "type": "string",
+      "description": "Entity the record was archived from, e.g. 'SensorReading'"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Original record id"
+    },
+    "original_created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Full JSON snapshot of the archived record"
+    }
+  },
+  "required": [
+    "source_entity",
+    "source_id"
+  ]
+}

@@ -1,0 +1,37 @@
+name: Load test (smoke)
+
+# Manual only — never on push/PR. Runs the k6 smoke test against a URL you supply.
+# Heavier soak/aggregation runs target a dedicated load environment, not prod.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Base URL to load-test (staging/load env — not production)
+        required: true
+        type: string
+      vus:
+        description: Virtual users
+        required: false
+        default: '5'
+        type: string
+      duration:
+        description: Test duration (e.g. 1m, 5m)
+        required: false
+        default: '1m'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  k6-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run k6 smoke test
+        uses: grafana/setup-k6-action@v1
+      - run: k6 run load-tests/k6/smoke.js
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          VUS: ${{ inputs.vus }}
+          DURATION: ${{ inputs.duration }}
