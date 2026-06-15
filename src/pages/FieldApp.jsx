@@ -79,10 +79,7 @@ export default function FieldApp() {
       await cacheDriverJobs(all);
       return all;
     },
-    placeholderData: async () => {
-      const cached = await getCachedDriverJobs();
-      return cached.length ? cached : [];
-    },
+    placeholderData: [],
     enabled: !!activeUser?.id,
     retry: isOnline ? 3 : false,
   });
