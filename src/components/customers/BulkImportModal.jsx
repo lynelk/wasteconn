@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Download, Loader2, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Download, Loader2, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';

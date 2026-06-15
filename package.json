@@ -12,6 +12,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "typecheck:strict": "tsc -p tsconfig.json --noEmit",
     "analyze:bundle": "vite build --mode analyze",
     "lint:ci": "eslint src/App.jsx src/routes src/api src/lib/errorHandler.js src/lib/logger.js src/lib/ErrorBoundary.jsx src/hooks/queries src/components/common src/__tests__ --quiet"
@@ -78,6 +80,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.60.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
