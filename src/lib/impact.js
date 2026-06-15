@@ -38,19 +38,25 @@ export function computeEsg(pickups = [], wasteBankTxns = []) {
     .filter(p => DIVERTED_WASTE_TYPES.includes(p.waste_type))
     .reduce((s, p) => s + pickupWeight(p), 0);
 
-  const recoveredKg = wasteBankTxns
-    .filter(t => t.payment_status === 'completed')
-    .reduce((s, t) => s + (t.weight_kg || 0), 0);
+  // Only accepted (non-rejected) completed intake counts as recovered material.
+  const recoveredTxns = wasteBankTxns
+    .filter(t => t.payment_status === 'completed' && t.grade !== 'rejected');
+  const recoveredKg = recoveredTxns.reduce((s, t) => s + (t.weight_kg || 0), 0);
 
   const totalHandledKg = collectedKg + recoveredKg;
   const totalDivertedKg = divertedFromCollection + recoveredKg;
   const diversionRate = totalHandledKg > 0 ? totalDivertedKg / totalHandledKg : 0;
 
-  // Breakdown by waste stream (kg) for charts.
+  // Breakdown by waste stream (kg) for charts — collections plus recovered
+  // waste-bank intake, so the per-stream rows reconcile with headline totals.
   const byStream = {};
   for (const p of completed) {
     const key = p.waste_type || 'general';
     byStream[key] = (byStream[key] || 0) + pickupWeight(p);
+  }
+  for (const t of recoveredTxns) {
+    const key = t.waste_category || 'mixed';
+    byStream[key] = (byStream[key] || 0) + (t.weight_kg || 0);
   }
 
   return {
