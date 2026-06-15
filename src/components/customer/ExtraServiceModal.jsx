@@ -31,21 +31,27 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
   ];
 
   const submit = useMutation({
-    mutationFn: () => base44.entities.PickupRequest.create({
-      customer_id: customer.id,
-      tenant_id: customer.tenant_id,
-      request_type: 'on_demand',
-      status: 'pending',
-      service_add_on_id: selected.id,
-      service_category: selected.category,
-      waste_type: selected.waste_type || 'bulky',
-      quoted_price_ugx: selected.price_ugx || 0,
-      billing_status: (selected.price_ugx || 0) > 0 ? 'quoted' : 'none',
-      source: 'customer_app',
-      address,
-      scheduled_date: date || undefined,
-      notes: notes || `${selected.name} requested via app`,
-    }),
+    mutationFn: () => {
+      // Carry the chosen service point's identifiers/coords so dispatch can
+      // zone-filter the job and the route optimiser uses real coordinates.
+      const sp = (servicePoints || []).find(p => p.address === address);
+      return base44.entities.PickupRequest.create({
+        customer_id: customer.id,
+        tenant_id: customer.tenant_id,
+        request_type: 'on_demand',
+        status: 'pending',
+        service_add_on_id: selected.id,
+        service_category: selected.category,
+        waste_type: selected.waste_type || 'bulky',
+        quoted_price_ugx: selected.price_ugx || 0,
+        billing_status: (selected.price_ugx || 0) > 0 ? 'quoted' : 'none',
+        source: 'customer_app',
+        address,
+        ...(sp ? { service_point_id: sp.id, zone_id: sp.zone_id, latitude: sp.latitude, longitude: sp.longitude } : {}),
+        scheduled_date: date || undefined,
+        notes: notes || `${selected.name} requested via app`,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-pickups'] });
       onClose();

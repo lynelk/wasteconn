@@ -68,4 +68,22 @@ describe('computeEsg', () => {
     ], []);
     expect(esg.byStream.recyclable).toBe(50);
   });
+
+  it('excludes rejected waste-bank loads from recovered/diverted totals', () => {
+    const esg = computeEsg([], [
+      { payment_status: 'completed', grade: 'A', weight_kg: 40, waste_category: 'plastic' },
+      { payment_status: 'completed', grade: 'rejected', weight_kg: 1000, waste_category: 'plastic' },
+    ]);
+    expect(esg.recoveredKg).toBe(40);
+    expect(esg.divertedKg).toBe(40);
+  });
+
+  it('folds recovered waste-bank weight into the stream breakdown', () => {
+    const esg = computeEsg(
+      [{ status: 'completed', waste_type: 'recyclable', actual_weight_kg: 10 }],
+      [{ payment_status: 'completed', grade: 'A', weight_kg: 25, waste_category: 'plastic' }],
+    );
+    expect(esg.byStream.recyclable).toBe(10);
+    expect(esg.byStream.plastic).toBe(25);
+  });
 });

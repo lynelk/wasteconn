@@ -60,7 +60,7 @@
     },
     "smart_bin_id": {
       "type": "string",
-      "description": "SmartBin referenced by an overflow/damage report"
+      "description": "Container (smart bin) referenced by an overflow/damage report"
     },
     "description": {
       "type": "string"

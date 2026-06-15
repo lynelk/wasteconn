@@ -5,9 +5,9 @@
     "tenant_id": {
       "type": "string"
     },
-    "bin_id": {
+    "container_id": {
       "type": "string",
-      "description": "SmartBin this reading belongs to"
+      "description": "Container (smart bin) this reading belongs to"
     },
     "sensor_id": {
       "type": "string"
@@ -55,6 +55,6 @@
   },
   "required": [
     "tenant_id",
-    "bin_id"
+    "container_id"
   ]
 }

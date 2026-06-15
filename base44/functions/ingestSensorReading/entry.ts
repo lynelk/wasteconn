@@ -2,22 +2,19 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Smart-bin fill-level ingestion webhook.
 // Devices POST one reading or a batch; we persist each as a SensorReading and
-// roll the latest values up onto the matching SmartBin (fill level, status,
-// battery, fire/tilt alarms, predictive fill rate).
+// roll the latest values up onto the matching Container (last fill %, battery,
+// reading time, smoothed daily fill rate). This is the ingestion path that
+// feeds the Container-based Smart Bins dashboard and fillLevelRouteOptimiser
+// (classifyFill / needsCollection read last_fill_pct + avg_daily_fill_rate_pct).
 //
 // Auth: shared secret in the Authorization header (Bearer <SENSOR_WEBHOOK_KEY>),
 // matching the CitoConnect webhook convention. Devices have no user session.
 
-function deriveStatus(fillPct: number, thresholdPct: number): string {
-  if (fillPct >= 100) return 'overflow';
-  if (fillPct >= thresholdPct) return 'full';
-  if (fillPct >= Math.max(0, thresholdPct - 20)) return 'warning';
-  return 'ok';
-}
-
 interface IncomingReading {
-  sensor_id?: string;
-  bin_code?: string;
+  qr_code?: string;
+  label?: string;
+  container_id?: string;
+  tenant_id?: string;
   fill_level_pct?: number;
   distance_cm?: number;
   battery_pct?: number;
@@ -27,10 +24,20 @@ interface IncomingReading {
   measured_at?: string;
 }
 
+// Accept a client timestamp only if it parses; otherwise fall back to now.
+function safeTimestamp(value?: string): string {
+  if (value) {
+    const t = Date.parse(value);
+    if (!Number.isNaN(t)) return new Date(t).toISOString();
+  }
+  return new Date().toISOString();
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
+
   const authHeader = req.headers.get('Authorization') || '';
   const incomingKey = authHeader.replace('Bearer ', '').trim();
   const expectedKey = Deno.env.get('SENSOR_WEBHOOK_KEY');
@@ -41,37 +48,40 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const readings: IncomingReading[] = Array.isArray(body?.readings)
-      ? body.readings
-      : [body];
+    const readings: IncomingReading[] = Array.isArray(body?.readings) ? body.readings : [body];
 
-    const results: Array<{ sensor_id?: string; bin_code?: string; status: string }> = [];
+    const results: Array<{ qr_code?: string; container_id?: string; status: string }> = [];
 
     for (const r of readings) {
-      // Resolve the bin by sensor id first, then by asset code.
-      let bin = null;
-      if (r.sensor_id) {
-        const bySensor = await base44.asServiceRole.entities.SmartBin.filter({ sensor_id: r.sensor_id });
-        bin = bySensor?.[0] || null;
+      // Resolve the container by explicit id, then QR code, then label.
+      // QR/label fallbacks are scoped by tenant_id when supplied to avoid
+      // cross-tenant collisions on reused human-readable codes.
+      const tenantScope = r.tenant_id ? { tenant_id: r.tenant_id } : {};
+      let container = null;
+      if (r.container_id) {
+        container = await base44.asServiceRole.entities.Container.get(r.container_id).catch(() => null);
       }
-      if (!bin && r.bin_code) {
-        const byCode = await base44.asServiceRole.entities.SmartBin.filter({ bin_code: r.bin_code });
-        bin = byCode?.[0] || null;
+      if (!container && r.qr_code) {
+        container = (await base44.asServiceRole.entities.Container.filter({ ...tenantScope, qr_code: r.qr_code }))?.[0] || null;
       }
-      if (!bin) {
-        results.push({ sensor_id: r.sensor_id, bin_code: r.bin_code, status: 'bin_not_found' });
+      if (!container && r.label) {
+        container = (await base44.asServiceRole.entities.Container.filter({ ...tenantScope, label: r.label }))?.[0] || null;
+      }
+      if (!container) {
+        results.push({ qr_code: r.qr_code, status: 'container_not_found' });
         continue;
       }
 
-      const measuredAt = r.measured_at || new Date().toISOString();
+      const measuredAt = safeTimestamp(r.measured_at);
       const fillPct = typeof r.fill_level_pct === 'number'
         ? Math.max(0, Math.min(100, r.fill_level_pct))
-        : bin.fill_level_pct || 0;
+        : (container.last_fill_pct ?? 0);
 
+      // Always retain the historical reading.
       await base44.asServiceRole.entities.SensorReading.create({
-        tenant_id: bin.tenant_id,
-        bin_id: bin.id,
-        sensor_id: r.sensor_id || bin.sensor_id,
+        tenant_id: container.tenant_id,
+        container_id: container.id,
+        sensor_id: r.qr_code || container.qr_code,
         fill_level_pct: fillPct,
         distance_cm: r.distance_cm,
         battery_pct: r.battery_pct,
@@ -83,40 +93,36 @@ Deno.serve(async (req) => {
         raw_payload: JSON.stringify(r),
       });
 
-      // Predictive fill rate from the previous reading (pct/day), ignoring
-      // emptying events (fill dropped).
-      let avgFillRate = bin.avg_fill_rate_pct_per_day;
-      let predictedFullAt = bin.predicted_full_at;
-      if (bin.last_reading_at && fillPct >= (bin.fill_level_pct || 0)) {
-        const elapsedDays = (new Date(measuredAt).getTime() - new Date(bin.last_reading_at).getTime()) / 86_400_000;
+      // Skip the container roll-up for stale / out-of-order deliveries so a
+      // late high-fill reading can't roll back a freshly emptied bin.
+      if (container.last_reading_at && Date.parse(measuredAt) <= Date.parse(container.last_reading_at)) {
+        results.push({ qr_code: container.qr_code, container_id: container.id, status: 'stale_skipped' });
+        continue;
+      }
+
+      // Smooth the daily fill rate from the previous reading, ignoring
+      // emptying events (fill dropped after a collection).
+      let avgRate = container.avg_daily_fill_rate_pct;
+      const prevFill = container.last_fill_pct;
+      if (typeof prevFill === 'number' && container.last_reading_at && fillPct >= prevFill) {
+        const elapsedDays = (Date.parse(measuredAt) - Date.parse(container.last_reading_at)) / 86_400_000;
         if (elapsedDays > 0.01) {
-          const rate = (fillPct - (bin.fill_level_pct || 0)) / elapsedDays;
-          // Exponential smoothing against the stored rate.
-          avgFillRate = bin.avg_fill_rate_pct_per_day
-            ? Math.round((0.5 * rate + 0.5 * bin.avg_fill_rate_pct_per_day) * 10) / 10
+          const rate = (fillPct - prevFill) / elapsedDays;
+          avgRate = typeof avgRate === 'number'
+            ? Math.round((0.5 * rate + 0.5 * avgRate) * 10) / 10
             : Math.round(rate * 10) / 10;
-          const threshold = bin.collection_threshold_pct || 80;
-          if (avgFillRate > 0 && fillPct < threshold) {
-            const daysToFull = (threshold - fillPct) / avgFillRate;
-            predictedFullAt = new Date(Date.now() + daysToFull * 86_400_000).toISOString();
-          }
         }
       }
 
       const updates: Record<string, unknown> = {
-        fill_level_pct: fillPct,
-        fill_status: deriveStatus(fillPct, bin.collection_threshold_pct || 80),
+        last_fill_pct: fillPct,
         last_reading_at: measuredAt,
-        fire_alarm: !!r.fire_detected,
-        tilt_alarm: !!r.tilt_detected,
       };
-      if (typeof r.battery_pct === 'number') updates.battery_pct = r.battery_pct;
-      if (typeof r.temperature_c === 'number') updates.temperature_c = r.temperature_c;
-      if (avgFillRate != null) updates.avg_fill_rate_pct_per_day = avgFillRate;
-      if (predictedFullAt) updates.predicted_full_at = predictedFullAt;
+      if (typeof r.battery_pct === 'number') updates.last_battery_pct = r.battery_pct;
+      if (typeof avgRate === 'number') updates.avg_daily_fill_rate_pct = avgRate;
 
-      await base44.asServiceRole.entities.SmartBin.update(bin.id, updates);
-      results.push({ sensor_id: r.sensor_id, bin_code: bin.bin_code, status: 'ok' });
+      await base44.asServiceRole.entities.Container.update(container.id, updates);
+      results.push({ qr_code: container.qr_code, container_id: container.id, status: 'ok' });
     }
 
     return Response.json({ received: results.length, results, timestamp: new Date().toISOString() });

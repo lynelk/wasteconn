@@ -35,15 +35,14 @@ Deno.serve(async (req) => {
 
     const category = ALLOWED.has(body.category) ? body.category : 'other';
 
+    // Link a referenced container (scoped to the report's tenant) for operator
+    // context only. We deliberately do NOT mutate the container's sensor state
+    // here — an unauthenticated citizen report must not directly create
+    // operational collection work; an operator confirms it first.
     let smartBinId: string | undefined;
     if (body.smart_bin_code) {
-      const bins = await base44.asServiceRole.entities.SmartBin.filter({ bin_code: body.smart_bin_code });
-      if (bins?.[0]) {
-        smartBinId = bins[0].id;
-        if (category === 'overflowing_bin' && bins[0].fill_status !== 'overflow') {
-          await base44.asServiceRole.entities.SmartBin.update(bins[0].id, { fill_status: 'overflow' });
-        }
-      }
+      const containers = await base44.asServiceRole.entities.Container.filter({ tenant_id: tenantId, qr_code: body.smart_bin_code });
+      if (containers?.[0]) smartBinId = containers[0].id;
     }
 
     const priority = category === 'illegal_dumping' || category === 'overflowing_bin' ? 'high' : 'medium';
