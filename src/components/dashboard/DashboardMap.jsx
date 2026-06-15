@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 
 // Fix default Leaflet icon paths (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -46,9 +48,50 @@ async function geocode(address) {
   return null;
 }
 
+// Satisfaction rating → heatmap color
+function satisfactionColor(rating) {
+  if (rating >= 4.5) return '#22c55e';
+  if (rating >= 3.5) return '#86efac';
+  if (rating >= 2.5) return '#f59e0b';
+  if (rating >= 1.5) return '#f97316';
+  return '#ef4444';
+}
+
 export default function DashboardMap({ servicePoints = [], pickups = [], vehicles = [], routes = [] }) {
   const [spCoords, setSpCoords] = useState([]);
   const [pickupCoords, setPickupCoords] = useState([]);
+
+  const { data: surveys = [] } = useQuery({
+    queryKey: ['satisfaction-heatmap'],
+    queryFn: () => base44.entities.CustomerSatisfaction.list('-created_date', 300),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: zones = [] } = useQuery({
+    queryKey: ['zones-heatmap'],
+    queryFn: () => base44.entities.ServiceZone.list(),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Build per-zone avg rating for zones that have lat/lon
+  const zoneSatisfaction = (() => {
+    const byZone = {};
+    surveys.filter(s => s.rating != null && s.zone_id).forEach(s => {
+      if (!byZone[s.zone_id]) byZone[s.zone_id] = { total: 0, count: 0 };
+      byZone[s.zone_id].total += s.rating;
+      byZone[s.zone_id].count += 1;
+    });
+    return zones
+      .filter(z => z.latitude && z.longitude && byZone[z.id])
+      .map(z => ({
+        id: z.id,
+        name: z.zone_name || z.name,
+        lat: z.latitude,
+        lon: z.longitude,
+        avg: byZone[z.id].total / byZone[z.id].count,
+        count: byZone[z.id].count,
+      }));
+  })();
 
   useEffect(() => {
     // Geocode service points that have explicit lat/lon
@@ -127,6 +170,26 @@ export default function DashboardMap({ servicePoints = [], pickups = [], vehicle
           </Marker>
         ))}
 
+        {/* Satisfaction Heatmap Overlays */}
+        {zoneSatisfaction.map(z => (
+          <CircleMarker
+            key={`sat-${z.id}`}
+            center={[z.lat, z.lon]}
+            radius={22}
+            color={satisfactionColor(z.avg)}
+            fillColor={satisfactionColor(z.avg)}
+            fillOpacity={0.35}
+            weight={2}
+          >
+            <Tooltip permanent={false} direction="top">
+              <div className="text-xs">
+                <strong>{z.name}</strong><br />
+                Avg Rating: {z.avg.toFixed(1)} ⭐ ({z.count} responses)
+              </div>
+            </Tooltip>
+          </CircleMarker>
+        ))}
+
         {/* Vehicles */}
         {vehiclePositions.map(v => (
           <Marker key={v.id} position={v.coords} icon={iconVehicle}>
@@ -147,6 +210,14 @@ export default function DashboardMap({ servicePoints = [], pickups = [], vehicle
         <div className="flex items-center gap-1.5"><span>🚛</span> Vehicles</div>
         <div className="flex items-center gap-1.5"><span style={{width:10,height:10,borderRadius:'50%',background:'#8b5cf6',display:'inline-block'}}></span> Service Points</div>
         <div className="flex items-center gap-1.5"><span>✅</span> Completed</div>
+        {zoneSatisfaction.length > 0 && (
+          <div className="mt-1.5 pt-1.5 border-t border-border/30">
+            <p className="text-[10px] font-semibold text-muted-foreground mb-1">Satisfaction</p>
+            <div className="flex items-center gap-1"><span style={{width:10,height:10,borderRadius:'50%',background:'#22c55e',display:'inline-block'}}></span><span>≥4.5</span></div>
+            <div className="flex items-center gap-1"><span style={{width:10,height:10,borderRadius:'50%',background:'#f59e0b',display:'inline-block'}}></span><span>2.5–3.5</span></div>
+            <div className="flex items-center gap-1"><span style={{width:10,height:10,borderRadius:'50%',background:'#ef4444',display:'inline-block'}}></span><span>&lt;1.5</span></div>
+          </div>
+        )}
       </div>
     </div>
   );
