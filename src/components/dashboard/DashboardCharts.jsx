@@ -34,6 +34,25 @@ function buildWasteTypePie(pickups) {
   return Object.entries(counts).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }));
 }
 
+function buildAvgPickupTimePerZone(pickups, zones = []) {
+  const zoneMetrics = {};
+  pickups.forEach(p => {
+    if (p.status !== 'completed' || !p.job_started_at || !p.completed_at || !p.zone_id) return;
+    const duration = (new Date(p.completed_at) - new Date(p.job_started_at)) / 60000;
+    if (duration <= 0 || duration > 480) return; // skip bad data
+    if (!zoneMetrics[p.zone_id]) zoneMetrics[p.zone_id] = { total: 0, count: 0 };
+    zoneMetrics[p.zone_id].total += duration;
+    zoneMetrics[p.zone_id].count += 1;
+  });
+  const zoneNameMap = {};
+  zones.forEach(z => { zoneNameMap[z.id] = z.name || z.id; });
+  return Object.entries(zoneMetrics).map(([zoneId, data]) => ({
+    zone: zoneNameMap[zoneId] || zoneId.slice(0, 8),
+    avgTime: Math.round(data.total / data.count),
+    jobs: data.count,
+  }));
+}
+
 function buildRevenueByMonth(payments) {
   const months = {};
   payments.forEach(p => {
@@ -44,10 +63,11 @@ function buildRevenueByMonth(payments) {
   return Object.entries(months).map(([month, revenue]) => ({ month, revenue: Math.round(revenue / 1000) }));
 }
 
-export default function DashboardCharts({ pickups = [], payments = [], complaints = [] }) {
+export default function DashboardCharts({ pickups = [], payments = [], complaints = [], zones = [] }) {
   const dailyPickups = useMemo(() => buildDailyPickups(pickups), [pickups]);
   const wasteTypePie = useMemo(() => buildWasteTypePie(pickups), [pickups]);
   const revenueByMonth = useMemo(() => buildRevenueByMonth(payments), [payments]);
+  const avgPickupTime = useMemo(() => buildAvgPickupTimePerZone(pickups, zones), [pickups, zones]);
 
   const complaintByCategory = useMemo(() => {
     const counts = {};
@@ -136,6 +156,32 @@ export default function DashboardCharts({ pickups = [], payments = [], complaint
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={100} />
                 <Tooltip contentStyle={{ fontSize: 11 }} />
                 <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+      {/* Avg Pickup Duration by Zone */}
+      <Card className="border-border/60 lg:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold font-jakarta">Avg Pickup Duration by Zone (minutes)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {avgPickupTime.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-8 text-center">No completed pickups with timing data yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={avgPickupTime}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="zone" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} unit=" min" />
+                <Tooltip
+                  contentStyle={{ fontSize: 11 }}
+                  formatter={(v, name) => name === 'avgTime' ? [`${v} min`, 'Avg Duration'] : [v, 'Jobs']}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} formatter={(v) => v === 'avgTime' ? 'Avg Duration (min)' : 'Jobs'} />
+                <Bar dataKey="avgTime" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="jobs" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

@@ -50,6 +50,7 @@ export default function Dashboard() {
   const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list() });
   const { data: routes = [] } = useQuery({ queryKey: ['routes-today'], queryFn: () => base44.entities.Route.filter({ route_date: format(new Date(), 'yyyy-MM-dd') }) });
   const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list(), enabled: role === 'super_admin' });
+  const { data: zones = [] } = useQuery({ queryKey: ['service-zones'], queryFn: () => base44.entities.ServiceZone.list() });
 
   const pendingPickups = pickups.filter(p => p.status === 'pending').length;
   const openComplaints = complaints.filter(c => c.status === 'open').length;
@@ -108,7 +109,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div>
         <h2 className="font-semibold font-jakarta text-base mb-4">Performance Analytics</h2>
-        <DashboardCharts pickups={pickups} payments={payments} complaints={complaints} />
+        <DashboardCharts pickups={pickups} payments={payments} complaints={complaints} zones={zones} />
       </div>
 
       {/* Activity Feed */}
