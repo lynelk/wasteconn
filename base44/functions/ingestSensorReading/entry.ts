@@ -28,6 +28,9 @@ interface IncomingReading {
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  }
   const authHeader = req.headers.get('Authorization') || '';
   const incomingKey = authHeader.replace('Bearer ', '').trim();
   const expectedKey = Deno.env.get('SENSOR_WEBHOOK_KEY');
