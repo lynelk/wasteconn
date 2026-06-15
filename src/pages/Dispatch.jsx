@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { MapPin, Truck, Plus, Zap, Map } from 'lucide-react';
+import { Truck, Plus, Zap, Map } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

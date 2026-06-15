@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { MapContainer, TileLayer, useMapEvents, Polyline, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMapEvents, Polyline, Marker } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
 import { Upload, Pen, Trash2, Check } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';

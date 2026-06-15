@@ -1,10 +1,9 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, Users, CreditCard, Calendar, Radio, Map } from 'lucide-react';
+import { Radio, Map } from 'lucide-react';
 import CitoReportExport from '@/components/analytics/CitoReportExport';
 import WialonIntegration from '@/pages/WialonIntegration';
 import CoverageAnalytics from '@/pages/CoverageAnalytics';

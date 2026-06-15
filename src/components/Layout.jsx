@@ -12,7 +12,6 @@ import {
   Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
   FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket, Trash2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import MobileBottomNav from '@/components/MobileBottomNav';

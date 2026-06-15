@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MessageSquare, Search, CheckCircle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, MessageSquare, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ComplaintForm from '@/components/complaints/ComplaintForm';
 import ComplaintDetail from '@/components/complaints/ComplaintDetail';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { format } from 'date-fns';
 
 const statusColor = { open:'bg-red-100 text-red-800', in_review:'bg-yellow-100 text-yellow-800', resolved:'bg-green-100 text-green-800', closed:'bg-gray-100 text-gray-600' };
@@ -23,11 +24,10 @@ export default function Complaints() {
 
   const { data: complaints = [], isLoading } = useQuery({
     queryKey: ['complaints'],
-    queryFn: () => base44.entities.Complaint.list('-created_date'),
+    queryFn: () => base44.entities.Complaint.list('-created_date', 200),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
-
-  const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+  // Resolve only the customers referenced by the loaded complaints (not the whole table).
+  const { map: customerMap } = useEntitiesByIds('Customer', complaints.map(c => c.customer_id));
 
   const filtered = complaints.filter(c => {
     const cust = customerMap[c.customer_id];

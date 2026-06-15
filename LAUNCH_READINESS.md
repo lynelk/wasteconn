@@ -57,6 +57,25 @@ so server-side search/pagination is now usable directly.
 **To finish observability:** set `VITE_UPTRACE_DSN` (and optional
 `VITE_APP_RELEASE`) in the deploy environment to start shipping telemetry.
 
+## Remediation progress — Phase 3 (shipped)
+
+- **P0.1 referenced-row resolution:** new `useEntitiesByIds` hook resolves only
+  the rows a bounded list references via `filter({ id: { $in } })` (chunked),
+  replacing "load the whole table to label a list". Applied to the `Complaints`
+  and `Subscriptions` pages (dropping `Customer.list()` / `ServicePoint.list()`),
+  and bounded the previously-unbounded `Complaint.list('-created_date')`.
+- **P0.1 contract picker:** `ContractForm` now uses `EntitySelect` for the
+  customer and fetches the chosen customer's service points on demand
+  (`ServicePoint.filter({ customer_id })`) instead of receiving whole tables.
+- **P1 lint debt cleared (item C):** `lint:fix` removed all 119 unused-import
+  errors; full `npm run lint` is now clean.
+
+Remaining bare `.list()` on high-cardinality entities (≈23, flagged by the
+ESLint guard) are **aggregate/analytics** screens (`MarketingHub` segment
+counts, `ServiceZones` per-zone customer counts, etc.) that need a server-side
+count/aggregation endpoint rather than a client cap — tracked under
+"server-side aggregation" below.
+
 Remaining `.list()` migrations, observability vendor wiring, load testing, and
 infra items are tracked below. _Note: an `errorReporter` already exists
 (captures window/rejection/boundary errors, batched to `ClientErrorLog`); what's
@@ -122,14 +141,25 @@ No evidence of load testing. Before 10M users, establish:
 
 - **Test coverage for critical flows.** `src/__tests__/e2e/` is a README stub.
   Add e2e/integration coverage for dispatch, payments, and the customer
-  self-service flows (already on the roadmap).
-- **Lazy-load heavy libs.** `jspdf` (390 KB) + `html2canvas` (194 KB) and the
-  `recharts` bundle (357 KB) should load only on the screens/actions that use
-  them (dynamic `import()` behind the export/report buttons), trimming first paint.
+  self-service flows (already on the roadmap). _Unit coverage has grown to 96
+  tests; e2e needs a browser+backend CI lane (Playwright) that isn't available
+  in this environment._
+- **Lazy-load heavy libs.** ✅ `jspdf` is now lazy-loaded everywhere. `recharts`
+  (357 KB) and `html2canvas` (194 KB) remain candidates to defer behind the
+  report/chart screens.
 - **Rate limiting / abuse protection** on public endpoints (`/pay/:token`,
   customer app, support chat) and on AI-backed functions (cost control).
+  _Backend (Base44 function) concern — not addressable from the client._
 - **Caching/CDN strategy** for static assets and cacheable reads; confirm
   React Query `staleTime`/`gcTime` per entity (currently a single 60 s default).
+- **Lint debt — ✅ DONE.** All unused-import errors removed; `npm run lint` is
+  clean. An ESLint guard now blocks new unbounded `.list()` on hot entities.
+
+### Server-side aggregation (remaining `.list()` sweep)
+A handful of analytics screens still read whole tables to compute counts
+(`MarketingHub`, `ServiceZones`, etc.). These need a backend count/aggregation
+endpoint (the SDK has no `count()`), not a client-side cap. Tracked for the
+backend team.
 
 ## 6. P2 — scale maturity
 
