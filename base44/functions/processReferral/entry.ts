@@ -12,26 +12,18 @@ function makeCode(customerId: string): string {
   return `REF-${customerId.slice(0, 6).toUpperCase()}`;
 }
 
-async function creditWallet(base44, customerId: string, tenantId: string, amount: number, note: string) {
-  const wallets = await base44.asServiceRole.entities.CustomerWallet.filter({ customer_id: customerId });
-  const now = new Date().toISOString();
-  if (wallets?.length) {
-    const w = wallets[0];
-    await base44.asServiceRole.entities.CustomerWallet.update(w.id, {
-      balance_ugx: (w.balance_ugx || 0) + amount,
-      total_earned_ugx: (w.total_earned_ugx || 0) + amount,
-      last_transaction_at: now,
-    });
-  } else {
-    await base44.asServiceRole.entities.CustomerWallet.create({
-      tenant_id: tenantId,
-      customer_id: customerId,
-      balance_ugx: amount,
-      total_earned_ugx: amount,
-      last_transaction_at: now,
-    });
-  }
-  // Ledger entry mirroring WasteBank payout style (credited to wallet, not cashed out)
+async function creditWallet(base44, customerId: string, tenantId: string, amount: number, note: string, reference: string) {
+  // Concurrency-safe, idempotent wallet credit via the ledger-backed function.
+  await base44.asServiceRole.functions.invoke('walletAdjust', {
+    _internal: true,
+    customer_id: customerId,
+    tenant_id: tenantId,
+    amount_ugx: amount,
+    kind: 'referral',
+    reference,
+    note,
+  });
+  // Business record mirroring WasteBank payout style (credited to wallet, not cashed out)
   await base44.asServiceRole.entities.WasteBankTransaction.create({
     tenant_id: tenantId,
     transaction_type: 'payout',
@@ -98,7 +90,7 @@ Deno.serve(async (req) => {
 
       let rewarded = 0;
       for (const ref of pending) {
-        await creditWallet(base44, ref.referrer_customer_id, ref.tenant_id, ref.reward_ugx || REFERRAL_REWARD_UGX, `Referral reward for referring customer ${referee_customer_id}`);
+        await creditWallet(base44, ref.referrer_customer_id, ref.tenant_id, ref.reward_ugx || REFERRAL_REWARD_UGX, `Referral reward for referring customer ${referee_customer_id}`, `referral:${ref.id}`);
         await base44.asServiceRole.entities.Referral.update(ref.id, {
           status: 'rewarded',
           rewarded_at: new Date().toISOString(),

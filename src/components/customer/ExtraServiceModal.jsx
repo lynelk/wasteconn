@@ -15,6 +15,7 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
   const [address, setAddress] = useState(servicePoints?.[0]?.address || customer?.address || '');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [photoUrls, setPhotoUrls] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -37,6 +38,13 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
 
   const photoRequired = !!selected?.requires_photo;
   const photoMissing = photoRequired && photoUrls.length === 0;
+
+  // Non-flat add-ons are priced per unit; collect the count and quote the total.
+  const UNIT_LABEL = { per_item: 'Number of items', per_day: 'Number of days', per_tonne: 'Estimated tonnes' };
+  const pricingUnit = selected?.pricing_unit || 'flat';
+  const needsQuantity = pricingUnit !== 'flat';
+  const qty = needsQuantity ? Math.max(1, Number(quantity) || 1) : 1;
+  const quotedPrice = (selected?.price_ugx || 0) * qty;
 
   const { data: addOns = [], isLoading } = useQuery({
     queryKey: ['active-add-ons', customer?.tenant_id],
@@ -65,14 +73,14 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
         service_add_on_id: selected.id,
         service_category: selected.category,
         waste_type: selected.waste_type || 'bulky',
-        quoted_price_ugx: selected.price_ugx || 0,
-        billing_status: (selected.price_ugx || 0) > 0 ? 'quoted' : 'none',
+        quoted_price_ugx: quotedPrice,
+        billing_status: quotedPrice > 0 ? 'quoted' : 'none',
         source: 'customer_app',
         address,
         ...(sp ? { service_point_id: sp.id, zone_id: sp.zone_id, latitude: sp.latitude, longitude: sp.longitude } : {}),
         ...(photoUrls.length ? { photo_urls: photoUrls } : {}),
         scheduled_date: date || undefined,
-        notes: notes || `${selected.name} requested via app`,
+        notes: notes || `${selected.name}${needsQuantity ? ` ×${qty} (${pricingUnit.replace('per_', 'per ')})` : ''} requested via app`,
       });
     },
     onSuccess: () => {
@@ -140,6 +148,17 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Preferred Date (optional)</label>
                     <input type="date" className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm" value={date} onChange={e => setDate(e.target.value)} />
                   </div>
+                  {needsQuantity && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{UNIT_LABEL[pricingUnit]}</label>
+                      <input
+                        type="number" min="1" step={pricingUnit === 'per_tonne' ? '0.1' : '1'}
+                        className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm"
+                        value={quantity}
+                        onChange={e => setQuantity(e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Notes (optional)</label>
                     <textarea rows={2} className="w-full border border-input bg-background rounded-lg px-3 py-2 text-sm resize-none" value={notes} onChange={e => setNotes(e.target.value)} placeholder="What needs collecting?" />
@@ -164,8 +183,8 @@ export default function ExtraServiceModal({ customer, servicePoints = [], onClos
                   )}
 
                   <div className="rounded-xl bg-muted/60 px-4 py-3 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Estimated charge</span>
-                    <span className="font-semibold text-primary">{(selected.price_ugx || 0).toLocaleString()} UGX</span>
+                    <span className="text-muted-foreground">Estimated charge{needsQuantity ? ` (${(selected.price_ugx || 0).toLocaleString()} × ${qty})` : ''}</span>
+                    <span className="font-semibold text-primary">{quotedPrice.toLocaleString()} UGX</span>
                   </div>
 
                   <Button className="w-full" disabled={!address || submit.isPending || uploading || photoMissing} onClick={() => submit.mutate()}>

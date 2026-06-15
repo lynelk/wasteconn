@@ -1,0 +1,40 @@
+{
+  "name": "WalletLedgerEntry",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "amount_ugx": {
+      "type": "number",
+      "description": "Signed amount: positive credits the wallet, negative debits it"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "opening",
+        "earn",
+        "payin",
+        "withdraw",
+        "referral",
+        "adjustment"
+      ],
+      "default": "earn",
+      "description": "Movement type; drives the cached total_* breakdown"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Idempotency key — a given (customer_id, reference) is applied at most once"
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id",
+    "amount_ugx"
+  ]
+}

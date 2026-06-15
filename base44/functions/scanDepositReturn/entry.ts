@@ -8,19 +8,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 //
 // Payload: { customer_id, items: [{ barcode, quantity }] }  (or a single { barcode, quantity })
 
-// Mirror the platform loyalty thresholds used by onPickupCompleted /
-// paymentWebhookHandler so a deposit return never demotes a customer.
-const TIER_THRESHOLDS: Array<{ tier: string; min: number }> = [
-  { tier: 'platinum', min: 5_000 },
-  { tier: 'gold', min: 2_000 },
-  { tier: 'silver', min: 500 },
-  { tier: 'bronze', min: 0 },
-];
-
-function tierFor(lifetimePoints: number): string {
-  return TIER_THRESHOLDS.find((t) => lifetimePoints >= t.min)?.tier || 'bronze';
-}
-
 // Staff roles allowed to process a redemption on behalf of any customer.
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'dispatcher', 'agent']);
 
@@ -130,45 +117,27 @@ Deno.serve(async (req) => {
       notes: `Deposit return: ${accepted} item(s) scanned, ${rejected} rejected.`,
     });
 
-    // Credit (or open) the customer wallet.
-    const wallets = await base44.asServiceRole.entities.CustomerWallet.filter({ customer_id: customerId });
-    const existingWallet = wallets?.[0];
-    let newBalance = totalValue;
-    if (existingWallet) {
-      newBalance = (existingWallet.balance_ugx || 0) + totalValue;
-      await base44.asServiceRole.entities.CustomerWallet.update(existingWallet.id, {
-        balance_ugx: newBalance,
-        total_earned_ugx: (existingWallet.total_earned_ugx || 0) + totalValue,
-        last_transaction_at: new Date().toISOString(),
-      });
-    } else {
-      await base44.asServiceRole.entities.CustomerWallet.create({
-        tenant_id: tenantId,
-        customer_id: customerId,
-        balance_ugx: totalValue,
-        total_earned_ugx: totalValue,
-        last_transaction_at: new Date().toISOString(),
-      });
-    }
+    // Credit the wallet and award loyalty through the ledger-backed functions
+    // (idempotent + concurrency-safe). Keyed off the redemption reference.
+    const walletRes = await base44.asServiceRole.functions.invoke('walletAdjust', {
+      _internal: true,
+      customer_id: customerId,
+      tenant_id: tenantId,
+      amount_ugx: totalValue,
+      kind: 'earn',
+      reference: `drs:${redemptionId || txnNumber}`,
+      note: `Deposit return ${txnNumber}`,
+    });
+    const newBalance = walletRes?.data?.balance_ugx ?? walletRes?.balance_ugx ?? totalValue;
 
-    // Award loyalty points and re-evaluate tier.
-    const loyalty = (await base44.asServiceRole.entities.LoyaltyAccount.filter({ customer_id: customerId }))?.[0];
-    if (loyalty) {
-      const lifetime = (loyalty.lifetime_points || 0) + totalPoints;
-      await base44.asServiceRole.entities.LoyaltyAccount.update(loyalty.id, {
-        points: (loyalty.points || 0) + totalPoints,
-        lifetime_points: lifetime,
-        tier: tierFor(lifetime),
-        last_earned_at: new Date().toISOString(),
-      });
-    } else if (totalPoints > 0) {
-      await base44.asServiceRole.entities.LoyaltyAccount.create({
-        tenant_id: tenantId,
+    if (totalPoints > 0) {
+      await base44.asServiceRole.functions.invoke('loyaltyAward', {
+        _internal: true,
         customer_id: customerId,
+        tenant_id: tenantId,
         points: totalPoints,
-        lifetime_points: totalPoints,
-        tier: tierFor(totalPoints),
-        last_earned_at: new Date().toISOString(),
+        reason: 'deposit_return',
+        reference: `drs:${redemptionId || txnNumber}:loyalty`,
       });
     }
 

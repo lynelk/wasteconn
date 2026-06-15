@@ -62,28 +62,17 @@ export default function WasteBankTransactionForm({ transactionType, customers = 
 
       const tx = await base44.entities.WasteBankTransaction.create(payload);
 
-      // Update or create wallet (only when online)
-      const wallets = await base44.entities.CustomerWallet.filter({ customer_id: data.customer_id });
-      if (wallets.length > 0) {
-        const w = wallets[0];
-        const updates = { last_transaction_at: new Date().toISOString() };
-        if (transactionType === 'payout') {
-          updates.balance_ugx = (w.balance_ugx || 0) + netAmount;
-          updates.total_earned_ugx = (w.total_earned_ugx || 0) + netAmount;
-        } else {
-          updates.balance_ugx = (w.balance_ugx || 0) - netAmount;
-          updates.total_paid_ugx = (w.total_paid_ugx || 0) + netAmount;
-        }
-        await base44.entities.CustomerWallet.update(w.id, updates);
-      } else {
-        await base44.entities.CustomerWallet.create({
-          customer_id: data.customer_id,
-          balance_ugx: transactionType === 'payout' ? netAmount : -netAmount,
-          total_earned_ugx: transactionType === 'payout' ? netAmount : 0,
-          total_paid_ugx: transactionType === 'payin' ? netAmount : 0,
-          last_transaction_at: new Date().toISOString(),
-        });
-      }
+      // Apply the wallet movement through the ledger-backed function so the
+      // balance is derived from an append-only ledger (concurrency-safe) and
+      // idempotent per transaction.
+      await base44.functions.invoke('walletAdjust', {
+        customer_id: data.customer_id,
+        tenant_id: data.tenant_id,
+        amount_ugx: transactionType === 'payout' ? netAmount : -netAmount,
+        kind: transactionType === 'payout' ? 'earn' : 'payin',
+        reference: tx.id,
+        note: `${transactionType} ${txNum}`,
+      });
 
       return tx;
     },
