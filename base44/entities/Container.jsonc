@@ -1,0 +1,127 @@
+{
+  "name": "Container",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "asset_category": {
+      "type": "string",
+      "enum": [
+        "smart_bin",
+        "skip"
+      ],
+      "default": "smart_bin",
+      "description": "Asset type: smart_bin (volumetric) or skip (weight-based)"
+    },
+    "fill_logic_type": {
+      "type": "string",
+      "enum": [
+        "volume",
+        "weight"
+      ],
+      "default": "volume",
+      "description": "How fill level is computed: volume (ultrasonic distance) or weight"
+    },
+    "label": {
+      "type": "string",
+      "description": "Human-readable name or location label"
+    },
+    "qr_code": {
+      "type": "string",
+      "description": "Unique QR/NFC code printed on the container"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "waste_stream": {
+      "type": "string",
+      "enum": [
+        "general",
+        "recyclable",
+        "organic",
+        "hazardous",
+        "e_waste"
+      ],
+      "default": "general"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "maintenance",
+        "decommissioned"
+      ],
+      "default": "active"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "address": {
+      "type": "string"
+    },
+    "capacity_litres": {
+      "type": "number",
+      "description": "Maximum volume capacity in litres (for smart_bin / volume logic)"
+    },
+    "max_weight_kg": {
+      "type": "number",
+      "description": "Maximum rated weight capacity in kg (for skip / weight logic)"
+    },
+    "collection_threshold_pct": {
+      "type": "number",
+      "default": 80,
+      "description": "Fill % at which collection should be triggered"
+    },
+    "last_fill_pct": {
+      "type": "number",
+      "description": "Latest normalised fill percentage (0-100), computed from either volume or weight"
+    },
+    "last_battery_pct": {
+      "type": "number"
+    },
+    "last_weight_kg": {
+      "type": "number",
+      "description": "Latest raw weight reading in kg (skip assets only)"
+    },
+    "last_reading_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the most recent sensor reading"
+    },
+    "weight_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the most recent weight reading (skip assets)"
+    },
+    "avg_daily_fill_rate_pct": {
+      "type": "number",
+      "description": "Smoothed daily fill-rate in normalised % points (shared by both asset types)"
+    },
+    "avg_daily_weight_gain_kg": {
+      "type": "number",
+      "description": "Smoothed daily weight-gain rate in kg (skip assets only)"
+    },
+    "sensor_id": {
+      "type": "string"
+    },
+    "firmware_version": {
+      "type": "string"
+    },
+    "last_maintenance_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "asset_category"
+  ]
+}

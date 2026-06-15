@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin } from 'lucide-react';
+import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, Boxes } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { classifyFill, predictDaysToFull, summariseContainers } from '@/lib/fillLevel';
+import { classifyFill, predictDaysToFull, summariseContainers } from '@/lib/capacityAnalytics';
 
 const statusStyle = {
   overflow: { bar: 'bg-red-500', badge: 'bg-red-100 text-red-700', label: 'Overflow' },
@@ -54,7 +54,7 @@ export default function SmartBins() {
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Smart Bins</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {summary.needsCollection} of {summary.total} containers due for collection
+            {summary.needsCollection} of {summary.total} assets due for collection · {summary.bins} bins, {summary.skips} skips
           </p>
         </div>
         <div className="flex gap-2">
@@ -78,8 +78,10 @@ export default function SmartBins() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiCard label="Total bins" value={summary.total} />
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+        <KpiCard label="Total assets" value={summary.total} />
+        <KpiCard label="Smart bins" value={summary.bins} />
+        <KpiCard label="Skips" value={summary.skips} />
         <KpiCard label="Due now" value={summary.needsCollection} accent="text-primary" />
         <KpiCard label="Overflowing" value={summary.overflow} accent="text-red-600" />
         <KpiCard label="Filling" value={summary.filling} accent="text-yellow-600" />
@@ -130,10 +132,18 @@ export default function SmartBins() {
                     <div>
                       <p className="font-bold font-jakarta text-sm">{c.label || c.qr_code || c.id}</p>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {c.waste_stream} {c.capacity_litres ? `· ${c.capacity_litres}L` : ''}
+                        {c.waste_stream}
+                        {c.asset_category === 'skip'
+                          ? c.max_weight_kg ? ` · ${c.max_weight_kg} kg cap` : ''
+                          : c.capacity_litres ? ` · ${c.capacity_litres}L` : ''}
                       </p>
                     </div>
-                    <Badge className={`text-xs ${style.badge}`} variant="secondary">{style.label}</Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className={`text-xs ${style.badge}`} variant="secondary">{style.label}</Badge>
+                      {c.asset_category === 'skip' && (
+                        <Badge className="text-[10px] bg-blue-100 text-blue-700" variant="secondary">Skip</Badge>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mb-2">
@@ -147,10 +157,17 @@ export default function SmartBins() {
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
-                    <span className="flex items-center gap-1">
-                      <Battery className="w-3.5 h-3.5" />
-                      {typeof c.last_battery_pct === 'number' ? `${Math.round(c.last_battery_pct)}%` : '—'}
-                    </span>
+                    {c.asset_category === 'skip' ? (
+                      <span className="flex items-center gap-1">
+                        <Weight className="w-3.5 h-3.5" />
+                        {typeof c.last_weight_kg === 'number' ? `${c.last_weight_kg} kg` : '—'}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Battery className="w-3.5 h-3.5" />
+                        {typeof c.last_battery_pct === 'number' ? `${Math.round(c.last_battery_pct)}%` : '—'}
+                      </span>
+                    )}
                     {status === 'overflow' ? (
                       <span className="flex items-center gap-1 text-red-600 font-medium">
                         <AlertTriangle className="w-3.5 h-3.5" /> Overflowing
