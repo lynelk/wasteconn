@@ -39,6 +39,24 @@ Safe, in-repo, fully-validated first slice of the roadmap below:
 - **P2 foundation:** `src/lib/region.js` centralises currency/locale/map-centre
   (previously hard-coded UGX / Kampala literals).
 
+## Remediation progress — Phase 2 (shipped)
+
+Confirmed the Base44 SDK supports MongoDB-style operators (`$regex`, `$or`),
+`list(sort, limit, skip)` pagination, and field projection (max 5,000/request) —
+so server-side search/pagination is now usable directly.
+
+- **P0.1 server-side search:** `useEntitySearch` now pushes search to the server
+  via `filter({ $or: [{ field: { $regex } }] }, sort, limit)` (case-insensitive,
+  input-escaped) instead of client-filtering — making every `EntitySelect` picker
+  both correct and scalable. Migrated the `YoPaymentPanel` customer picker too.
+- **P0.2 observability (Uptrace APM):** `src/lib/monitoring.js` — fail-safe,
+  env-gated (`VITE_UPTRACE_DSN`) OTLP/HTTP exporter to Uptrace with no heavy OTel
+  browser SDK, plus Web Vitals (CLS/LCP/INP/FCP/TTFB) RUM. Wired into
+  `errorReporter` (errors → OTLP logs) and `main.jsx`; no-op without a DSN.
+
+**To finish observability:** set `VITE_UPTRACE_DSN` (and optional
+`VITE_APP_RELEASE`) in the deploy environment to start shipping telemetry.
+
 Remaining `.list()` migrations, observability vendor wiring, load testing, and
 infra items are tracked below. _Note: an `errorReporter` already exists
 (captures window/rejection/boundary errors, batched to `ClientErrorLog`); what's

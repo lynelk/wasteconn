@@ -3,29 +3,33 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { clampLimit, dedupeById, DEFAULT_PAGE_SIZE } from '@/lib/pagination';
 
-// Bounded, debounced search over a Base44 entity — the scalable replacement for
-// `entity.list()` dropdowns that load every row.
+// Bounded, server-side search over a Base44 entity — the scalable replacement
+// for `entity.list()` dropdowns that load every row.
 //
-// Strategy (degrades safely regardless of backend search support):
-//   1. Always fetch a bounded "recent" page (sorted), so the picker is usable
-//      with no query and never pulls the whole table.
-//   2. When the user types, additionally fetch exact-match server hits per
-//      searchField, then client-filter everything by substring.
-//
-// This is strictly better than an unbounded list: it caps reads, and matches at
-// least the recent page + any exact server hits. Wire backend full-text search
-// into the `filter` calls here once available for complete coverage.
+// Base44 supports MongoDB-style operators, so we push search to the server:
+//   - empty query  -> a bounded recent page (`list(sort, limit)`)
+//   - typed query  -> `filter({ $or: [{ field: { $regex } }, ...] }, sort, limit)`
+// Nothing ever fetches an unbounded table.
 
-// Pure helper (unit-tested): rank/limit candidate rows by substring match.
-export function filterCandidates(rows, query, fields, limit = DEFAULT_PAGE_SIZE) {
-  const cap = clampLimit(limit);
-  const deduped = dedupeById(rows);
-  const q = (query || '').trim().toLowerCase();
-  if (!q) return deduped.slice(0, cap);
-  const matches = deduped.filter((r) =>
-    fields.some((f) => String(r?.[f] ?? '').toLowerCase().includes(q))
-  );
-  return matches.slice(0, cap);
+// Escape user input so it is treated as a literal substring, not a pattern.
+export function escapeRegex(input = '') {
+  return String(input).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Pure helper (unit-tested): build the server $or/$regex query for a search term.
+// Returns null for an empty term (caller should use a plain recent list).
+export function buildSearchQuery(searchFields, term) {
+  const q = (term || '').trim();
+  if (!q) return null;
+  // Inline (?i) makes the regex case-insensitive (PCRE flag).
+  const rx = `(?i)${escapeRegex(q)}`;
+  const clauses = searchFields.map((f) => ({ [f]: { $regex: rx } }));
+  return clauses.length === 1 ? clauses[0] : { $or: clauses };
+}
+
+// Pure helper (unit-tested): dedupe + cap candidate rows.
+export function filterCandidates(rows, limit = DEFAULT_PAGE_SIZE) {
+  return dedupeById(rows).slice(0, clampLimit(limit));
 }
 
 export function useEntitySearch({
@@ -37,37 +41,25 @@ export function useEntitySearch({
 }) {
   const [query, setQuery] = useState('');
   const cap = clampLimit(limit);
+  const q = query.trim();
+  const available = enabled && !!base44.entities[entity];
 
   const recent = useQuery({
     queryKey: ['entity-search', entity, 'recent', sort, cap],
     queryFn: () => base44.entities[entity].list(sort, cap),
-    enabled: enabled && !!base44.entities[entity],
+    enabled: available && q.length === 0,
     staleTime: 60_000,
   });
 
-  const q = query.trim();
-  const serverHits = useQuery({
-    queryKey: ['entity-search', entity, 'q', q, searchFields, cap],
-    // Exact-match server lookups for each search field (best-effort).
-    queryFn: async () => {
-      const results = await Promise.all(
-        searchFields.map((f) => base44.entities[entity].filter({ [f]: q }, sort, cap).catch(() => []))
-      );
-      return results.flat();
-    },
-    enabled: enabled && q.length > 0 && !!base44.entities[entity],
+  const searched = useQuery({
+    queryKey: ['entity-search', entity, 'q', q, searchFields, sort, cap],
+    queryFn: () => base44.entities[entity].filter(buildSearchQuery(searchFields, q), sort, cap),
+    enabled: available && q.length > 0,
     staleTime: 60_000,
   });
 
-  const options = useMemo(
-    () => filterCandidates([...(serverHits.data || []), ...(recent.data || [])], query, searchFields, cap),
-    [serverHits.data, recent.data, query, searchFields, cap]
-  );
+  const active = q.length > 0 ? searched : recent;
+  const options = useMemo(() => filterCandidates(active.data || [], cap), [active.data, cap]);
 
-  return {
-    query,
-    setQuery,
-    options,
-    isLoading: recent.isLoading || serverHits.isFetching,
-  };
+  return { query, setQuery, options, isLoading: active.isLoading || active.isFetching };
 }
