@@ -89,11 +89,14 @@ Deno.serve(async (req) => {
     const wallets = await base44.asServiceRole.entities.CustomerWallet.filter({ customer_id: customerId });
     let wallet = wallets?.[0];
     if (wallet) {
+      const newBalance = (wallet.balance_ugx || 0) + totalValue;
+      const newTotalEarned = (wallet.total_earned_ugx || 0) + totalValue;
       await base44.asServiceRole.entities.CustomerWallet.update(wallet.id, {
-        balance_ugx: (wallet.balance_ugx || 0) + totalValue,
-        total_earned_ugx: (wallet.total_earned_ugx || 0) + totalValue,
+        balance_ugx: newBalance,
+        total_earned_ugx: newTotalEarned,
         last_transaction_at: new Date().toISOString(),
       });
+      wallet = { ...wallet, balance_ugx: newBalance, total_earned_ugx: newTotalEarned };
     } else {
       wallet = await base44.asServiceRole.entities.CustomerWallet.create({
         tenant_id: tenantId,
