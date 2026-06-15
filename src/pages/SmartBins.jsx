@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, Boxes } from 'lucide-react';
+import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, FileSpreadsheet } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
+import HealthSummaryPanel from '@/components/smartbins/HealthSummaryPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { classifyFill, predictDaysToFull, summariseContainers } from '@/lib/capacityAnalytics';
+import { useToast } from '@/components/ui/use-toast';
 
 const statusStyle = {
   overflow: { bar: 'bg-red-500', badge: 'bg-red-100 text-red-700', label: 'Overflow' },
@@ -31,6 +33,22 @@ function KpiCard({ label, value, accent }) {
 export default function SmartBins() {
   const [search, setSearch] = useState('');
   const [plan, setPlan] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSheetsExport = async () => {
+    setExporting(true);
+    try {
+      const res = await base44.functions.invoke('exportMaintenanceToSheets', {});
+      const { spreadsheetUrl, rowsExported } = res.data;
+      toast({ title: 'Exported to Google Sheets', description: `${rowsExported} assets exported. Opening sheet...` });
+      window.open(spreadsheetUrl, '_blank');
+    } catch (err) {
+      toast({ title: 'Export failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data: containers = [], isLoading } = useQuery({
     queryKey: ['containers'],
@@ -71,6 +89,10 @@ export default function SmartBins() {
             ]}
             rows={containers}
           />
+          <Button onClick={handleSheetsExport} disabled={exporting} variant="outline" className="gap-2">
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            Export to Sheets
+          </Button>
           <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending} className="gap-2">
             {planMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             Generate Collection Plan
@@ -103,6 +125,8 @@ export default function SmartBins() {
           </CardContent>
         </Card>
       )}
+
+      <HealthSummaryPanel containers={containers} />
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
