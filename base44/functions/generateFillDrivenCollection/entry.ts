@@ -12,8 +12,9 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
+    if (!user || !['admin', 'super_admin', 'dispatcher'].includes(user.role)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const body = await req.json().catch(() => ({}));
     const date = body.date || new Date().toISOString().slice(0, 10);
     const zoneId = body.zone_id || null;
