@@ -178,3 +178,34 @@ Each endpoint will be consumed through a `useQuery` calling
 2. `zoneCustomerCounts`, `zoneCoverageStats`.
 3. `customerSegmentCount` + `sendSmsCampaign`.
 4. `entityAggregate` generic fallback + retire remaining aggregate `.list()`s.
+
+## Implementation status
+
+Reference implementations scaffolded in `base44/functions/` (interim
+projection + paginated-scan approach; swap to maintained counters per the
+architecture section before high scale):
+
+- [x] `dashboardMetrics`
+- [x] `billingSummary`
+- [x] `paymentsSummary`
+- [x] `zoneCustomerCounts`
+- [x] `zoneCoverageStats`
+- [x] `customerSegmentCount`
+- [ ] `sendSmsCampaign` — bulk send job; wire to the existing comms/queue infra
+- [ ] `entityAggregate` — generic fallback (phase 4)
+
+**Validation needed before frontend cutover:** these functions have not been run
+against a live tenant from this environment. Backend team to (1) verify each
+against a seeded fixture tenant, (2) add the indexes listed above, then (3)
+confirm — at which point the frontend swaps each aggregate `entity.list()` for a
+`base44.functions.invoke('<name>', params)` call (one screen per PR, kept atomic
+since functions deploy with the app). Cutover is intentionally **not** bundled
+with this scaffold so unverified aggregates never reach a live dashboard.
+
+### Frontend cutover checklist (next PRs)
+- [ ] Dashboard → `dashboardMetrics`
+- [ ] BillingPage → `billingSummary`
+- [ ] Payments → `paymentsSummary`
+- [ ] ServiceZones → `zoneCustomerCounts`
+- [ ] CoverageAnalytics → `zoneCoverageStats`
+- [ ] MarketingHub → `customerSegmentCount` (+ `sendSmsCampaign` when ready)
