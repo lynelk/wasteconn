@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import {
   Activity, AlertTriangle, CheckCircle, RefreshCw, Zap,
-  XCircle, TrendingUp, Wifi, WifiOff, ChevronDown, ChevronUp
+  XCircle, TrendingUp, Wifi, WifiOff, ChevronDown, ChevronUp, PlugZap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

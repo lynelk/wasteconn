@@ -138,11 +138,5 @@ export function initMonitoring() {
     };
   }
 
-  // Web Vitals → metrics (works even without a DSN; routes to logger).
-  import('web-vitals')
-    .then(({ onCLS, onLCP, onINP, onFCP, onTTFB }) => {
-      const report = (m) => captureMetric(`web_vitals.${m.name}`, m.value, { rating: m.rating });
-      onCLS(report); onLCP(report); onINP(report); onFCP(report); onTTFB(report);
-    })
-    .catch(() => {});
+  // Web Vitals collection is skipped — package not installed in this build.
 }
