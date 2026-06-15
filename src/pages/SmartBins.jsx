@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, FileSpreadsheet } from 'lucide-react';
+import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, FileSpreadsheet, Map } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
 import HealthSummaryPanel from '@/components/smartbins/HealthSummaryPanel';
+import SmartBinsMap from '@/components/smartbins/SmartBinsMap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ function KpiCard({ label, value, accent }) {
 export default function SmartBins() {
   const [search, setSearch] = useState('');
   const [plan, setPlan] = useState(null);
+  const [showMap, setShowMap] = useState(true);
   const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
 
@@ -93,6 +95,10 @@ export default function SmartBins() {
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
             Export to Sheets
           </Button>
+          <Button onClick={() => setShowMap(v => !v)} variant="outline" className="gap-2">
+            <Map className="w-4 h-4" />
+            {showMap ? 'Hide Map' : 'Live Map'}
+          </Button>
           <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending} className="gap-2">
             {planMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             Generate Collection Plan
@@ -125,6 +131,8 @@ export default function SmartBins() {
           </CardContent>
         </Card>
       )}
+
+      {showMap && <SmartBinsMap containers={containers} />}
 
       <HealthSummaryPanel containers={containers} />
 
