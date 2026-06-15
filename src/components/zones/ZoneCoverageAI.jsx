@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { RefreshCw, Brain, AlertTriangle, Info, CheckCircle, MapPin } from 'lucide-react';
+import { RefreshCw, Brain, AlertTriangle, Info, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 

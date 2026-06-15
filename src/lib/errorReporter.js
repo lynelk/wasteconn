@@ -1,5 +1,6 @@
 import { base44 } from '@/api/base44Client';
 import { logger } from '@/lib/logger';
+import { captureError } from '@/lib/monitoring';
 
 // Persists client-side errors to the ClientErrorLog entity so production
 // failures are visible to admins. Deduped and batched to avoid write storms.
@@ -44,6 +45,7 @@ export function reportError(error, context = {}) {
     if (queue.length > 50) queue = queue.slice(-50);
 
     logger.error('client.error.captured', { message, source: context.source });
+    captureError(error, context);
   } catch {
     // never throw from the reporter
   }

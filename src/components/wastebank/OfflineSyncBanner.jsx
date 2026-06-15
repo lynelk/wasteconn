@@ -1,7 +1,7 @@
 /**
  * OfflineSyncBanner — shows pending offline transactions and lets agents sync manually.
  */
-import { WifiOff, Wifi, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function OfflineSyncBanner({ isOnline, pendingCount, syncing, lastSyncAt, onSync }) {

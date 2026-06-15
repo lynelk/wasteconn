@@ -3,17 +3,14 @@ import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Truck, MapPin, CheckCircle2, Clock, Camera, LogOut, RefreshCw, Upload, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
-import { base44 as sdk } from '@/api/base44Client';
+import { Truck, LogOut, RefreshCw, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
 import GPSTracker from '@/components/driver/GPSTracker';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 import IncidentReportModal from '@/components/field/IncidentReportModal';
-import { cacheDriverJobs, getCachedDriverJobs, updateCachedDriverJob, enqueueAction } from '@/lib/offlineDB';
+import { cacheDriverJobs, getCachedDriverJobs } from '@/lib/offlineDB';
 
 const statusOrder = ['assigned', 'in_progress', 'completed', 'cancelled'];
 

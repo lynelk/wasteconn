@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw,
-  Shield, Smartphone, Wifi, Database, Users, Zap, Play, Server
+  Shield, Smartphone, Wifi, Database, Zap, Play, Server
 } from 'lucide-react';
 
 // ─── Health check helpers ───────────────────────────────────────────────────

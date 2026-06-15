@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Smartphone, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import EntitySelect from '@/components/common/EntitySelect';
 
 export default function YoPaymentPanel({ onPaymentCreated }) {
   const [customerId, setCustomerId] = useState('');
@@ -16,14 +15,8 @@ export default function YoPaymentPanel({ onPaymentCreated }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
-  });
-
-  const handleCustomerChange = (id) => {
+  const handleCustomerChange = (id, customer) => {
     setCustomerId(id);
-    const customer = customers.find(c => c.id === id);
     if (customer?.mobile_money_number) setPhone(customer.mobile_money_number);
   };
 
@@ -54,14 +47,14 @@ export default function YoPaymentPanel({ onPaymentCreated }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Customer</Label>
-            <Select value={customerId} onValueChange={handleCustomerChange}>
-              <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
-              <SelectContent>
-                {customers.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EntitySelect
+              entity="Customer"
+              value={customerId}
+              onChange={handleCustomerChange}
+              searchFields={['full_name', 'phone']}
+              getLabel={(c) => c.full_name}
+              placeholder="Select customer..."
+            />
           </div>
 
           <div className="space-y-1.5">

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { Bell, Send, Mail, MessageSquare, Plus, Zap, Loader2, CheckCircle2, XCircle, Brain } from 'lucide-react';
+import { Bell, Send, Mail, MessageSquare, Zap, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SendNotificationModal from '@/components/comms/SendNotificationModal';
 import AIMessageComposer from '@/components/comms/AIMessageComposer';
 

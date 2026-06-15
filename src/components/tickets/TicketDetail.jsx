@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Clock, AlertTriangle, User, MapPin, MessageSquare, Shield } from 'lucide-react';
+import { CheckCircle2, Clock, AlertTriangle, User, MapPin, Shield } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
 const STATUS_TRANSITIONS = {

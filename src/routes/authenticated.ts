@@ -22,13 +22,17 @@ const CoverageAnalytics = lazy(() => import('@/pages/CoverageAnalytics'));
 const OmniInbox = lazy(() => import('@/pages/OmniInbox'));
 const ReportingDashboard = lazy(() => import('@/pages/ReportingDashboard'));
 const WasteBank = lazy(() => import('@/pages/WasteBank'));
+const SmartBins = lazy(() => import('@/pages/SmartBins'));
 const WialonIntegration = lazy(() => import('@/pages/WialonIntegration'));
 const IntegrationsHub = lazy(() => import('@/pages/IntegrationsHub'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const PreLaunchDashboard = lazy(() => import('@/pages/PreLaunchDashboard'));
-const SmartBins = lazy(() => import('@/pages/SmartBins'));
 const ServiceCatalog = lazy(() => import('@/pages/ServiceCatalog'));
 const SustainabilityDashboard = lazy(() => import('@/pages/SustainabilityDashboard'));
+const Settings = lazy(() => import('@/pages/Settings'));
+const MyPickups = lazy(() => import('@/pages/MyPickups'));
+const MyPayments = lazy(() => import('@/pages/MyPayments'));
+const MyComplaints = lazy(() => import('@/pages/MyComplaints'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -53,11 +57,15 @@ export const authenticatedRoutes = [
   { path: '/omni-inbox', component: OmniInbox, domain: 'Operations' },
   { path: '/reporting', component: ReportingDashboard, domain: 'Finance' },
   { path: '/waste-bank', component: WasteBank, domain: 'Finance' },
+  { path: '/smart-bins', component: SmartBins, domain: 'Operations' },
   { path: '/wialon', component: WialonIntegration, domain: 'Integrations' },
   { path: '/integrations-hub', component: IntegrationsHub, domain: 'Integrations' },
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
   { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' },
-  { path: '/smart-bins', component: SmartBins, domain: 'Operations' },
   { path: '/service-catalog', component: ServiceCatalog, domain: 'Operations' },
-  { path: '/sustainability', component: SustainabilityDashboard, domain: 'Operations' }
+  { path: '/sustainability', component: SustainabilityDashboard, domain: 'Operations' },
+  { path: '/settings', component: Settings, domain: 'Admin' },
+  { path: '/my-pickups', component: MyPickups, domain: 'Public' },
+  { path: '/my-payments', component: MyPayments, domain: 'Finance' },
+  { path: '/my-complaints', component: MyComplaints, domain: 'Public' }
 ];

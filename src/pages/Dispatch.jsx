@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { MapPin, Truck, Plus, Zap, Map } from 'lucide-react';
+import { Truck, Plus, Zap, Map } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import RouteBuilder from '@/components/dispatch/RouteBuilder';
 import AIRouteOptimiser from '@/components/dispatch/AIRouteOptimiser';
 import PredictiveExceptionEngine from '@/components/dispatch/PredictiveExceptionEngine';
 import EnhancedDispatchMap from '@/components/dispatch/EnhancedDispatchMap';
+import SpatialDispatchMap from '@/components/dispatch/SpatialDispatchMap';
 
 export default function Dispatch() {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export default function Dispatch() {
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [mapMode, setMapMode] = useState('spatial'); // 'spatial' | 'live'
 
   const { data: jobs = [], isLoading: loadingJobs } = useQuery({
     queryKey: ['dispatch-jobs', selectedDate],
@@ -104,7 +106,7 @@ export default function Dispatch() {
             rows={jobs}
           />
           <Button variant="outline" onClick={() => setShowMap(m => !m)} className="gap-2">
-            <Map className="w-4 h-4" /> {showMap ? 'Hide Map' : 'Live Map'}
+            <Map className="w-4 h-4" /> {showMap ? 'Hide Map' : 'Map View'}
           </Button>
           <Button onClick={() => { if (selectedJobs.length > 0) setShowRouteBuilder(true); }} disabled={selectedJobs.length === 0}>
             <Plus className="w-4 h-4" /> Build Route ({selectedJobs.length})
@@ -129,11 +131,36 @@ export default function Dispatch() {
         ))}
       </div>
 
-      {/* Live Map */}
+      {/* Map View */}
       {showMap && (
         <Card className="border-border/60">
-          <CardContent className="pt-4">
-            <EnhancedDispatchMap jobs={jobs} routes={routes} />
+          <CardContent className="pt-4 space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              {[
+                { key: 'spatial', label: 'Spatial Jobs' },
+                { key: 'live', label: 'Live Drivers' },
+              ].map(m => (
+                <button
+                  key={m.key}
+                  onClick={() => setMapMode(m.key)}
+                  className={`text-xs px-3 py-1.5 rounded-md border transition-all ${mapMode === m.key ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {mapMode === 'spatial' ? (
+              <SpatialDispatchMap
+                jobs={jobs}
+                zones={zones}
+                selectedZone={selectedZone}
+                onZoneClick={setSelectedZone}
+                selectedJobs={selectedJobs}
+                onJobClick={toggleJob}
+              />
+            ) : (
+              <EnhancedDispatchMap jobs={jobs} routes={routes} />
+            )}
           </CardContent>
         </Card>
       )}

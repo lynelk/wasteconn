@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star, MapPinOff } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import NavigationAssist, { recordJobCompletion } from '@/components/driver/NavigationAssist';
 import LocationCorrectionModal from '@/components/driver/LocationCorrectionModal';

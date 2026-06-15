@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO } from 'date-fns';
 import {
-  Plus, Search, Edit2, Trash2, CheckCircle,
-  CreditCard, XCircle, Users, FileText, AlertTriangle,
+  Plus, Search, Edit2, Trash2,
+  CreditCard, Users, FileText, AlertTriangle,
   Sparkles, ChevronRight, Tag, LayoutGrid
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/use-toast';
 import ContractForm from '@/components/subscriptions/ContractForm';
 import TariffPlanForm from '@/components/subscriptions/TariffPlanForm';
 import ContractDetailPanel from '@/components/subscriptions/ContractDetailPanel';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 
 const statusColor = {
   active: 'bg-green-100 text-green-700',
@@ -53,11 +54,10 @@ export default function Subscriptions() {
     queryKey: ['subscriptions'],
     queryFn: () => base44.entities.Subscription.list('-created_date', 300),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
   const { data: plans = [] } = useQuery({ queryKey: ['plans'], queryFn: () => base44.entities.ServicePlan.list() });
-  const { data: servicePoints = [] } = useQuery({ queryKey: ['servicePoints'], queryFn: () => base44.entities.ServicePoint.list() });
 
-  const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+  // Resolve only the customers referenced by the loaded subscriptions (not the whole table).
+  const { map: customerMap } = useEntitiesByIds('Customer', subscriptions.map(s => s.customer_id));
   const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
 
   const activePlans = plans.filter(p => p.status === 'active');
@@ -348,9 +348,7 @@ export default function Subscriptions() {
           </DialogHeader>
           <ContractForm
             subscription={editingContract}
-            customers={customers}
             plans={activePlans}
-            servicePoints={servicePoints}
             onClose={() => { setContractOpen(false); setEditingContract(null); }}
             onSaved={() => {
               qc.invalidateQueries({ queryKey: ['subscriptions'] });

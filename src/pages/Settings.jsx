@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import {
   Settings as SettingsIcon, Database, Users, MapPin, Truck,
   CreditCard, MessageSquare, Trash2, AlertTriangle, Phone, Save,
-  Radio, Wrench, Send, Shield, CheckCircle2
+  Radio, Send, Shield, CheckCircle2
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent,

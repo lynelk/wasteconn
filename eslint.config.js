@@ -38,7 +38,19 @@ const sharedRules = {
   'react/prop-types': 'off',
   'react/react-in-jsx-scope': 'off',
   'react/no-unknown-property': ['error', { ignore: ['cmdk-input-wrapper', 'toast-close'] }],
-  'react-hooks/rules-of-hooks': 'error'
+  'react-hooks/rules-of-hooks': 'error',
+  // Scale guard: never fetch high-cardinality entities unbounded on the client.
+  // Use entity.list(sort, limit) / entity.filter(query, sort, limit), or the
+  // EntitySelect / useEntitySearch helpers for pickers.
+  'no-restricted-syntax': [
+    'warn',
+    {
+      selector:
+        "CallExpression[arguments.length=0][callee.property.name='list'][callee.object.property.name=/^(Customer|PickupRequest|Payment|Invoice|ServicePoint|SensorReading|VehicleTelematics|AuditLog)$/]",
+      message:
+        'Unbounded .list() on a high-cardinality entity. Pass a limit (list(sort, limit)) or use EntitySelect/useEntitySearch.',
+    },
+  ]
 };
 
 export default [
@@ -73,7 +85,16 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/consistent-type-imports': 'warn',
-      'unused-imports/no-unused-imports': 'error'
+      'unused-imports/no-unused-imports': 'error',
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "CallExpression[arguments.length=0][callee.property.name='list'][callee.object.property.name=/^(Customer|PickupRequest|Payment|Invoice|ServicePoint|SensorReading|VehicleTelematics|AuditLog)$/]",
+          message:
+            'Unbounded .list() on a high-cardinality entity. Pass a limit (list(sort, limit)) or use EntitySelect/useEntitySearch.',
+        },
+      ]
     }
   }
 ];

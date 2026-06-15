@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
+import EntitySelect from '@/components/common/EntitySelect';
 
 export default function PickupForm({ pickup, onClose }) {
   const qc = useQueryClient();
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
 
   const [form, setForm] = useState({
     customer_id: pickup?.customer_id || '',
@@ -25,11 +25,11 @@ export default function PickupForm({ pickup, onClose }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleCustomerChange = (customerId) => {
-    const c = customers.find(c => c.id === customerId);
-    set('customer_id', customerId);
+  const handleCustomerChange = (customerId, c) => {
     if (c) {
       setForm(f => ({ ...f, customer_id: customerId, tenant_id: c.tenant_id, address: c.address || f.address }));
+    } else {
+      set('customer_id', customerId);
     }
   };
 
@@ -45,7 +45,7 @@ export default function PickupForm({ pickup, onClose }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Customer *</Label>
-          <MobileSelect value={form.customer_id} onChange={handleCustomerChange} options={customers.map(c => ({ value: c.id, label: `${c.full_name} — ${c.phone}` }))} placeholder="Select customer" />
+          <EntitySelect entity="Customer" value={form.customer_id} onChange={handleCustomerChange} searchFields={['full_name', 'phone']} getLabel={(c) => `${c.full_name} — ${c.phone}`} placeholder="Select customer" />
         </div>
         <div className="space-y-1.5">
           <Label>Request Type</Label>

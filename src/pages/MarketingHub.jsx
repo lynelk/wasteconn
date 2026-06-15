@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Megaphone, Users, Send, CheckCircle, AlertCircle, Loader2, Filter } from 'lucide-react';
+import { Megaphone, Send, CheckCircle, AlertCircle, Loader2, Filter } from 'lucide-react';
 
 export default function MarketingHub() {
   const [zoneFilter, setZoneFilter] = useState('all');
