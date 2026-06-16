@@ -106,11 +106,7 @@ const navGroups = [
       { label: 'Tenant Health', icon: Activity, path: '/tenant-health', roles: ['super_admin'] },
       { label: 'Schema Evolution', icon: Database, path: '/schema-evolution', roles: ['super_admin'] },
       { label: 'System Settings', icon: Settings, path: '/sync-settings', roles: ['super_admin'] },
-      { label: 'Audit Log', icon: Shield, path: '/audit-logs', roles: ['admin', 'super_admin'] },
-      { label: 'Exceptions Queue', icon: AlertTriangle, path: '/exceptions', roles: ['admin', 'super_admin', 'dispatcher'] },
-      { label: 'Integration Queue', icon: Zap, path: '/integration-queue', roles: ['admin', 'super_admin'] },
-      { label: 'Integration Health', icon: RefreshCw, path: '/integration-health', roles: ['admin', 'super_admin'] },
-      { label: 'Integrations Hub', icon: PlugZap, path: '/integrations-hub', roles: ['admin', 'super_admin'] },
+
       { label: 'Pre-Launch Dashboard', icon: Rocket, path: '/pre-launch', roles: ['super_admin'] },
     ]
   }
