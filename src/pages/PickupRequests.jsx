@@ -57,7 +57,10 @@ export default function PickupRequests() {
   });
   const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
 
-  const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+  const customerMap = Object.fromEntries([
+    ...customers.map(c => [c.id, c]),
+    ...customers.filter(c => c.account_number).map(c => [c.account_number, c]),
+  ]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.PickupRequest.update(id, data),
