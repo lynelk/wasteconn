@@ -1,0 +1,28 @@
+{
+  "name": "LoyaltyLedgerEntry",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "points": {
+      "type": "number",
+      "description": "Signed points: positive awards, negative redeems"
+    },
+    "reason": {
+      "type": "string",
+      "description": "e.g. pickup_completed, payment, deposit_return, opening"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Idempotency key — a given (customer_id, reference) is applied at most once"
+    }
+  },
+  "required": [
+    "customer_id",
+    "points"
+  ]
+}

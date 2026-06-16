@@ -6,36 +6,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const PICKUP_POINTS = 10;
 
-function tierFor(lifetimePoints: number): string {
-  if (lifetimePoints >= 5000) return 'platinum';
-  if (lifetimePoints >= 2000) return 'gold';
-  if (lifetimePoints >= 500) return 'silver';
-  return 'bronze';
-}
-
-async function awardLoyaltyPoints(base44, customerId: string, tenantId: string, points: number) {
+// Award via the ledger-backed loyaltyAward function (idempotent + race-safe).
+// Keying on the pickup id also prevents a double award if the trigger re-fires.
+async function awardLoyaltyPoints(base44, customerId: string, tenantId: string, points: number, pickupId: string) {
   if (!customerId) return;
-  const accounts = await base44.asServiceRole.entities.LoyaltyAccount.filter({ customer_id: customerId });
-  const now = new Date().toISOString();
-  if (accounts?.length) {
-    const a = accounts[0];
-    const lifetime = (a.lifetime_points || 0) + points;
-    await base44.asServiceRole.entities.LoyaltyAccount.update(a.id, {
-      points: (a.points || 0) + points,
-      lifetime_points: lifetime,
-      tier: tierFor(lifetime),
-      last_earned_at: now,
-    });
-  } else {
-    await base44.asServiceRole.entities.LoyaltyAccount.create({
-      tenant_id: tenantId,
-      customer_id: customerId,
-      points,
-      lifetime_points: points,
-      tier: tierFor(points),
-      last_earned_at: now,
-    });
-  }
+  await base44.asServiceRole.functions.invoke('loyaltyAward', {
+    _internal: true,
+    customer_id: customerId,
+    tenant_id: tenantId,
+    points,
+    reason: 'pickup_completed',
+    reference: `pickup:${pickupId}`,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -84,7 +66,7 @@ Deno.serve(async (req) => {
     }
 
     // Award loyalty points for the completed collection
-    await awardLoyaltyPoints(base44, pickup.customer_id, pickup.tenant_id, PICKUP_POINTS);
+    await awardLoyaltyPoints(base44, pickup.customer_id, pickup.tenant_id, PICKUP_POINTS, pickupId);
 
     return Response.json({ success: true, pickupId, loyalty_points_awarded: PICKUP_POINTS });
   } catch (error) {
