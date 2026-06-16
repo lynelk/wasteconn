@@ -1,0 +1,60 @@
+{
+  "name": "RegionalTarget",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "region_name": {
+      "type": "string",
+      "description": "Display name of the region e.g. Kampala Central"
+    },
+    "zone_id": {
+      "type": "string",
+      "description": "Link to ServiceZone or ZoneHierarchy"
+    },
+    "target_name": {
+      "type": "string",
+      "description": "e.g. Annual Waste Diversion 2026"
+    },
+    "target_value_kg": {
+      "type": "number",
+      "description": "Annual target in kg"
+    },
+    "current_value_kg": {
+      "type": "number",
+      "description": "Current tracked progress in kg",
+      "default": 0
+    },
+    "year": {
+      "type": "number",
+      "description": "Target year e.g. 2026"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "on_track",
+        "at_risk",
+        "behind",
+        "achieved"
+      ],
+      "default": "on_track"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "region_name",
+    "target_value_kg",
+    "year"
+  ]
+}
