@@ -88,11 +88,43 @@ export default function BulkImportModal({ open, onClose, tenantId, onComplete })
     setFile(f);
     setResults(null);
 
-    const text = await f.text();
-    const { headers, rows } = parseCSV(text);
-    setDetectedHeaders(headers);
-    setParsedRows(rows);
-    setValidationResults(validateRows(rows));
+    const isExcel = f.name.endsWith('.xlsx') || f.name.endsWith('.xls');
+
+    if (isExcel) {
+      // Use ExtractDataFromUploadedFile for Excel files
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
+      const schema = {
+        type: 'object',
+        properties: Object.fromEntries(ALL_COLS.map(c => [c, { type: 'string' }])),
+      };
+      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: schema,
+      });
+      if (result.status === 'success') {
+        const raw = Array.isArray(result.output) ? result.output : [result.output];
+        // Normalise headers
+        const normalised = raw.map(obj => {
+          const normalObj = {};
+          for (const [k, v] of Object.entries(obj)) {
+            normalObj[normaliseHeader(k)] = v;
+          }
+          return normalObj;
+        });
+        const headers = normalised.length > 0 ? Object.keys(normalised[0]) : [];
+        setDetectedHeaders(headers);
+        setParsedRows(normalised);
+        setValidationResults(validateRows(normalised));
+      } else {
+        toast({ title: 'Failed to parse Excel file', description: result.details, variant: 'destructive' });
+      }
+    } else {
+      const text = await f.text();
+      const { headers, rows } = parseCSV(text);
+      setDetectedHeaders(headers);
+      setParsedRows(rows);
+      setValidationResults(validateRows(rows));
+    }
   };
 
   const handleImport = async () => {
@@ -184,7 +216,7 @@ export default function BulkImportModal({ open, onClose, tenantId, onComplete })
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { fileRef.current.files = e.dataTransfer.files; handleFile({ target: { files: [f] } }); } }}
               onDragOver={e => e.preventDefault()}
             >
-              <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
+              <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={handleFile} />
               {file ? (
                 <div className="flex flex-col items-center gap-2">
                   <FileText className="w-8 h-8 text-primary" />
@@ -197,7 +229,8 @@ export default function BulkImportModal({ open, onClose, tenantId, onComplete })
               ) : (
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="w-8 h-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Click or drag & drop a CSV file</p>
+                  <p className="text-sm text-muted-foreground">Click or drag & drop a CSV or Excel file</p>
+                  <p className="text-xs text-muted-foreground">.csv, .xlsx, .xls supported</p>
                 </div>
               )}
             </div>

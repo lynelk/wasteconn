@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, Tooltip, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { base44 } from '@/api/base44Client';
@@ -60,6 +60,27 @@ function satisfactionColor(rating) {
 export default function DashboardMap({ servicePoints = [], pickups = [], vehicles = [], routes = [] }) {
   const [spCoords, setSpCoords] = useState([]);
   const [pickupCoords, setPickupCoords] = useState([]);
+  const [liveDriverLocations, setLiveDriverLocations] = useState([]);
+
+  // Real-time driver location subscriptions
+  useEffect(() => {
+    const unsub = base44.entities.DriverLocation.subscribe((event) => {
+      setLiveDriverLocations(prev => {
+        if (event.type === 'delete') return prev.filter(d => d.id !== event.id);
+        const updated = prev.filter(d => d.id !== event.id);
+        if (event.data) return [...updated, event.data];
+        return updated;
+      });
+    });
+    return () => unsub();
+  }, []);
+
+  // Initial driver location fetch
+  useEffect(() => {
+    base44.entities.DriverLocation.list('-updated_date', 50)
+      .then(locs => setLiveDriverLocations(locs))
+      .catch(() => {});
+  }, []);
 
   const { data: surveys = [] } = useQuery({
     queryKey: ['satisfaction-heatmap'],
@@ -122,15 +143,40 @@ export default function DashboardMap({ servicePoints = [], pickups = [], vehicle
     return () => { cancelled = true; };
   }, [pickups]);
 
-  // Simulate vehicle positions near Kampala if no explicit coordinates
+  // Use live driver locations where available, fall back to simulated vehicle positions
+  const liveDriverMap = Object.fromEntries(liveDriverLocations.map(d => [d.driver_id, d]));
   const vehiclePositions = vehicles.slice(0, 8).map((v, i) => {
+    const liveDriver = liveDriverLocations.find(d => d.vehicle_id === v.id);
+    if (liveDriver?.latitude && liveDriver?.longitude) {
+      return { ...v, coords: [liveDriver.latitude, liveDriver.longitude], isLive: true };
+    }
     const angle = (i / 8) * 2 * Math.PI;
     const radius = 0.04 + (i % 3) * 0.015;
     return {
       ...v,
       coords: [KAMPALA_CENTER[0] + Math.sin(angle) * radius, KAMPALA_CENTER[1] + Math.cos(angle) * radius],
+      isLive: false,
     };
   });
+
+  // Parse route GPS paths for polylines
+  const routePolylines = routes
+    .filter(r => r.actual_route_gps_path || r.path_geojson)
+    .map(r => {
+      try {
+        if (r.actual_route_gps_path) {
+          const pts = JSON.parse(r.actual_route_gps_path);
+          return { id: r.id, name: r.route_name, coords: pts.map(p => [p.lat, p.lng]) };
+        }
+        if (r.path_geojson) {
+          const gj = JSON.parse(r.path_geojson);
+          const coords = gj?.coordinates || [];
+          return { id: r.id, name: r.route_name, coords: coords.map(([lng, lat]) => [lat, lng]) };
+        }
+      } catch (_) {}
+      return null;
+    })
+    .filter(Boolean);
 
   return (
     <div className="relative rounded-xl overflow-hidden border border-border/60" style={{ height: 380 }}>
@@ -190,14 +236,22 @@ export default function DashboardMap({ servicePoints = [], pickups = [], vehicle
           </CircleMarker>
         ))}
 
-        {/* Vehicles */}
+        {/* Route Polylines */}
+        {routePolylines.map(r => (
+          <Polyline key={r.id} positions={r.coords} color="#3b82f6" weight={3} opacity={0.7}>
+            <Tooltip sticky>{r.name || `Route ${r.id.slice(0, 6)}`}</Tooltip>
+          </Polyline>
+        ))}
+
+        {/* Vehicles / Live Drivers */}
         {vehiclePositions.map(v => (
-          <Marker key={v.id} position={v.coords} icon={iconVehicle}>
+          <Marker key={v.id} position={v.coords} icon={v.isLive ? makeIcon('#22c55e', '🚛') : iconVehicle}>
             <Popup>
               <div className="text-xs">
                 <strong>🚛 {v.registration_number}</strong><br />
                 {v.vehicle_type} · {v.make_model || '—'}<br />
                 Status: <span className="capitalize font-semibold">{v.status?.replace(/_/g, ' ')}</span>
+                {v.isLive && <><br /><span className="text-green-600 font-semibold">● Live GPS</span></>}
               </div>
             </Popup>
           </Marker>
@@ -210,6 +264,8 @@ export default function DashboardMap({ servicePoints = [], pickups = [], vehicle
         <div className="flex items-center gap-1.5"><span>🚛</span> Vehicles</div>
         <div className="flex items-center gap-1.5"><span style={{width:10,height:10,borderRadius:'50%',background:'#8b5cf6',display:'inline-block'}}></span> Service Points</div>
         <div className="flex items-center gap-1.5"><span>✅</span> Completed</div>
+        {routePolylines.length > 0 && <div className="flex items-center gap-1.5"><span style={{width:16,height:3,background:'#3b82f6',display:'inline-block',borderRadius:2}}></span> Routes</div>}
+        {liveDriverLocations.length > 0 && <div className="flex items-center gap-1.5"><span style={{width:10,height:10,borderRadius:'50%',background:'#22c55e',display:'inline-block'}}></span> Live GPS</div>}
         {zoneSatisfaction.length > 0 && (
           <div className="mt-1.5 pt-1.5 border-t border-border/30">
             <p className="text-[10px] font-semibold text-muted-foreground mb-1">Satisfaction</p>
