@@ -1,0 +1,51 @@
+{
+  "name": "UserInvite",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Invited email address"
+    },
+    "role": {
+      "type": "string",
+      "description": "Assigned role"
+    },
+    "invited_by": {
+      "type": "string",
+      "description": "Name/email of who sent the invite"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When invite was last sent/resent"
+    },
+    "first_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When invite was first sent"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When invite was accepted (user registered)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "resend_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times resent"
+    }
+  },
+  "required": [
+    "email",
+    "role"
+  ]
+}
