@@ -6,6 +6,7 @@ const RBACManagement = lazy(() => import('@/pages/RBACManagement'));
 const TenantHealthMonitor = lazy(() => import('@/pages/TenantHealthMonitor'));
 const SchemaEvolution = lazy(() => import('@/pages/SchemaEvolution'));
 const ZoneHierarchyAdmin = lazy(() => import('@/pages/ZoneHierarchyAdmin'));
+const UsersPage = lazy(() => import('@/pages/Users'));
 
 export const adminRoutes = [
   { path: '/tenants', component: Tenants, domain: 'Admin' },
@@ -13,5 +14,6 @@ export const adminRoutes = [
   { path: '/rbac', component: RBACManagement, domain: 'Admin' },
   { path: '/tenant-health', component: TenantHealthMonitor, domain: 'Admin' },
   { path: '/schema-evolution', component: SchemaEvolution, domain: 'Admin' },
-  { path: '/zone-hierarchy', component: ZoneHierarchyAdmin, domain: 'Admin' }
+  { path: '/zone-hierarchy', component: ZoneHierarchyAdmin, domain: 'Admin' },
+  { path: '/users', component: UsersPage, domain: 'Admin' }
 ];

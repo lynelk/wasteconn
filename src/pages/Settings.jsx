@@ -7,12 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Link } from 'react-router-dom';
 import {
   Settings as SettingsIcon, Database, Users, MapPin, Truck,
   CreditCard, MessageSquare, Trash2, AlertTriangle, Phone, Save,
-  Radio, Send, Shield, CheckCircle2
+  Radio, Send, Shield, CheckCircle2, ChevronRight
 } from 'lucide-react';
-import UserManagement from '@/components/settings/UserManagement';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -153,7 +153,24 @@ export default function Settings() {
       </div>
 
       {/* User Management */}
-      <UserManagement />
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">User Management</p>
+                <p className="text-xs text-muted-foreground">Manage platform users, roles and access</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
+              <Link to="/users">Manage Users <ChevronRight className="w-4 h-4" /></Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Sprint Progress */}
       <Card className="border-primary/20 bg-primary/5">
