@@ -89,7 +89,9 @@ export default function DriverPerformance() {
   });
 
   const driverStats = useMemo(() => {
-    const driverUsers = drivers.filter(d => d.role === 'driver');
+    // Identify drivers from who has completed jobs (no special role needed)
+    const driverIdSet = new Set(allJobs.map(j => j.assigned_driver_id).filter(Boolean));
+    const driverUsers = drivers.filter(d => driverIdSet.has(d.id));
 
     return driverUsers.map((driver, idx) => {
       const driverJobs = allJobs.filter(j => j.assigned_driver_id === driver.id);
