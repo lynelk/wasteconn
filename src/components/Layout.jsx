@@ -94,11 +94,14 @@ const navGroups = [
       { label: 'Sustainability', icon: Leaf, path: '/sustainability', roles: ['admin', 'super_admin'] },
     ]
   },
+  // Customer-only items + Settings
   {
-    label: 'Settings & Admin',
-    icon: Settings,
-    roles: ['admin', 'super_admin'],
+    label: null,
     items: [
+      { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
+      { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
+      { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },
+      { label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'super_admin'] },
       { label: 'RBAC Management', icon: Lock, path: '/rbac', roles: ['super_admin'] },
       { label: 'Tenant Health', icon: Activity, path: '/tenant-health', roles: ['super_admin'] },
       { label: 'Schema Evolution', icon: Database, path: '/schema-evolution', roles: ['super_admin'] },
@@ -109,16 +112,6 @@ const navGroups = [
       { label: 'Integration Health', icon: RefreshCw, path: '/integration-health', roles: ['admin', 'super_admin'] },
       { label: 'Integrations Hub', icon: PlugZap, path: '/integrations-hub', roles: ['admin', 'super_admin'] },
       { label: 'Pre-Launch Dashboard', icon: Rocket, path: '/pre-launch', roles: ['super_admin'] },
-    ]
-  },
-  // Customer-only items
-  {
-    label: null,
-    items: [
-      { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
-      { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
-      { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },
-      { label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'super_admin'] },
     ]
   }
 ];
