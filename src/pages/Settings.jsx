@@ -12,6 +12,7 @@ import {
   CreditCard, MessageSquare, Trash2, AlertTriangle, Phone, Save,
   Radio, Send, Shield, CheckCircle2
 } from 'lucide-react';
+import UserManagement from '@/components/settings/UserManagement';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -150,6 +151,9 @@ export default function Settings() {
           </Card>
         ))}
       </div>
+
+      {/* User Management */}
+      <UserManagement />
 
       {/* Sprint Progress */}
       <Card className="border-primary/20 bg-primary/5">
