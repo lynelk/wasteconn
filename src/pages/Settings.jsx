@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import {
-  Settings as SettingsIcon, Database, Users, MapPin, Truck,
-  CreditCard, MessageSquare, Trash2, AlertTriangle, Phone, Save,
-  Radio, Send, Shield, CheckCircle2, ChevronRight
+  Users, MapPin, Truck, CreditCard, MessageSquare, Trash2,
+  AlertTriangle, Phone, Save, Radio, Send, Shield, CheckCircle2,
+  ChevronRight, Layers, Database, Activity, GitBranch, Inbox,
+  Wifi, BarChart2, Recycle, BookOpen, UserCog, Settings as SettingsIcon,
+  Plug, Globe
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent,
@@ -20,39 +21,201 @@ import {
 
 const DELETION_PHRASE = 'I understand this will permanently delete all my data and cannot be undone';
 
-export default function Settings() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [savingPhone, setSavingPhone] = useState(false);
-  const [phoneSaved, setPhoneSaved] = useState(false);
+// ── Section / module definitions ────────────────────────────────────────────
+const SECTIONS = [
+  {
+    id: 'platform',
+    label: 'Platform',
+    icon: Layers,
+    items: [
+      { icon: Users,        label: 'Tenants',          desc: 'Multi-tenant waste management companies',           path: '/tenants',        status: 'active' },
+      { icon: Users,        label: 'Customers',         desc: 'Residential & commercial customer management',      path: '/customers',       status: 'active' },
+      { icon: UserCog,      label: 'User Management',   desc: 'Platform users, roles and access control',          path: '/users',           status: 'active' },
+      { icon: MapPin,       label: 'Service Zones',     desc: 'District-level collection zone setup',              path: '/zones',           status: 'active' },
+      { icon: Database,     label: 'Service Plans',     desc: 'Pricing tiers and billing configuration',           path: '/plans',           status: 'active' },
+      { icon: Database,     label: 'Subscriptions',     desc: 'Customer plan subscriptions & renewals',            path: '/subscriptions',   status: 'active' },
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Operations & Dispatch',
+    icon: Radio,
+    items: [
+      { icon: Radio,        label: 'Dispatch Board',    desc: 'AI-assisted route building and job assignment',     path: '/dispatch',        status: 'active' },
+      { icon: Truck,        label: 'Fleet & Maintenance', desc: 'Vehicle tracking, work orders & fuel logs',       path: '/fleet',           status: 'active' },
+      { icon: Truck,        label: 'Driver App',        desc: 'Offline-first driver route & evidence capture',     path: '/driver-app',      status: 'active' },
+      { icon: CreditCard,   label: 'Payments',          desc: 'Mobile money & cash payment tracking',              path: '/payments',        status: 'active' },
+      { icon: MessageSquare,label: 'Complaints',        desc: 'Customer feedback and complaint resolution',         path: '/complaints',      status: 'active' },
+      { icon: Send,         label: 'Communications',    desc: 'AI-assisted notifications & bulk messaging',        path: '/communications',  status: 'active' },
+      { icon: CreditCard,   label: 'Customer Portal',   desc: 'Self-service invoices, pickup requests & history',  path: '/customer-app',    status: 'active' },
+    ],
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations & Data',
+    icon: Plug,
+    items: [
+      { icon: Globe,        label: 'Integrations Hub',  desc: 'Connect third-party APIs and data sources',         path: '/integrations-hub',status: 'active' },
+      { icon: Activity,     label: 'Integration Health',desc: 'Monitor connector status and sync health',           path: '/integration-health', status: 'active' },
+      { icon: Inbox,        label: 'Integration Queue', desc: 'Review and retry queued integration payloads',       path: '/integration-queue', status: 'active' },
+      { icon: GitBranch,    label: 'Sync Settings',     desc: 'Configure data sync rules and schedules',            path: '/sync-settings',   status: 'active' },
+      { icon: Wifi,         label: 'Wialon Telemetry',  desc: 'Live fleet GPS tracking & telematics feed',          path: '/wialon',          status: 'coming_soon' },
+      { icon: Database,     label: 'QuickBooks Sync',   desc: 'Automated accounting export & reconciliation',       path: null,               status: 'coming_soon' },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Admin & Compliance',
+    icon: Shield,
+    items: [
+      { icon: Shield,       label: 'Audit Log',         desc: 'Immutable event log with AI risk scoring',           path: '/audit-logs',      status: 'active' },
+      { icon: AlertTriangle,label: 'Exceptions Queue',  desc: 'Review and resolve flagged system exceptions',       path: '/exceptions',      status: 'active' },
+      { icon: BarChart2,    label: 'Compliance Reports',desc: 'Regulatory and operational compliance reporting',     path: '/compliance',      status: 'active' },
+      { icon: BookOpen,     label: 'Schema Evolution',  desc: 'Propose and review database schema changes',         path: '/schema-evolution',status: 'active' },
+      { icon: Recycle,      label: 'CircularOS — Waste Bank', desc: 'Buy-back payouts, material grading & marketplace', path: '/waste-bank',  status: 'coming_soon' },
+      { icon: Database,     label: 'USSD Gateway',      desc: 'Feature-phone access via USSD codes',                path: null,               status: 'coming_soon' },
+    ],
+  },
+];
 
-  const handleSavePhone = async () => {
-    setSavingPhone(true);
+// ── Sub-panels ───────────────────────────────────────────────────────────────
+
+function ProfilePanel({ user }) {
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
     await base44.auth.updateMe({ phone });
-    setSavingPhone(false);
-    setPhoneSaved(true);
-    setTimeout(() => setPhoneSaved(false), 2500);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   };
 
-  const handleDeleteAllData = async () => {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold font-jakarta">My Profile</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage your personal details and preferences.</p>
+      </div>
+
+      {/* Identity */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identity</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-xs mb-1.5 block">Full name</Label>
+            <Input value={user?.full_name || ''} disabled className="text-sm bg-muted/40" />
+          </div>
+          <div>
+            <Label className="text-xs mb-1.5 block">Email</Label>
+            <Input value={user?.email || ''} disabled className="text-sm bg-muted/40" />
+          </div>
+          <div>
+            <Label className="text-xs mb-1.5 block">Role</Label>
+            <div className="flex items-center h-9">
+              <Badge variant="secondary" className="capitalize">{user?.role || 'user'}</Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Contact & Notifications</h3>
+        <p className="text-xs text-muted-foreground">Your phone number is used for mobile money payments and SMS alerts.</p>
+        <div className="flex gap-2 items-end max-w-sm">
+          <div className="flex-1">
+            <Label className="text-xs mb-1.5 block">Phone number</Label>
+            <Input
+              placeholder="+256 7XX XXX XXX"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving || !phone} className="gap-1.5 shrink-0">
+            {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saved ? 'Saved' : saving ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModulesPanel({ section }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold font-jakarta">{section.label}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {section.id === 'platform' && 'Core platform entities and user management.'}
+          {section.id === 'operations' && 'Dispatch, fleet, payments and customer-facing modules.'}
+          {section.id === 'integrations' && 'Third-party connectors, sync configuration and queue management.'}
+          {section.id === 'admin' && 'Compliance, audit trails, exceptions and governance tools.'}
+        </p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        {section.items.map(item => {
+          const Icon = item.icon;
+          const isActive = item.status === 'active';
+          const inner = (
+            <div className={cn(
+              'group flex items-start gap-4 p-4 rounded-xl border transition-all',
+              isActive && item.path
+                ? 'border-border bg-card hover:border-primary/40 hover:shadow-sm cursor-pointer'
+                : 'border-border/50 bg-muted/30 opacity-60'
+            )}>
+              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                <Icon className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold">{item.label}</span>
+                  {!isActive && (
+                    <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0">Soon</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+              {isActive && item.path && (
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 mt-1 transition-colors" />
+              )}
+            </div>
+          );
+
+          return isActive && item.path ? (
+            <Link key={item.label} to={item.path}>{inner}</Link>
+          ) : (
+            <div key={item.label}>{inner}</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DangerPanel({ user }) {
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // Find customer record linked to this user
       const customers = await base44.entities.Customer.filter({ email: user?.email });
       for (const customer of customers) {
-        const customerId = customer.id;
-        // Delete all linked data in parallel
+        const id = customer.id;
         const [pickups, invoices, payments, complaints, servicePoints, subscriptions] = await Promise.all([
-          base44.entities.PickupRequest.filter({ customer_id: customerId }),
-          base44.entities.Invoice.filter({ customer_id: customerId }),
-          base44.entities.Payment.filter({ customer_id: customerId }),
-          base44.entities.Complaint.filter({ customer_id: customerId }),
-          base44.entities.ServicePoint.filter({ customer_id: customerId }),
-          base44.entities.Subscription.filter({ customer_id: customerId }),
+          base44.entities.PickupRequest.filter({ customer_id: id }),
+          base44.entities.Invoice.filter({ customer_id: id }),
+          base44.entities.Payment.filter({ customer_id: id }),
+          base44.entities.Complaint.filter({ customer_id: id }),
+          base44.entities.ServicePoint.filter({ customer_id: id }),
+          base44.entities.Subscription.filter({ customer_id: id }),
         ]);
         await Promise.all([
           ...pickups.map(r => base44.entities.PickupRequest.delete(r.id)),
@@ -62,198 +225,128 @@ export default function Settings() {
           ...servicePoints.map(r => base44.entities.ServicePoint.delete(r.id)),
           ...subscriptions.map(r => base44.entities.Subscription.delete(r.id)),
         ]);
-        await base44.entities.Customer.delete(customerId);
+        await base44.entities.Customer.delete(id);
       }
     } finally {
       setIsDeleting(false);
-      setDeleteConfirmOpen(false);
+      setOpen(false);
       base44.auth.logout('/');
     }
   };
 
-  const modules = [
-    { icon: Users, label: 'Tenants', desc: 'Multi-tenant waste management companies', status: 'active', path: '/tenants' },
-    { icon: Users, label: 'Customers', desc: 'Residential & commercial customer management', status: 'active', path: '/customers' },
-    { icon: MapPin, label: 'Service Zones', desc: 'District-level collection zone setup', status: 'active', path: '/zones' },
-    { icon: Database, label: 'Service Plans', desc: 'Pricing tiers and billing configuration', status: 'active', path: '/plans' },
-    { icon: Database, label: 'Subscriptions', desc: 'Customer plan subscriptions & renewals', status: 'active', path: '/subscriptions' },
-    { icon: Truck, label: 'Fleet & Maintenance', desc: 'Vehicle tracking, work orders & fuel logs', status: 'active', path: '/fleet' },
-    { icon: CreditCard, label: 'Payments', desc: 'Mobile money & cash payment tracking', status: 'active', path: '/payments' },
-    { icon: MessageSquare, label: 'Complaints', desc: 'Customer feedback and complaint resolution', status: 'active', path: '/complaints' },
-    { icon: Radio, label: 'Dispatch Board', desc: 'AI-assisted route building and job assignment', status: 'active', path: '/dispatch' },
-    { icon: Truck, label: 'Driver App', desc: 'Offline-first driver route & evidence capture', status: 'active', path: '/driver-app' },
-    { icon: CreditCard, label: 'Customer Portal', desc: 'Self-service invoices, pickup requests & history', status: 'active', path: '/customer-app' },
-    { icon: Shield, label: 'Audit Log', desc: 'Immutable log with AI risk scoring', status: 'active', path: '/audit-logs' },
-    { icon: Send, label: 'Communications', desc: 'AI-assisted notifications & bulk messaging', status: 'active', path: '/communications' },
-    { icon: Database, label: 'USSD Gateway', desc: 'Feature-phone access via USSD codes', status: 'coming_soon', path: null },
-    { icon: CreditCard, label: 'Mobile Money API', desc: 'Live MTN/Airtel payment gateway integration', status: 'coming_soon', path: null },
-    { icon: MapPin, label: 'Wialon Telemetry', desc: 'Live fleet GPS tracking & telematics feed', status: 'coming_soon', path: '/wialon' },
-    { icon: Database, label: 'CircularOS — Waste Bank', desc: 'Buy-back payouts, material grading & marketplace', status: 'coming_soon', path: '/waste-bank' },
-    { icon: Database, label: 'QuickBooks Sync', desc: 'Automated accounting export & reconciliation', status: 'coming_soon', path: null },
-  ];
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold font-jakarta text-destructive">Danger Zone</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Irreversible actions — proceed with caution.</p>
+      </div>
+
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold">Delete All My App Data</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Permanently deletes your customer profile, service points, pickup history, invoices, payments, complaints and subscriptions.
+              Your login account remains active but all NLSWMS data will be gone forever.
+            </p>
+          </div>
+        </div>
+        <AlertDialog open={open} onOpenChange={v => { setOpen(v); if (!v) setConfirmText(''); }}>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="gap-2">
+              <Trash2 className="w-4 h-4" /> Delete My App Data
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" /> Permanently Delete All Data
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 text-sm">
+                  <p>This will <strong>permanently and irreversibly</strong> delete all records linked to your account.</p>
+                  <p className="font-medium text-foreground">Your login account will remain, but the data cannot be recovered.</p>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Type the sentence below to confirm:</p>
+                    <p className="text-xs font-medium bg-muted rounded-lg px-3 py-2 italic mb-2">"{DELETION_PHRASE}"</p>
+                    <Input
+                      value={confirmText}
+                      onChange={e => setConfirmText(e.target.value)}
+                      placeholder="Type the confirmation sentence…"
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button variant="destructive" disabled={confirmText !== DELETION_PHRASE || isDeleting} onClick={handleDelete}>
+                {isDeleting ? 'Deleting…' : 'Yes, Delete Everything'}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+}
+
+// ── Nav items ─────────────────────────────────────────────────────────────────
+const NAV = [
+  { id: 'profile',       label: 'My Profile',              icon: UserCog },
+  { id: 'platform',      label: 'Platform',                icon: Layers },
+  { id: 'operations',    label: 'Operations & Dispatch',   icon: Radio },
+  { id: 'integrations',  label: 'Integrations & Data',     icon: Plug },
+  { id: 'admin',         label: 'Admin & Compliance',      icon: Shield },
+  { id: 'danger',        label: 'Danger Zone',             icon: Trash2, danger: true },
+];
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function Settings() {
+  const { user } = useAuth();
+  const [active, setActive] = useState('profile');
+
+  const activeSection = SECTIONS.find(s => s.id === active);
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold font-jakarta">Platform Settings</h1>
-        <p className="text-sm text-muted-foreground">NLSWMS — Integrated Waste Management Platform</p>
-      </div>
-
-      {/* Profile — Phone Number */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Phone className="w-4 h-4 text-primary" /> Phone Number
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground mb-3">
-            Store your phone number for mobile money payments and SMS notifications.
-          </p>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label className="text-xs mb-1.5 block">Phone number</Label>
-              <Input
-                placeholder="+256 7XX XXX XXX"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                className="text-sm"
-              />
-            </div>
-            <Button onClick={handleSavePhone} disabled={savingPhone || !phone} className="gap-1.5 shrink-0">
-              {phoneSaved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              {phoneSaved ? 'Saved' : savingPhone ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Module Grid */}
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {modules.map(m => {
-          const cardContent = (
-            <>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-                      <m.icon className="w-4 h-4 text-primary" />
-                    </div>
-                    <CardTitle className="text-sm">{m.label}</CardTitle>
-                  </div>
-                  <Badge className={m.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                    {m.status === 'active' ? 'Active' : 'Soon'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">{m.desc}</p>
-              </CardContent>
-            </>
-          );
-          return m.path ? (
-            <Link key={m.label} to={m.path}>
-              <Card className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer h-full">
-                {cardContent}
-              </Card>
-            </Link>
-          ) : (
-            <Card key={m.label} className="opacity-60 h-full">
-              {cardContent}
-            </Card>
+    <div className="flex h-full min-h-screen">
+      {/* Sidebar */}
+      <aside className="w-56 shrink-0 border-r border-border bg-muted/30 flex flex-col py-6 px-3 gap-1">
+        <div className="px-3 mb-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Settings</p>
+        </div>
+        {NAV.map(n => {
+          const Icon = n.icon;
+          return (
+            <button
+              key={n.id}
+              onClick={() => setActive(n.id)}
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left w-full',
+                active === n.id
+                  ? n.danger
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-primary text-primary-foreground'
+                  : n.danger
+                    ? 'text-destructive/80 hover:bg-destructive/10'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+              )}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{n.label}</span>
+            </button>
           );
         })}
-      </div>
+      </aside>
 
-      {/* User Management */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">User Management</p>
-                <p className="text-xs text-muted-foreground">Manage platform users, roles and access</p>
-              </div>
-            </div>
-            <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
-              <Link to="/users">Manage Users <ChevronRight className="w-4 h-4" /></Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-destructive/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-destructive flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            Danger Zone
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Permanently deletes <strong>all your data</strong> from this application — including your customer profile,
-            service points, pickup history, invoices, payments, complaints, and subscriptions.
-            Your login account remains active but all EcoTrack app data will be gone forever.
-          </p>
-          <AlertDialog open={deleteConfirmOpen} onOpenChange={(open) => { setDeleteConfirmOpen(open); if (!open) setConfirmText(''); }}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="gap-2">
-                <Trash2 className="w-4 h-4" />
-                Delete My App Data
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-destructive flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" /> Permanently Delete All Data
-                </AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-3 text-sm">
-                    <p>This will <strong>permanently and irreversibly</strong> delete:</p>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs ml-1">
-                      <li>Your customer profile and account details</li>
-                      <li>All service points linked to your account</li>
-                      <li>All pickup requests and collection history</li>
-                      <li>All invoices and payment records</li>
-                      <li>All complaints and support tickets</li>
-                      <li>All active or past subscriptions</li>
-                    </ul>
-                    <p className="font-medium text-foreground">Your login account will remain, but this data cannot be recovered.</p>
-                    <div className="pt-1">
-                      <p className="text-xs text-muted-foreground mb-2">
-                        To confirm, type the sentence below exactly:
-                      </p>
-                      <p className="text-xs font-medium bg-muted rounded-lg px-3 py-2 text-foreground italic mb-2">
-                        "{DELETION_PHRASE}"
-                      </p>
-                      <Input
-                        value={confirmText}
-                        onChange={e => setConfirmText(e.target.value)}
-                        placeholder="Type the confirmation sentence…"
-                        className="text-xs"
-                      />
-                    </div>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Button
-                  variant="destructive"
-                  disabled={confirmText !== DELETION_PHRASE || isDeleting}
-                  onClick={handleDeleteAllData}
-                >
-                  {isDeleting ? 'Deleting…' : 'Yes, Delete Everything'}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto p-8 max-w-3xl">
+        {active === 'profile' && <ProfilePanel user={user} />}
+        {activeSection && <ModulesPanel section={activeSection} />}
+        {active === 'danger' && <DangerPanel user={user} />}
+      </main>
     </div>
   );
 }
