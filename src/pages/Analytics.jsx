@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Radio, Map, TrendingUp } from 'lucide-react';
 import CitoReportExport from '@/components/analytics/CitoReportExport';
+import HistoricalTrendWidget from '@/components/analytics/HistoricalTrendWidget';
 import WialonIntegration from '@/pages/WialonIntegration';
 import CoverageAnalytics from '@/pages/CoverageAnalytics';
-import HistoricalTrendWidget from '@/components/analytics/HistoricalTrendWidget';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
@@ -83,6 +83,8 @@ export default function Analytics() {
           <p className="text-xs text-muted-foreground">need attention</p>
         </CardContent></Card>
       </div>
+
+      <HistoricalTrendWidget />
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-border/60">

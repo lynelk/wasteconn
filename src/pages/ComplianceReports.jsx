@@ -54,7 +54,7 @@ export default function ComplianceReports() {
     setExporting(true);
     try {
       const res = await base44.functions.invoke('exportComplianceToSheets', {});
-      const url = res?.data?.spreadsheet_url;
+      const url = res?.data?.spreadsheetUrl;
       toast({
         title: 'Exported to Google Sheets',
         description: `${res?.data?.rows_exported || 0} reports exported.${url ? ' Opening sheet...' : ''}`,
