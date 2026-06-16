@@ -9,21 +9,36 @@
     "zone_name": {
       "type": "string"
     },
+    "region": {
+      "type": "string",
+      "description": "Uganda administrative region (e.g. Central, Eastern)"
+    },
     "district": {
       "type": "string"
     },
+    "county": {
+      "type": "string",
+      "description": "County or Constituency"
+    },
     "sub_county": {
-      "type": "string"
+      "type": "string",
+      "description": "Sub-county, Town or Municipal Division"
     },
     "parish": {
-      "type": "string"
+      "type": "string",
+      "description": "Parish or Ward"
     },
     "village": {
-      "type": "string"
+      "type": "string",
+      "description": "Village, Cell or Zone"
     },
     "zone_code": {
       "type": "string",
       "description": "Short code e.g. KLA-N-01"
+    },
+    "zone_hierarchy_id": {
+      "type": "string",
+      "description": "Linked ZoneHierarchy record ID for administrative alignment"
     },
     "collection_days": {
       "type": "array",
