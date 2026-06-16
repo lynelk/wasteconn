@@ -17,6 +17,11 @@ import { Users, UserPlus, Mail, Search } from 'lucide-react';
 
 const ROLES = ['admin', 'dispatcher', 'driver', 'billing_officer', 'user', 'customer'];
 
+const getInviteStatus = (u) => {
+  if (u.full_name && u.full_name.trim()) return 'active';
+  return 'pending';
+};
+
 const roleColor = {
   admin: 'bg-red-100 text-red-700',
   super_admin: 'bg-purple-100 text-purple-700',
@@ -112,7 +117,14 @@ export default function UsersPage() {
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{u.full_name || '—'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate">{u.full_name || u.email?.split('@')[0] || '—'}</p>
+                        {getInviteStatus(u) === 'pending' ? (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 shrink-0">Pending</span>
+                        ) : (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">Active</span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                     </div>
                   </div>
