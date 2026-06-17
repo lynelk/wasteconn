@@ -31,7 +31,6 @@ export default function RedeemPointsModal({ customer, loyalty, onClose }) {
   const redeem = useMutation({
     mutationFn: (payload) => base44.functions.invoke('redeemLoyaltyPoints', {
       customer_id: customer.id,
-      reference: newReference(),
       ...payload,
     }),
     onSuccess: (res) => {
@@ -113,7 +112,7 @@ export default function RedeemPointsModal({ customer, loyalty, onClose }) {
                             {typeof r.stock === 'number' && r.stock <= 0 && ' · out of stock'}
                           </p>
                         </div>
-                        <Button size="sm" variant="outline" disabled={!affordable || redeem.isPending} onClick={() => { setError(''); redeem.mutate({ reward_id: r.id }); }}>
+                        <Button size="sm" variant="outline" disabled={!affordable || redeem.isPending} onClick={() => { setError(''); redeem.mutate({ reward_id: r.id, reference: newReference() }); }}>
                           Redeem
                         </Button>
                       </div>
@@ -133,7 +132,7 @@ export default function RedeemPointsModal({ customer, loyalty, onClose }) {
                     onChange={e => setPoints(e.target.value)}
                   />
                   <p className="text-[11px] text-muted-foreground">Min {DEFAULT_MIN_REDEEM} points · rate set by your provider.</p>
-                  <Button className="w-full" disabled={adHocInvalid || redeem.isPending} onClick={() => { setError(''); redeem.mutate({ points: qty }); }}>
+                  <Button className="w-full" disabled={adHocInvalid || redeem.isPending} onClick={() => { setError(''); redeem.mutate({ points: qty, reference: newReference() }); }}>
                     {redeem.isPending ? 'Redeeming…' : `Convert ${qty || ''} points`.trim()}
                   </Button>
                 </div>

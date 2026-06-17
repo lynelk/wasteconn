@@ -32,7 +32,8 @@ async function redeemablePoints(base44, customerId: string): Promise<number> {
 }
 
 function voucherCode(): string {
-  return `VCHR-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  // UUID-based, unguessable token.
+  return `VCHR-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 }
 
 Deno.serve(async (req) => {
@@ -65,10 +66,22 @@ Deno.serve(async (req) => {
 
     const redeemKey = `redeem:${reference}`;
 
-    // Idempotency: if this redemption was already applied, return current state.
+    // Idempotency: if this redemption was already applied, return the same
+    // response shape the original call produced (re-derived from the ledgers).
     const existing = await base44.asServiceRole.entities.LoyaltyLedgerEntry.filter({ customer_id: customerId, reference: redeemKey });
     if (existing?.[0]) {
-      return Response.json({ success: true, idempotent: true, redeemed_points: Math.abs(existing[0].points || 0) });
+      const redeemed = Math.abs(existing[0].points || 0);
+      const remaining = await redeemablePoints(base44, customerId);
+      const walletEntry = (await base44.asServiceRole.entities.WalletLedgerEntry.filter({ customer_id: customerId, reference: redeemKey }))?.[0];
+      const creditedUgx = walletEntry?.amount_ugx || 0;
+      return Response.json({
+        success: true,
+        idempotent: true,
+        redeemed_points: redeemed,
+        credited_ugx: creditedUgx,
+        points_remaining: remaining,
+        message: 'This redemption was already processed.',
+      });
     }
 
     // Tenant-configurable rate / minimum.
@@ -117,11 +130,13 @@ Deno.serve(async (req) => {
           tenant_id: customer.tenant_id,
           customer_id: customerId,
           channel: 'in_app',
-          template_type: 'loyalty_reward',
+          template_type: 'custom',
           subject: `Reward redeemed: ${reward.name}`,
           body: `You redeemed "${reward.name}" for ${cost} points. Voucher code: ${voucher}. Present this code to claim your reward.`,
           status: 'sent',
           sent_at: new Date().toISOString(),
+          related_entity_type: 'LoyaltyReward',
+          related_entity_id: reward.id,
         }).catch(() => null);
       }
 
