@@ -29,6 +29,7 @@ const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const PreLaunchDashboard = lazy(() => import('@/pages/PreLaunchDashboard'));
 const ServiceCatalog = lazy(() => import('@/pages/ServiceCatalog'));
 const SustainabilityDashboard = lazy(() => import('@/pages/SustainabilityDashboard'));
+const LoyaltyRewards = lazy(() => import('@/pages/LoyaltyRewards'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const MyPickups = lazy(() => import('@/pages/MyPickups'));
 const MyPayments = lazy(() => import('@/pages/MyPayments'));
@@ -63,6 +64,7 @@ export const authenticatedRoutes = [
   { path: '/marketing', component: MarketingHub, domain: 'Operations' },
   { path: '/pre-launch', component: PreLaunchDashboard, domain: 'Operations' },
   { path: '/service-catalog', component: ServiceCatalog, domain: 'Operations' },
+  { path: '/loyalty-rewards', component: LoyaltyRewards, domain: 'Operations' },
   { path: '/sustainability', component: SustainabilityDashboard, domain: 'Operations' },
   { path: '/settings', component: Settings, domain: 'Admin' },
   { path: '/my-pickups', component: MyPickups, domain: 'Public' },

@@ -18,6 +18,7 @@ export const ROUTE_ROLES = {
   '/zone-hierarchy': ['admin', 'super_admin'],
   '/plans': ['admin', 'super_admin'],
   '/service-catalog': ['admin', 'super_admin'],
+  '/loyalty-rewards': ['admin', 'super_admin'],
   '/vehicles': ['admin', 'super_admin', 'dispatcher'],
   '/fleet-maintenance': ['admin', 'super_admin'],
   '/driver-performance': ['admin', 'super_admin'],

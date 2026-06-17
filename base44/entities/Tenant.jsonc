@@ -89,6 +89,16 @@
     "quarantine_reason": {
       "type": "string"
     },
+    "loyalty_ugx_per_point": {
+      "type": "number",
+      "default": 10,
+      "description": "Wallet UGX granted per loyalty point on ad-hoc redemption"
+    },
+    "loyalty_min_redeem_points": {
+      "type": "number",
+      "default": 100,
+      "description": "Minimum points a customer can redeem in one go"
+    },
     "notes": {
       "type": "string"
     }
