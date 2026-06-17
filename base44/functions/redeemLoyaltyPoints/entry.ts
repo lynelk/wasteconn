@@ -150,20 +150,29 @@ Deno.serve(async (req) => {
       // Durable, claimable redemption record. wallet_credit is fulfilled
       // instantly (claimed); vouchers/perks stay issued until claimed at point
       // of service. Keyed on the redeem reference for idempotent lookups.
-      await base44.asServiceRole.entities.RewardRedemption.create({
-        tenant_id: customer.tenant_id,
-        customer_id: customerId,
-        reward_id: reward.id,
-        reward_name: reward.name,
-        reward_type: reward.reward_type || 'voucher',
-        cost_points: cost,
-        value_ugx: creditedUgx,
-        voucher_code: voucher || undefined,
-        status: reward.reward_type === 'wallet_credit' ? 'claimed' : 'issued',
-        claimed_at: reward.reward_type === 'wallet_credit' ? new Date().toISOString() : undefined,
-        reference: redeemKey,
-        notes: `Redeemed via app for ${cost} points`,
-      }).catch(() => null);
+      const actor = user?.email || user?.id || 'system';
+      try {
+        await base44.asServiceRole.entities.RewardRedemption.create({
+          tenant_id: customer.tenant_id,
+          customer_id: customerId,
+          reward_id: reward.id,
+          reward_name: reward.name,
+          reward_type: reward.reward_type || 'voucher',
+          cost_points: cost,
+          value_ugx: creditedUgx,
+          voucher_code: voucher || undefined,
+          status: reward.reward_type === 'wallet_credit' ? 'claimed' : 'issued',
+          claimed_at: reward.reward_type === 'wallet_credit' ? new Date().toISOString() : undefined,
+          claimed_by: reward.reward_type === 'wallet_credit' ? actor : undefined,
+          reference: redeemKey,
+          notes: `Redeemed via app for ${cost} points by ${actor}`,
+        });
+      } catch (err) {
+        // The points/wallet movements are already durably recorded in the
+        // ledgers; surface this so a missing tracking record is observable
+        // rather than silently lost.
+        console.error('RewardRedemption.create failed', { reference: redeemKey, reward_id: reward.id, error: (err as Error).message });
+      }
 
       return Response.json({
         success: true,

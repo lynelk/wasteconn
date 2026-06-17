@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -27,7 +27,12 @@ export default function Redemptions() {
     queryFn: () => base44.entities.RewardRedemption.list('-created_date', 500),
   });
   const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
-  const customerName = (id) => customers.find(c => c.id === id)?.full_name || '—';
+  const customerNameById = useMemo(() => {
+    const m = new Map();
+    for (const c of customers) m.set(c.id, c.full_name);
+    return m;
+  }, [customers]);
+  const customerName = (id) => customerNameById.get(id) || '—';
 
   const claim = useMutation({
     mutationFn: (r) => base44.entities.RewardRedemption.update(r.id, {
@@ -42,6 +47,7 @@ export default function Redemptions() {
   const cancel = useMutation({
     mutationFn: (r) => base44.entities.RewardRedemption.update(r.id, { status: 'cancelled' }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['reward-redemptions'] }); toast({ title: 'Redemption cancelled' }); },
+    onError: (e) => toast({ title: 'Could not cancel', description: e.message, variant: 'destructive' }),
   });
 
   const filtered = statusFilter === 'all' ? redemptions : redemptions.filter(r => r.status === statusFilter);
