@@ -64,8 +64,9 @@ Deno.serve(async (req) => {
     let entries = await loadAllEntries(base44, customerId);
 
     if (reference && entries.some((e) => e.reference === reference)) {
-      const lifetime = entries.reduce((s, e) => s + (e.points || 0), 0);
-      return Response.json({ success: true, idempotent: true, lifetime_points: lifetime, tier: tierFor(lifetime) });
+      const lifetime = entries.filter((e) => (e.points || 0) > 0).reduce((s, e) => s + (e.points || 0), 0);
+      const redeemable = entries.reduce((s, e) => s + (e.points || 0), 0);
+      return Response.json({ success: true, idempotent: true, points: redeemable, lifetime_points: lifetime, tier: tierFor(lifetime) });
     }
 
     // Seed legacy lifetime points so existing balances aren't lost.
@@ -88,13 +89,16 @@ Deno.serve(async (req) => {
     });
 
     entries = await loadAllEntries(base44, customerId);
-    const lifetime = entries.reduce((s, e) => s + (e.points || 0), 0);
+    // lifetime_points (tier driver) is monotonic — only positive awards count.
+    // Redeemable points is the net of awards minus redemptions.
+    const lifetime = entries.filter((e) => (e.points || 0) > 0).reduce((s, e) => s + (e.points || 0), 0);
+    const redeemable = entries.reduce((s, e) => s + (e.points || 0), 0);
     const tier = tierFor(lifetime);
     const now = new Date().toISOString();
 
     if (account) {
       await base44.asServiceRole.entities.LoyaltyAccount.update(account.id, {
-        points: lifetime,
+        points: redeemable,
         lifetime_points: lifetime,
         tier,
         last_earned_at: now,
@@ -103,14 +107,14 @@ Deno.serve(async (req) => {
       account = await base44.asServiceRole.entities.LoyaltyAccount.create({
         tenant_id: tenantId,
         customer_id: customerId,
-        points: lifetime,
+        points: redeemable,
         lifetime_points: lifetime,
         tier,
         last_earned_at: now,
       });
     }
 
-    return Response.json({ success: true, lifetime_points: lifetime, tier });
+    return Response.json({ success: true, points: redeemable, lifetime_points: lifetime, tier });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
   }
