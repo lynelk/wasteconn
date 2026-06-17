@@ -8,10 +8,10 @@ import {
   LayoutDashboard, Users, MapPin, Truck, Calendar, CreditCard,
   MessageSquare, Settings, Menu, X, LogOut,
   Building2, ClipboardList, BarChart3, User, ChevronLeft, ChevronDown,
-  Radio, Shield, Wrench, Send, TrendingUp, Star, FileCheck, Package,
-  Activity, Database, Lock, AlertTriangle, Zap, GitBranch, Inbox, Scale,
-  FileBarChart, PlugZap, RefreshCw, Recycle, Megaphone, Rocket,
-  Trash2, Leaf, PackagePlus
+  Radio, Wrench, Send, TrendingUp, Star, FileCheck, Package,
+  Activity, Database, Lock, GitBranch, Inbox, Scale,
+  FileBarChart, Recycle, Megaphone, Rocket,
+  Trash2, Leaf, PackagePlus, Gift
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -50,6 +50,7 @@ const navGroups = [
       { label: 'Zone Hierarchy', icon: GitBranch, path: '/zone-hierarchy', roles: ['admin', 'super_admin'] },
       { label: 'Service Plans', icon: ClipboardList, path: '/plans', roles: ['admin', 'super_admin'] },
       { label: 'Service Catalog', icon: PackagePlus, path: '/service-catalog', roles: ['admin', 'super_admin'] },
+      { label: 'Loyalty Rewards', icon: Gift, path: '/loyalty-rewards', roles: ['admin', 'super_admin'] },
     ]
   },
   {
