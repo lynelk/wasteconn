@@ -5,13 +5,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
-import { FileText, Plus, LogOut, Download, Truck, MapPin, CreditCard, PackagePlus, ScanLine } from 'lucide-react';
+import { FileText, Plus, LogOut, Download, Truck, MapPin, CreditCard, PackagePlus, ScanLine, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CustomerPickupModal from '@/components/customer/CustomerPickupModal';
 import ExtraServiceModal from '@/components/customer/ExtraServiceModal';
 import ScanToEarnModal from '@/components/customer/ScanToEarnModal';
+import RedeemPointsModal from '@/components/customer/RedeemPointsModal';
 import CustomerInvoiceCard from '@/components/customer/CustomerInvoiceCard';
 import SurveyModal from '@/components/customer/SurveyModal';
 import TrackDispatchModal from '@/components/customer/TrackDispatchModal';
@@ -40,6 +41,7 @@ export default function CustomerApp() {
   const [statementOpen, setStatementOpen] = useState(false);
   const [showExtraService, setShowExtraService] = useState(false);
   const [showScanToEarn, setShowScanToEarn] = useState(false);
+  const [showRedeem, setShowRedeem] = useState(false);
 
   const { data: customer } = useQuery({
     queryKey: ['my-customer', user?.email],
@@ -237,6 +239,11 @@ export default function CustomerApp() {
           <Button variant="outline" className="gap-2" disabled={!customer} onClick={() => setShowScanToEarn(true)}>
             <ScanLine className="w-4 h-4" /> Scan to Earn
           </Button>
+          {(loyalty?.points || 0) >= 100 && (
+            <Button variant="outline" className="gap-2 col-span-2" disabled={!customer} onClick={() => setShowRedeem(true)}>
+              <Gift className="w-4 h-4" /> Redeem {Number(loyalty.points).toLocaleString()} points
+            </Button>
+          )}
         </div>
 
         {/* Environmental impact + loyalty */}
@@ -441,6 +448,15 @@ export default function CustomerApp() {
         <ScanToEarnModal
           customer={customer}
           onClose={() => setShowScanToEarn(false)}
+        />
+      )}
+
+      {/* Redeem loyalty points for wallet credit */}
+      {showRedeem && (
+        <RedeemPointsModal
+          customer={customer}
+          loyalty={loyalty}
+          onClose={() => setShowRedeem(false)}
         />
       )}
     </div>

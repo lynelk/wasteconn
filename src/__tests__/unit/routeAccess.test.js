@@ -9,6 +9,7 @@ describe('canAccessRoute', () => {
 
   it('blocks roles not in the allow-list for restricted paths', () => {
     expect(canAccessRoute('/service-catalog', 'customer')).toBe(false);
+    expect(canAccessRoute('/loyalty-rewards', 'customer')).toBe(false);
     expect(canAccessRoute('/sustainability', 'driver')).toBe(false);
     expect(canAccessRoute('/smart-bins', 'customer')).toBe(false);
   });
