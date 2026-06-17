@@ -11,7 +11,7 @@ import {
   Radio, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, GitBranch, Inbox, Scale,
   FileBarChart, Recycle, Megaphone, Rocket,
-  Trash2, Leaf, PackagePlus, Gift
+  Trash2, Leaf, PackagePlus, Gift, Ticket
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -51,6 +51,7 @@ const navGroups = [
       { label: 'Service Plans', icon: ClipboardList, path: '/plans', roles: ['admin', 'super_admin'] },
       { label: 'Service Catalog', icon: PackagePlus, path: '/service-catalog', roles: ['admin', 'super_admin'] },
       { label: 'Loyalty Rewards', icon: Gift, path: '/loyalty-rewards', roles: ['admin', 'super_admin'] },
+      { label: 'Redemptions', icon: Ticket, path: '/redemptions', roles: ['admin', 'super_admin', 'dispatcher'] },
     ]
   },
   {

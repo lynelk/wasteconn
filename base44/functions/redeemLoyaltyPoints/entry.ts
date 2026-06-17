@@ -74,11 +74,13 @@ Deno.serve(async (req) => {
       const remaining = await redeemablePoints(base44, customerId);
       const walletEntry = (await base44.asServiceRole.entities.WalletLedgerEntry.filter({ customer_id: customerId, reference: redeemKey }))?.[0];
       const creditedUgx = walletEntry?.amount_ugx || 0;
+      const priorRedemption = (await base44.asServiceRole.entities.RewardRedemption.filter({ customer_id: customerId, reference: redeemKey }))?.[0];
       return Response.json({
         success: true,
         idempotent: true,
         redeemed_points: redeemed,
         credited_ugx: creditedUgx,
+        voucher_code: priorRedemption?.voucher_code || null,
         points_remaining: remaining,
         message: 'This redemption was already processed.',
       });
@@ -143,6 +145,33 @@ Deno.serve(async (req) => {
       // Best-effort stock decrement for limited rewards.
       if (typeof reward.stock === 'number') {
         await base44.asServiceRole.entities.LoyaltyReward.update(reward.id, { stock: Math.max(0, reward.stock - 1) }).catch(() => null);
+      }
+
+      // Durable, claimable redemption record. wallet_credit is fulfilled
+      // instantly (claimed); vouchers/perks stay issued until claimed at point
+      // of service. Keyed on the redeem reference for idempotent lookups.
+      const actor = user?.email || user?.id || 'system';
+      try {
+        await base44.asServiceRole.entities.RewardRedemption.create({
+          tenant_id: customer.tenant_id,
+          customer_id: customerId,
+          reward_id: reward.id,
+          reward_name: reward.name,
+          reward_type: reward.reward_type || 'voucher',
+          cost_points: cost,
+          value_ugx: creditedUgx,
+          voucher_code: voucher || undefined,
+          status: reward.reward_type === 'wallet_credit' ? 'claimed' : 'issued',
+          claimed_at: reward.reward_type === 'wallet_credit' ? new Date().toISOString() : undefined,
+          claimed_by: reward.reward_type === 'wallet_credit' ? actor : undefined,
+          reference: redeemKey,
+          notes: `Redeemed via app for ${cost} points by ${actor}`,
+        });
+      } catch (err) {
+        // The points/wallet movements are already durably recorded in the
+        // ledgers; surface this so a missing tracking record is observable
+        // rather than silently lost.
+        console.error('RewardRedemption.create failed', { reference: redeemKey, reward_id: reward.id, error: (err as Error).message });
       }
 
       return Response.json({

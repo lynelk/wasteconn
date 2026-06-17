@@ -1,0 +1,71 @@
+{
+  "name": "RewardRedemption",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "reward_id": {
+      "type": "string",
+      "description": "LoyaltyReward redeemed"
+    },
+    "reward_name": {
+      "type": "string"
+    },
+    "reward_type": {
+      "type": "string",
+      "enum": [
+        "wallet_credit",
+        "perk",
+        "voucher",
+        "discount"
+      ],
+      "default": "voucher"
+    },
+    "cost_points": {
+      "type": "number"
+    },
+    "value_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Wallet credit granted, when applicable"
+    },
+    "voucher_code": {
+      "type": "string",
+      "description": "Claim code for perk/voucher/discount rewards"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "claimed",
+        "cancelled"
+      ],
+      "default": "issued",
+      "description": "wallet_credit rewards are issued already claimed; vouchers stay issued until redeemed at point of service"
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claimed_by": {
+      "type": "string",
+      "description": "Operator who marked the voucher claimed"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Idempotency key shared with the loyalty/wallet ledger entries"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "customer_id",
+    "cost_points"
+  ]
+}

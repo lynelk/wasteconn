@@ -19,6 +19,7 @@ export const ROUTE_ROLES = {
   '/plans': ['admin', 'super_admin'],
   '/service-catalog': ['admin', 'super_admin'],
   '/loyalty-rewards': ['admin', 'super_admin'],
+  '/redemptions': ['admin', 'super_admin', 'dispatcher'],
   '/vehicles': ['admin', 'super_admin', 'dispatcher'],
   '/fleet-maintenance': ['admin', 'super_admin'],
   '/driver-performance': ['admin', 'super_admin'],

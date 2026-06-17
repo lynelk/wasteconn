@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { Badge } from '@/components/ui/badge';
@@ -9,10 +9,10 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   Users, MapPin, Truck, CreditCard, MessageSquare, Trash2,
-  AlertTriangle, Phone, Save, Radio, Send, Shield, CheckCircle2,
+  AlertTriangle, Save, Radio, Send, Shield, CheckCircle2,
   ChevronRight, Layers, Database, Activity, GitBranch, Inbox,
-  Wifi, BarChart2, Recycle, BookOpen, UserCog, Settings as SettingsIcon,
-  Plug, Globe
+  Wifi, BarChart2, Recycle, BookOpen, UserCog,
+  Plug, Globe, Gift
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent,
@@ -141,6 +141,83 @@ function ProfilePanel({ user }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoyaltyConfigPanel({ user }) {
+  const tenantId = user?.tenant_id;
+  const [ugxPerPoint, setUgxPerPoint] = useState('');
+  const [minRedeem, setMinRedeem] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    if (!tenantId) { setLoading(false); return; }
+    base44.entities.Tenant.get(tenantId)
+      .then(t => { if (!active) return; setUgxPerPoint(t?.loyalty_ugx_per_point ?? 10); setMinRedeem(t?.loyalty_min_redeem_points ?? 100); })
+      .catch(() => { if (active) setError('Could not load loyalty settings.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [tenantId]);
+
+  const handleSave = async () => {
+    setSaving(true); setError('');
+    try {
+      await base44.entities.Tenant.update(tenantId, {
+        loyalty_ugx_per_point: Math.max(0, Number(ugxPerPoint) || 0),
+        loyalty_min_redeem_points: Math.max(0, Math.floor(Number(minRedeem) || 0)),
+      });
+      setSaved(true); setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setError(e.message || 'Could not save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold font-jakarta">Loyalty</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Control how customers redeem loyalty points for wallet credit.</p>
+      </div>
+
+      {!tenantId ? (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
+          Loyalty settings are configured per tenant. Switch to a tenant account to edit them.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Points redemption</h3>
+          {loading ? (
+            <div className="h-20 rounded-lg bg-muted animate-pulse" />
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4 max-w-lg">
+                <div>
+                  <Label className="text-xs mb-1.5 block">Wallet UGX per point</Label>
+                  <Input type="number" min="0" value={ugxPerPoint} onChange={e => setUgxPerPoint(e.target.value)} className="text-sm" />
+                  <p className="text-[11px] text-muted-foreground mt-1">Value credited per point on ad-hoc redemption.</p>
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block">Minimum points to redeem</Label>
+                  <Input type="number" min="0" value={minRedeem} onChange={e => setMinRedeem(e.target.value)} className="text-sm" />
+                  <p className="text-[11px] text-muted-foreground mt-1">Smallest ad-hoc redemption allowed.</p>
+                </div>
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+                {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saved ? 'Saved' : saving ? 'Saving…' : 'Save'}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -296,6 +373,7 @@ function DangerPanel({ user }) {
 // ── Nav items ─────────────────────────────────────────────────────────────────
 const NAV = [
   { id: 'profile',       label: 'My Profile',              icon: UserCog },
+  { id: 'loyalty',       label: 'Loyalty',                 icon: Gift },
   { id: 'platform',      label: 'Platform',                icon: Layers },
   { id: 'operations',    label: 'Operations & Dispatch',   icon: Radio },
   { id: 'integrations',  label: 'Integrations & Data',     icon: Plug },
@@ -344,6 +422,7 @@ export default function Settings() {
       {/* Content */}
       <main className="flex-1 overflow-y-auto p-8 max-w-3xl">
         {active === 'profile' && <ProfilePanel user={user} />}
+        {active === 'loyalty' && <LoyaltyConfigPanel user={user} />}
         {activeSection && <ModulesPanel section={activeSection} />}
         {active === 'danger' && <DangerPanel user={user} />}
       </main>
