@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { format, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import DriverFuelEfficiencyPanel from '@/components/fuel/DriverFuelEfficiencyPanel';
 import DriverProfileDetails from '@/components/driver/DriverProfileDetails';
+import DriverShiftHistoryTab from '@/components/driver/DriverShiftHistoryTab';
 
 export default function DriverDetail() {
   const params = new URLSearchParams(window.location.search);
@@ -152,7 +153,8 @@ export default function DriverDetail() {
       <Tabs defaultValue="pickups">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="pickups"><Calendar className="w-3.5 h-3.5 mr-1.5" />Pickups</TabsTrigger>
-          <TabsTrigger value="shifts"><Clock className="w-3.5 h-3.5 mr-1.5" />Shifts & Fuel</TabsTrigger>
+          <TabsTrigger value="shift-history"><Clock className="w-3.5 h-3.5 mr-1.5" />Shift History</TabsTrigger>
+          <TabsTrigger value="shifts"><Fuel className="w-3.5 h-3.5 mr-1.5" />Fuel Efficiency</TabsTrigger>
           <TabsTrigger value="profile"><FileText className="w-3.5 h-3.5 mr-1.5" />Profile & Docs</TabsTrigger>
         </TabsList>
 
@@ -239,7 +241,12 @@ export default function DriverDetail() {
           </Card>
         </TabsContent>
 
-        {/* Shifts & Fuel Tab */}
+        {/* Shift History Tab */}
+        <TabsContent value="shift-history" className="mt-4">
+          <DriverShiftHistoryTab shifts={shifts} pickups={allJobs} vehicles={vehicles} />
+        </TabsContent>
+
+        {/* Fuel Efficiency Tab */}
         <TabsContent value="shifts" className="mt-4">
           <DriverFuelEfficiencyPanel shifts={shifts} fuelLogs={fuelLogs} vehicles={vehicles} />
         </TabsContent>
