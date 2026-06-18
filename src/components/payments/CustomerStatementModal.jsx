@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import EntitySelect from '@/components/common/EntitySelect';
 import { FileText, Download, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
-export default function CustomerStatementModal({ open, onClose, customers = [] }) {
+export default function CustomerStatementModal({ open, onClose }) {
   const [customerId, setCustomerId] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,14 +20,8 @@ export default function CustomerStatementModal({ open, onClose, customers = [] }
     setError('');
     setLoading(true);
     try {
-      const response = await base44.functions.invoke('generateCustomerStatement', {
-        customer_id: customerId,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      });
-      // The response is binary - but since functions return JSON we handle both
-      // For binary PDFs the SDK returns data as base64 or triggers download
-      // Use fetch directly for PDF blob
+      // The statement is a binary PDF, so fetch the function endpoint directly
+      // for the blob (the SDK's invoke() assumes a JSON response).
       const token = base44.auth._token || '';
       const res = await fetch(`/api/functions/generateCustomerStatement`, {
         method: 'POST',
@@ -39,8 +34,7 @@ export default function CustomerStatementModal({ open, onClose, customers = [] }
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const customer = customers.find(c => c.id === customerId);
-      const filename = `statement_${customer?.full_name?.replace(/\s+/g,'_') || customerId}.pdf`;
+      const filename = `statement_${customerName?.replace(/\s+/g,'_') || customerId}.pdf`;
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
@@ -65,14 +59,14 @@ export default function CustomerStatementModal({ open, onClose, customers = [] }
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label className="text-sm">Customer *</Label>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger><SelectValue placeholder="Select customer..." /></SelectTrigger>
-              <SelectContent>
-                {customers.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.full_name} {c.account_number ? `· ${c.account_number}` : ''}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EntitySelect
+              entity="Customer"
+              value={customerId}
+              onChange={(id, row) => { setCustomerId(id); setCustomerName(row?.full_name || ''); }}
+              searchFields={['full_name', 'account_number', 'phone']}
+              getLabel={(r) => `${r.full_name}${r.account_number ? ` · ${r.account_number}` : ''}`}
+              placeholder="Select customer..."
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

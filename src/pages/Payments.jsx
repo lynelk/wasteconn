@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import {
   Plus, CreditCard, Search, CheckCircle, Smartphone, FileText,
   BarChart2, AlertTriangle, RefreshCw, Landmark, Link, RotateCcw,
@@ -55,16 +56,14 @@ export default function Payments() {
     queryKey: ['payments'],
     queryFn: () => base44.entities.Payment.list('-created_date'),
   });
-  const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
-  });
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices-all'],
     queryFn: () => base44.entities.Invoice.list(),
   });
 
-  const customerMap = Object.fromEntries(customers.map(c => [c.id, c]));
+  // Resolve only the customers referenced by the loaded payments, instead of
+  // fetching the whole customer table to label rows.
+  const { map: customerMap } = useEntitiesByIds('Customer', payments.map(p => p.customer_id));
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Payment.update(id, data),
@@ -441,7 +440,7 @@ export default function Payments() {
         </TabsContent>
       </Tabs>
 
-      <CustomerStatementModal open={statementOpen} onClose={() => setStatementOpen(false)} customers={customers} />
+      <CustomerStatementModal open={statementOpen} onClose={() => setStatementOpen(false)} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
