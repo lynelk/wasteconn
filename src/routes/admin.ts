@@ -8,6 +8,7 @@ const SchemaEvolution = lazy(() => import('@/pages/SchemaEvolution'));
 const ZoneHierarchyAdmin = lazy(() => import('@/pages/ZoneHierarchyAdmin'));
 const UsersPage = lazy(() => import('@/pages/Users'));
 const EFRISReconciliation = lazy(() => import('@/pages/EFRISReconciliation'));
+const InventoryReconciliation = lazy(() => import('@/pages/InventoryReconciliation'));
 
 export const adminRoutes = [
   { path: '/tenants', component: Tenants, domain: 'Admin' },
@@ -17,5 +18,6 @@ export const adminRoutes = [
   { path: '/schema-evolution', component: SchemaEvolution, domain: 'Admin' },
   { path: '/zone-hierarchy', component: ZoneHierarchyAdmin, domain: 'Admin' },
   { path: '/users', component: UsersPage, domain: 'Admin' },
-  { path: '/efris', component: EFRISReconciliation, domain: 'Finance' }
+  { path: '/efris', component: EFRISReconciliation, domain: 'Finance' },
+  { path: '/inventory-reconciliation', component: InventoryReconciliation, domain: 'Finance' }
 ];

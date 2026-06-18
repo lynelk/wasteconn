@@ -16,7 +16,10 @@ import {
     DollarSign,
     AlertTriangle,
     Download,
-    BarChart3
+    BarChart3,
+    Activity,
+    User,
+    FileCheck
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import { format } from "date-fns";
@@ -39,6 +42,8 @@ export default function EFRISReconciliation() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
+    const [activityLogId, setActivityLogId] = useState(null);
+    const [manualNote, setManualNote] = useState("");
 
     const queryClient = useQueryClient();
 
@@ -76,6 +81,24 @@ export default function EFRISReconciliation() {
         onSuccess: (data) => {
             alert(`Export successful! ${data.data.exported_count} invoices exported to Google Sheets.`);
         }
+    });
+
+    // Log EFRIS activity mutation
+    const logActivityMutation = useMutation({
+        mutationFn: ({ efris_log_id, action, notes }) => 
+            base44.functions.invoke('logEFRISActivity', { efris_log_id, action, notes }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['efris-logs'] });
+            queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+        }
+    });
+
+    // Fetch audit logs for EFRIS
+    const { data: auditLogs } = useQuery({
+        queryKey: ['audit-logs', monthFilter],
+        queryFn: () => base44.entities.AuditLog.filter({ 
+            entity_type: 'EFRISInvoiceLog'
+        }, '-timestamp', 200)
     });
 
     // Calculate statistics
@@ -205,6 +228,7 @@ export default function EFRISReconciliation() {
                     <TabsTrigger value="all-invoices">All Invoices</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                     <TabsTrigger value="failed">Failed ({stats.failed})</TabsTrigger>
+                    <TabsTrigger value="activity-log">Activity Log</TabsTrigger>
                 </TabsList>
 
                 {/* Reconciliation Tab - Payments without EFRIS */}
@@ -392,6 +416,75 @@ export default function EFRISReconciliation() {
                                         )}
                                     </div>
                                 ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Activity Log Tab */}
+                <TabsContent value="activity-log" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Activity className="w-5 h-5" />
+                                EFRIS Activity & Audit Trail
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Complete history of status changes, retries, and manual overrides
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {(auditLogs || []).map((log) => (
+                                    <div key={log.id} className="p-4 border rounded-lg bg-slate-50">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-full bg-blue-100 border border-blue-300">
+                                                    {log.action?.includes('retry') ? (
+                                                        <RefreshCw className="w-4 h-4 text-blue-600" />
+                                                    ) : log.action?.includes('override') ? (
+                                                        <FileCheck className="w-4 h-4 text-blue-600" />
+                                                    ) : (
+                                                        <Activity className="w-4 h-4 text-blue-600" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">
+                                                        {log.action?.replace('_', ' ').toUpperCase()}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        EFRIS Invoice: {log.entity_id?.slice(-8)} • {log.details?.previous_status && `Status: ${log.details.previous_status}`}
+                                                    </p>
+                                                    {log.details?.user_full_name && (
+                                                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                                            <User className="w-3 h-3" />
+                                                            {log.details.user_full_name} ({log.details.user_email})
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Badge variant="outline">
+                                                {log.timestamp ? format(new Date(log.timestamp), 'PPp') : 'N/A'}
+                                            </Badge>
+                                        </div>
+                                        {log.details?.notes && (
+                                            <div className="mt-2 p-2 bg-white rounded border text-sm">
+                                                <strong>Notes:</strong> {log.details.notes}
+                                            </div>
+                                        )}
+                                        {log.details?.error_message && (
+                                            <div className="mt-2 p-2 bg-red-50 rounded border border-red-200 text-sm text-red-700">
+                                                <strong>Error:</strong> {log.details.error_message}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {(!auditLogs || auditLogs.length === 0) && (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                        <p>No activity logs found for this period</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

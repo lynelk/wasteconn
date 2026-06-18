@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import {
   Package, AlertTriangle, CheckCircle, MapPin, Camera, Shield,
-  RefreshCw, Eye, BarChart3, List, Filter
+  RefreshCw, Eye, BarChart3, List, Filter, FileText, TrendingUp
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,10 +23,12 @@ const statusColors = {
 
 export default function ItemDistributionAudit() {
   const queryClient = useQueryClient();
-  const [filterFlag, setFilterFlag] = useState('all'); // all | flagged | confirmed | pending
+  const [filterFlag, setFilterFlag] = useState('all');
   const [runningAudit, setRunningAudit] = useState(false);
   const [auditResult, setAuditResult] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [runningReconciliation, setRunningReconciliation] = useState(false);
+  const [reconciliationResult, setReconciliationResult] = useState(null);
 
   const { data: distributions = [], isLoading } = useQuery({
     queryKey: ['item-distributions'],
@@ -55,6 +57,16 @@ export default function ItemDistributionAudit() {
     setAuditResult(res.data);
     queryClient.invalidateQueries({ queryKey: ['item-distributions'] });
     setRunningAudit(false);
+  };
+
+  const handleRunReconciliation = async () => {
+    setRunningReconciliation(true);
+    setReconciliationResult(null);
+    const res = await base44.functions.invoke('reconcileInventoryDistribution', {});
+    setReconciliationResult(res.data);
+    queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    queryClient.invalidateQueries({ queryKey: ['item-distributions'] });
+    setRunningReconciliation(false);
   };
 
   // KPI calculations
@@ -100,11 +112,43 @@ export default function ItemDistributionAudit() {
             Track bin liners & supplies given to customers · Detect pilferage · Full audit trail
           </p>
         </div>
-        <Button onClick={handleRunAudit} disabled={runningAudit} className="gap-2">
-          <Shield className={`w-4 h-4 ${runningAudit ? 'animate-spin' : ''}`} />
-          {runningAudit ? 'Running Audit...' : 'Run Pilferage Audit'}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRunReconciliation} disabled={runningReconciliation} variant="outline" className="gap-2">
+            <FileText className={`w-4 h-4 ${runningReconciliation ? 'animate-spin' : ''}`} />
+            {runningReconciliation ? 'Reconciling...' : 'Run Reconciliation'}
+          </Button>
+          <Button onClick={handleRunAudit} disabled={runningAudit} className="gap-2">
+            <Shield className={`w-4 h-4 ${runningAudit ? 'animate-spin' : ''}`} />
+            {runningAudit ? 'Running Audit...' : 'Run Pilferage Audit'}
+          </Button>
+        </div>
       </div>
+
+      {/* Reconciliation result banner */}
+      {reconciliationResult && (
+        <div className={`rounded-xl px-4 py-3 border text-sm flex items-start gap-3 ${reconciliationResult.discrepancies?.length > 0 ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-green-50 border-green-300 text-green-700'}`}>
+          {reconciliationResult.discrepancies?.length > 0 ? <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+          <div className="flex-1">
+            <p className="font-semibold">
+              {reconciliationResult.discrepancies?.length > 0 
+                ? `${reconciliationResult.discrepancies.length} item(s) show discrepancies` 
+                : 'Reconciliation complete — all items balanced'}
+            </p>
+            <p className="text-xs opacity-80">
+              {reconciliationResult.summary?.items_reviewed} items reviewed · 
+              Financial impact: UGX {Math.abs(reconciliationResult.summary?.total_variance_value || 0).toLocaleString()}
+            </p>
+            {reconciliationResult.discrepancies?.length > 0 && (
+              <div className="mt-2 text-xs space-y-1">
+                {reconciliationResult.discrepancies.slice(0, 3).map((d, i) => (
+                  <p key={i}>• {d.item_name}: {d.variance > 0 ? '+' : ''}{d.variance} units ({d.variance_percentage}%)</p>
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={() => setReconciliationResult(null)} className="ml-auto text-current opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Audit result banner */}
       {auditResult && (
@@ -144,6 +188,7 @@ export default function ItemDistributionAudit() {
         <TabsList>
           <TabsTrigger value="log"><List className="w-3.5 h-3.5 mr-1" />Distribution Log</TabsTrigger>
           <TabsTrigger value="stock"><BarChart3 className="w-3.5 h-3.5 mr-1" />Stock vs Distributed</TabsTrigger>
+          <TabsTrigger value="reconciliation"><FileText className="w-3.5 h-3.5 mr-1" />Reconciliation Report</TabsTrigger>
         </TabsList>
 
         {/* Distribution Log */}
@@ -285,6 +330,84 @@ export default function ItemDistributionAudit() {
                   </BarChart>
                 </ResponsiveContainer>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Reconciliation Report Tab */}
+        <TabsContent value="reconciliation" className="mt-4 space-y-4">
+          <Card className="border-border/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Inventory Reconciliation Report
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Automated comparison of inventory stock levels against confirmed distributions
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-slate-50 border">
+                    <div className="text-xs text-muted-foreground">Items Reviewed</div>
+                    <div className="text-lg font-bold">{reconciliationResult?.summary?.total_items || '-'}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
+                    <div className="text-xs text-orange-700">Discrepancies</div>
+                    <div className="text-lg font-bold text-orange-700">{reconciliationResult?.summary?.items_with_discrepancies || '-'}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50 border">
+                    <div className="text-xs text-muted-foreground">Stock Value</div>
+                    <div className="text-lg font-bold">UGX {((reconciliationResult?.summary?.total_stock_value || 0) / 1000000).toFixed(2)}M</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50 border">
+                    <div className="text-xs text-muted-foreground">Variance</div>
+                    <div className="text-lg font-bold">UGX {((reconciliationResult?.summary?.total_variance_value || 0) / 1000).toFixed(1)}K</div>
+                  </div>
+                </div>
+
+                {reconciliationResult?.discrepancies?.length > 0 ? (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-600" />
+                      Items Requiring Investigation
+                    </h4>
+                    <div className="space-y-2">
+                      {reconciliationResult.discrepancies.map((d, i) => (
+                        <div key={i} className="p-3 rounded-lg border border-orange-200 bg-orange-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{d.item_name}</p>
+                              <p className="text-xs text-orange-700">
+                                Variance: {d.variance > 0 ? '+' : ''}{d.variance} units ({d.variance_percentage}%)
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Financial Impact</p>
+                              <p className="font-semibold text-sm text-orange-700">
+                                UGX {Math.abs(d.financial_impact_ugx || 0).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : reconciliationResult ? (
+                  <div className="text-center py-8 text-green-600">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-2" />
+                    <p className="font-medium">All inventory items are balanced!</p>
+                    <p className="text-xs text-muted-foreground">No discrepancies detected between stock and distributions</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Click "Run Reconciliation" to generate a report</p>
+                    <p className="text-xs mt-1">Automated monthly on the 1st at 6:00 AM</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
