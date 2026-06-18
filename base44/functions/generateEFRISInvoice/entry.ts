@@ -69,41 +69,30 @@ Deno.serve(async (req) => {
         const netAmount = grossAmount / (1 + taxRate);
         const taxAmount = grossAmount - netAmount;
 
-        // EFRIS API Configuration
-        const EFRIS_API_URL = Deno.env.get('EFRIS_API_URL') || 'https://efris.ura.go.ug';
-        const EFRIS_USERNAME = Deno.env.get('EFRIS_USERNAME');
-        const EFRIS_PASSWORD = Deno.env.get('EFRIS_PASSWORD');
+        // Use CitoConnect integration for EFRIS
+        const CITOCONNECT_API_URL = Deno.env.get('CITOCONNECT_API_URL');
+        const CITOCONNECT_API_KEY = Deno.env.get('CITOCONNECT_API_KEY');
 
-        if (!EFRIS_USERNAME || !EFRIS_PASSWORD) {
-            throw new Error('EFRIS credentials not configured. Please set EFRIS_USERNAME and EFRIS_PASSWORD secrets.');
+        if (!CITOCONNECT_API_URL || !CITOCONNECT_API_KEY) {
+            throw new Error('CitoConnect integration not configured. Please set CITOCONNECT_API_URL and CITOCONNECT_API_KEY secrets.');
         }
 
-        // Step 1: Login to EFRIS (T103)
-        const loginPayload = {
-            data: {
-                username: EFRIS_USERNAME,
-                password: EFRIS_PASSWORD
-            },
-            globalInfo: {
-                interfaceCode: 'T103',
-                interfaceName: 'Login',
-                requestTime: new Date().toISOString().replace(/[-:]/g, '').slice(0, 14)
-            }
-        };
-
-        const loginResponse = await fetch(`${EFRIS_API_URL}/api/v1/login`, {
+        // Step 1: Get session token from CitoConnect
+        const sessionResponse = await fetch(`${CITOCONNECT_API_URL}/api/session`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginPayload)
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${CITOCONNECT_API_KEY}`
+            }
         });
 
-        const loginResult = await loginResponse.json();
+        const sessionResult = await sessionResponse.json();
         
-        if (!loginResult.returnStateInfo || loginResult.returnStateInfo.responseCode !== '0000') {
-            throw new Error(`EFRIS Login failed: ${loginResult.returnStateInfo?.responseMsg || 'Unknown error'}`);
+        if (!sessionResult.success || !sessionResult.token) {
+            throw new Error(`CitoConnect authentication failed: ${sessionResult.message || 'Unknown error'}`);
         }
 
-        const sessionToken = loginResult.data?.token;
+        const sessionToken = sessionResult.token;
 
         // Step 2: Upload Invoice (T109)
         const invoiceNumber = `INV-${payment_id.slice(-8).toUpperCase()}`;
@@ -139,7 +128,7 @@ Deno.serve(async (req) => {
             }
         };
 
-        const invoiceResponse = await fetch(`${EFRIS_API_URL}/api/v1/invoice/upload`, {
+        const invoiceResponse = await fetch(`${CITOCONNECT_API_URL}/api/v1/efris/invoice`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
