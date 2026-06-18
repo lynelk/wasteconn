@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
-import { FileText, Download, Plus, Shield, CheckCircle, Archive, Target, Sheet } from 'lucide-react';
+import { FileText, Download, Plus, Shield, CheckCircle, Archive, Target, Sheet, PackageOpen } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ export default function ComplianceReports() {
   const [periodTo, setPeriodTo] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [generating, setGenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [bulkExporting, setBulkExporting] = useState(false);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ['compliance-reports'],
@@ -70,6 +71,29 @@ export default function ComplianceReports() {
     if (report.pdf_url) window.open(report.pdf_url, '_blank');
   };
 
+  const handleBulkExport = async () => {
+    setBulkExporting(true);
+    try {
+      const res = await base44.functions.invoke('bulkExportCityReport', {
+        period_from: periodFrom,
+        period_to: periodTo,
+      });
+      const { filename, base64, stats: s } = res.data;
+      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Bulk export ready', description: `${s.pickup_rows} pickups + ${s.transaction_rows} waste transactions downloaded.` });
+    } catch (err) {
+      toast({ title: 'Export failed', description: err?.message, variant: 'destructive' });
+    }
+    setBulkExporting(false);
+  };
+
   const stats = {
     total:     reports.length,
     generated: reports.filter(r => r.status === 'generated').length,
@@ -85,6 +109,10 @@ export default function ComplianceReports() {
           <p className="text-muted-foreground text-sm mt-0.5">Regional targets, audit archives & Google Sheets export</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleBulkExport} disabled={bulkExporting} className="gap-2">
+            <PackageOpen className="w-4 h-4" />
+            {bulkExporting ? 'Exporting…' : 'Bulk Export CSV'}
+          </Button>
           <Button variant="outline" onClick={handleExportToSheets} disabled={exporting} className="gap-2">
             <Sheet className="w-4 h-4" />
             {exporting ? 'Exporting…' : 'Export to Sheets'}

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Users, UserPlus, Mail, Search, RefreshCw, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Mail, Search, RefreshCw, Clock, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ROLES = ['admin', 'dispatcher', 'driver', 'billing_officer', 'user', 'customer'];

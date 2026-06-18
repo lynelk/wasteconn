@@ -3,11 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Radio, Map, TrendingUp } from 'lucide-react';
+import { Radio, Map, TrendingUp, MapPin, Route } from 'lucide-react';
 import CitoReportExport from '@/components/analytics/CitoReportExport';
 import HistoricalTrendWidget from '@/components/analytics/HistoricalTrendWidget';
 import WialonIntegration from '@/pages/WialonIntegration';
 import CoverageAnalytics from '@/pages/CoverageAnalytics';
+import RouteEfficiencyAnalysis from '@/components/analytics/RouteEfficiencyAnalysis';
+import PickupHeatmap from '@/components/analytics/PickupHeatmap';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
@@ -58,6 +60,8 @@ export default function Analytics() {
           <TabsTrigger value="coverage"><Map className="w-3.5 h-3.5 mr-1" />Coverage</TabsTrigger>
           <TabsTrigger value="wialon"><Radio className="w-3.5 h-3.5 mr-1" />Telematics</TabsTrigger>
           <TabsTrigger value="trends"><TrendingUp className="w-3.5 h-3.5 mr-1" />Trends</TabsTrigger>
+          <TabsTrigger value="routes"><Route className="w-3.5 h-3.5 mr-1" />Route Efficiency</TabsTrigger>
+          <TabsTrigger value="heatmap"><MapPin className="w-3.5 h-3.5 mr-1" />Demand Heatmap</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -170,6 +174,14 @@ export default function Analytics() {
 
         <TabsContent value="trends" className="mt-4">
           <HistoricalTrendWidget />
+        </TabsContent>
+
+        <TabsContent value="routes" className="mt-4">
+          <RouteEfficiencyAnalysis />
+        </TabsContent>
+
+        <TabsContent value="heatmap" className="mt-4">
+          <PickupHeatmap />
         </TabsContent>
       </Tabs>
     </div>

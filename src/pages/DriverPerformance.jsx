@@ -7,7 +7,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { Award, AlertTriangle, Camera, Truck, User } from 'lucide-react';
+import { Award, AlertTriangle, Camera, Truck, User, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import DriverLeaderboard from '@/components/drivers/DriverLeaderboard';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
@@ -21,7 +23,8 @@ function DriverCard({ driver, stats, rank }) {
   const needsTraining = stats.overallScore < 60;
 
   return (
-    <Card className={`border-border/60 ${needsTraining ? 'border-l-4 border-l-yellow-400' : ''}`}>
+    <Link to={`/driver-detail?id=${driver.id}`} className="block">
+    <Card className={`border-border/60 hover:shadow-md transition-shadow cursor-pointer ${needsTraining ? 'border-l-4 border-l-yellow-400' : ''}`}>
       <CardContent className="pt-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -67,8 +70,12 @@ function DriverCard({ driver, stats, rank }) {
             {stats.flaggedPhotos} photo(s) flagged for review
           </div>
         )}
+        <div className="mt-3 flex items-center justify-end text-xs text-primary gap-1">
+          View details <ChevronRight className="w-3.5 h-3.5" />
+        </div>
       </CardContent>
     </Card>
+    </Link>
   );
 }
 
@@ -159,6 +166,9 @@ export default function DriverPerformance() {
         <h1 className="text-2xl font-bold font-jakarta">Driver Efficiency Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">AI-powered performance analytics for fleet managers</p>
       </div>
+
+      {/* Leaderboard */}
+      <DriverLeaderboard />
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

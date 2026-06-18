@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import EntitySelect from '@/components/common/EntitySelect';
 
 const CATEGORIES = ['missed_collection','billing_dispute','service_quality','access_issue','bin_damage','driver_behaviour','wrong_schedule','general_inquiry','other'];
 const SOURCES = ['web_form','whatsapp','email','phone','in_app','operator'];
@@ -13,7 +14,7 @@ const PRIORITIES = ['low','medium','high','urgent'];
 
 const SLA_MAP = { missed_collection: 12, billing_dispute: 48, service_quality: 24, access_issue: 8, bin_damage: 48, driver_behaviour: 24, wrong_schedule: 12, general_inquiry: 72, other: 48, urgent: 4, high: 8, medium: 24, low: 72 };
 
-export default function TicketForm({ customers = [], zones = [], servicePoints = [], onClose }) {
+export default function TicketForm({ zones = [], onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     source: 'web_form', category: 'general_inquiry', priority: 'medium',
@@ -23,18 +24,22 @@ export default function TicketForm({ customers = [], zones = [], servicePoints =
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // Fetch only the selected customer's service points on demand, rather than
+  // loading the whole service-point table.
+  const { data: customerPoints = [] } = useQuery({
+    queryKey: ['service-points', 'by-customer', form.customer_id],
+    queryFn: () => base44.entities.ServicePoint.filter({ customer_id: form.customer_id }, undefined, 200),
+    enabled: !!form.customer_id,
+  });
+
   const mutation = useMutation({
     mutationFn: async (data) => {
       const slaHours = SLA_MAP[data.category] || 24;
       const slaDue = new Date(Date.now() + slaHours * 3600000).toISOString();
       const ticketNumber = `TKT-${Date.now().toString(36).toUpperCase()}`;
-      const customer = customers.find(c => c.id === data.customer_id);
       return base44.entities.Ticket.create({
         ...data,
         ticket_number: ticketNumber,
-        customer_name: customer?.full_name || data.customer_name,
-        customer_phone: customer?.phone || data.customer_phone,
-        customer_email: customer?.email || data.customer_email,
         sla_hours: slaHours,
         sla_due_at: slaDue,
         status: 'open',
@@ -43,8 +48,16 @@ export default function TicketForm({ customers = [], zones = [], servicePoints =
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tickets'] }); onClose(); },
   });
 
-  const selectedCustomer = customers.find(c => c.id === form.customer_id);
-  const customerPoints = servicePoints.filter(sp => sp.customer_id === form.customer_id);
+  // Capture the chosen customer's contact details onto the form so the ticket
+  // carries them without needing the whole customer list in memory.
+  const onSelectCustomer = (id, row) => setForm(f => ({
+    ...f,
+    customer_id: id || '',
+    customer_name: row?.full_name || '',
+    customer_phone: row?.phone || '',
+    customer_email: row?.email || '',
+    service_point_id: '',
+  }));
 
   return (
     <div className="space-y-4">
@@ -75,13 +88,16 @@ export default function TicketForm({ customers = [], zones = [], servicePoints =
 
       <div>
         <Label className="text-xs">Customer (optional)</Label>
-        <Select value={form.customer_id || 'anonymous'} onValueChange={v => set('customer_id', v === 'anonymous' ? '' : v)}>
-          <SelectTrigger className="mt-1"><SelectValue placeholder="Search customer..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="anonymous">Anonymous / Walk-in</SelectItem>
-            {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name} · {c.phone}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="mt-1">
+          <EntitySelect
+            entity="Customer"
+            value={form.customer_id}
+            onChange={onSelectCustomer}
+            searchFields={['full_name', 'phone', 'account_number']}
+            getLabel={(c) => `${c.full_name}${c.phone ? ` · ${c.phone}` : ''}`}
+            placeholder="Search customer (leave empty for walk-in)…"
+          />
+        </div>
       </div>
 
       {!form.customer_id && (
@@ -110,11 +126,11 @@ export default function TicketForm({ customers = [], zones = [], servicePoints =
         </div>
         <div>
           <Label className="text-xs">Service Point</Label>
-          <Select value={form.service_point_id || 'none'} onValueChange={v => set('service_point_id', v === 'none' ? '' : v)}>
-            <SelectTrigger className="mt-1"><SelectValue placeholder="Select service point" /></SelectTrigger>
+          <Select value={form.service_point_id || 'none'} onValueChange={v => set('service_point_id', v === 'none' ? '' : v)} disabled={!form.customer_id}>
+            <SelectTrigger className="mt-1"><SelectValue placeholder={form.customer_id ? 'Select service point' : 'Select a customer first'} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Not specified</SelectItem>
-              {(form.customer_id ? customerPoints : servicePoints).map(sp => (
+              {customerPoints.map(sp => (
                 <SelectItem key={sp.id} value={sp.id}>{sp.name || sp.address}</SelectItem>
               ))}
             </SelectContent>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Calendar, Edit2, Search, Zap, RefreshCw } from 'lucide-react';
+import PickupDetailPanel from '@/components/pickups/PickupDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ export default function PickupRequests() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({ customer_id: '', horizon_days: 30 });
   const [scheduling, setScheduling] = useState(false);
+  const [selectedPickup, setSelectedPickup] = useState(null);
 
   const handleAISchedule = async () => {
     if (!scheduleForm.customer_id) return;
@@ -125,7 +127,7 @@ export default function PickupRequests() {
           {filtered.map(p => {
             const customer = customerMap[p.customer_id];
             return (
-              <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card hover:shadow-sm transition-shadow">
+              <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setSelectedPickup(p)}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold text-sm">{customer?.full_name || 'Unknown Customer'}</p>
@@ -146,7 +148,7 @@ export default function PickupRequests() {
                       Complete
                     </Button>
                   )}
-                  <button onClick={() => { setEditing(p); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5">
+                  <button onClick={(e) => { e.stopPropagation(); setEditing(p); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -197,6 +199,10 @@ export default function PickupRequests() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {selectedPickup && (
+        <PickupDetailPanel pickup={selectedPickup} onClose={() => setSelectedPickup(null)} />
+      )}
 
       <Dialog open={open} onOpenChange={() => { setOpen(false); setEditing(null); }}>
         <DialogContent className="max-w-lg">
