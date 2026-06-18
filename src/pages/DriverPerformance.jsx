@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Award, AlertTriangle, Camera, Truck, User, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import DriverLeaderboard from '@/components/drivers/DriverLeaderboard';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
@@ -165,6 +166,9 @@ export default function DriverPerformance() {
         <h1 className="text-2xl font-bold font-jakarta">Driver Efficiency Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">AI-powered performance analytics for fleet managers</p>
       </div>
+
+      {/* Leaderboard */}
+      <DriverLeaderboard />
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
