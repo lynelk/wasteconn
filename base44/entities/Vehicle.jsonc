@@ -61,6 +61,11 @@
       "type": "string",
       "format": "date"
     },
+    "quarterly_maintenance_budget_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Allocated quarterly maintenance budget for this vehicle in UGX"
+    },
     "notes": {
       "type": "string"
     }

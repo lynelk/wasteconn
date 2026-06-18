@@ -1,0 +1,108 @@
+{
+  "name": "HiredVehicleProvider",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "provider_code": {
+      "type": "string",
+      "description": "Unique vendor identifier e.g. HV-001"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Name of the transport company"
+    },
+    "contact_person": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "enum": [
+        "truck",
+        "tipper",
+        "compactor",
+        "pickup",
+        "tricycle",
+        "other"
+      ],
+      "default": "truck"
+    },
+    "capacity": {
+      "type": "string",
+      "description": "e.g. 5 tonnes, 10 m3"
+    },
+    "rate_per_trip_ugx": {
+      "type": "number",
+      "description": "Rate per trip in UGX",
+      "default": 0
+    },
+    "rate_per_day_ugx": {
+      "type": "number",
+      "description": "Rate per day in UGX",
+      "default": 0
+    },
+    "availability": {
+      "type": "string",
+      "enum": [
+        "on_call",
+        "weekdays",
+        "weekends",
+        "always"
+      ],
+      "default": "on_call",
+      "description": "Availability schedule"
+    },
+    "mou_status": {
+      "type": "string",
+      "enum": [
+        "MOU Signed",
+        "No MOU",
+        "Pending"
+      ],
+      "default": "No MOU"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "blacklisted"
+      ],
+      "default": "active"
+    },
+    "total_trips": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of trips completed"
+    },
+    "total_billed_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Total billing amount in UGX"
+    },
+    "last_used_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date this provider was last engaged"
+    },
+    "performance_rating": {
+      "type": "number",
+      "description": "Average performance rating 1-5"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "client_name"
+  ]
+}

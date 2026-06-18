@@ -21,6 +21,7 @@ export default function VehicleForm({ vehicle, onClose }) {
     tenant_id: vehicle?.tenant_id || (tenants[0]?.id || ''),
     last_service_date: vehicle?.last_service_date || '',
     next_service_date: vehicle?.next_service_date || '',
+    quarterly_maintenance_budget_ugx: vehicle?.quarterly_maintenance_budget_ugx || '',
     notes: vehicle?.notes || '',
   });
 
@@ -68,9 +69,13 @@ export default function VehicleForm({ vehicle, onClose }) {
           <Label>Last Service Date</Label>
           <Input type="date" value={form.last_service_date} onChange={e => set('last_service_date', e.target.value)} />
         </div>
-        <div className="col-span-2 space-y-1.5">
+        <div className="space-y-1.5">
           <Label>Next Service Date</Label>
           <Input type="date" value={form.next_service_date} onChange={e => set('next_service_date', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Quarterly Maintenance Budget (UGX)</Label>
+          <Input type="number" value={form.quarterly_maintenance_budget_ugx} onChange={e => set('quarterly_maintenance_budget_ugx', Number(e.target.value))} placeholder="e.g. 5000000" />
         </div>
       </div>
       <div className="flex justify-end gap-3 pt-2">
