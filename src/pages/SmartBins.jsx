@@ -5,6 +5,7 @@ import { Trash2, Search, Battery, Zap, Loader2, AlertTriangle, MapPin, Weight, F
 import ExportButton from '@/components/export/ExportButton';
 import HealthSummaryPanel from '@/components/smartbins/HealthSummaryPanel';
 import SmartBinsMap from '@/components/smartbins/SmartBinsMap';
+import FillAlertBanner from '@/components/smartbins/FillAlertBanner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +53,7 @@ export default function SmartBins() {
     }
   };
 
-  const { data: containers = [], isLoading } = useQuery({
+  const { data: containers = [], isLoading, refetch } = useQuery({
     queryKey: ['containers'],
     queryFn: () => base44.entities.Container.list(),
   });
@@ -131,6 +132,8 @@ export default function SmartBins() {
           </CardContent>
         </Card>
       )}
+
+      <FillAlertBanner containers={containers} onRefresh={refetch} />
 
       {showMap && <SmartBinsMap containers={containers} />}
 

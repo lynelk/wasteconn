@@ -35,6 +35,7 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const MyPickups = lazy(() => import('@/pages/MyPickups'));
 const MyPayments = lazy(() => import('@/pages/MyPayments'));
 const MyComplaints = lazy(() => import('@/pages/MyComplaints'));
+const DriverDetail = lazy(() => import('@/pages/DriverDetail'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -71,5 +72,6 @@ export const authenticatedRoutes = [
   { path: '/settings', component: Settings, domain: 'Admin' },
   { path: '/my-pickups', component: MyPickups, domain: 'Public' },
   { path: '/my-payments', component: MyPayments, domain: 'Finance' },
-  { path: '/my-complaints', component: MyComplaints, domain: 'Public' }
+  { path: '/my-complaints', component: MyComplaints, domain: 'Public' },
+  { path: '/driver-detail', component: DriverDetail, domain: 'Operations' }
 ];
