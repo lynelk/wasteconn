@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import RoleGuard from '@/components/RoleGuard';
 import { authenticatedRoutes, adminRoutes, fieldOperationsRoutes, publicRoutes } from '@/routes';
+import { customerRoutes } from '@/routes/customer';
 import ErrorBoundary from '@/lib/ErrorBoundary';
 
 const Loader = () => (
@@ -55,6 +56,10 @@ const AuthenticatedApp = () => {
             <Route key={route.path} path={route.path} element={<RoleGuard path={route.path}><route.component /></RoleGuard>} />
           ))}
         </Route>
+        {/* Customer App Routes */}
+        {customerRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={<route.component />} />
+        ))}
         {publicRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={<route.component />} />
         ))}

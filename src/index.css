@@ -96,6 +96,17 @@
       font-size: 16px !important;
     }
   }
+  /* Mobile-first touch targets */
+  @media (max-width: 768px) {
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
   /* Safe area support */
   .safe-top {
     padding-top: env(safe-area-inset-top);

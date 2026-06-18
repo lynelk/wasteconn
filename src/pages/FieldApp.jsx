@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Truck, LogOut, RefreshCw, AlertTriangle, Users, Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import DistributionModal from '@/components/distributions/DistributionModal';
 import { Button } from '@/components/ui/button';
 import DriverJobCard from '@/components/driver/DriverJobCard';
+import MobileJobCard from '@/components/field/MobileJobCard';
 import DriverStats from '@/components/driver/DriverStats';
 import GPSTracker from '@/components/driver/GPSTracker';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -186,44 +189,52 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-gray-900 px-4 pt-safe-top pb-4 sticky top-0 z-20 border-b border-gray-800">
+      <div className="bg-gradient-to-r from-primary to-primary/80 px-4 pt-safe-top pb-4 sticky top-0 z-20 shadow-lg">
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
               <Truck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold font-jakarta text-sm">{activeUser?.full_name?.split(' ')[0] || 'Field Staff'}</p>
-              <p className="text-xs text-gray-400">{format(new Date(), 'EEE, MMM d')} · {activeUser?.field_app_role || 'driver'}</p>
+              <p className="font-bold font-jakarta text-base">{activeUser?.full_name?.split(' ')[0] || 'Field Staff'}</p>
+              <p className="text-xs text-white/80">{format(new Date(), 'EEEE, MMM d')} · {activeUser?.field_app_role || 'driver'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <GPSTracker
-              user={activeUser}
-              currentJobId={todayJobs.find(j => j.status === 'in_progress')?.id}
-              currentRouteId={null}
-              isOnline={isOnline}
-            />
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-xs font-medium px-2 py-1 rounded-lg",
+                isOnline ? "text-green-400 bg-green-900/30" : "text-yellow-400 bg-yellow-900/30"
+              )}>
+                {isOnline ? "● Online" : "● Offline"}
+              </span>
+              <GPSTracker
+                user={activeUser}
+                currentJobId={todayJobs.find(j => j.status === 'in_progress')?.id}
+                currentRouteId={null}
+                isOnline={isOnline}
+              />
+            </div>
             <button
               onClick={() => setIncidentOpen(true)}
-              className="flex items-center gap-1 text-xs text-red-400 bg-red-900/30 px-2 py-1 rounded-lg border border-red-800"
+              className="flex items-center gap-2 text-xs font-medium text-red-400 bg-red-900/30 px-3 py-2 rounded-xl border border-red-800 active:bg-red-900/50 transition-colors min-h-[44px]"
             >
-              <AlertTriangle className="w-3 h-3" /> Incident
+              <AlertTriangle className="w-4 h-4" /> <span className="hidden sm:inline">Incident</span>
             </button>
             {isOnline
               ? <span className="text-xs text-green-400">● Online</span>
               : <span className="text-xs text-yellow-400">● Offline</span>
             }
-            <button onClick={() => setShowPinSwitch(true)} className="p-2 text-gray-400 hover:text-white" title="Switch User">
-              <Users className="w-4 h-4" />
+            <button onClick={() => setShowPinSwitch(true)} className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors min-h-[44px] min-w-[44px]" title="Switch User">
+              <Users className="w-5 h-5" />
             </button>
-            <button onClick={() => refetch()} className="p-2 text-gray-400 hover:text-white">
-              <RefreshCw className="w-4 h-4" />
+            <button onClick={() => refetch()} className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors min-h-[44px] min-w-[44px]">
+              <RefreshCw className="w-5 h-5" />
             </button>
-            <button onClick={() => base44.auth.logout('/')} className="p-2 text-gray-400 hover:text-white">
-              <LogOut className="w-4 h-4" />
+            <button onClick={() => base44.auth.logout('/')} className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors min-h-[44px] min-w-[44px]">
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -250,9 +261,14 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
       <DriverStats jobs={todayJobs} completedToday={completedToday} />
 
       <div className="flex-1 overflow-auto px-4 pb-8">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Today's Jobs ({todayJobs.length})
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-white">
+            Today's Jobs ({todayJobs.length})
+          </h2>
+          <Badge variant="outline" className="bg-white/10 border-white/20 text-white">
+            {completedToday} completed
+          </Badge>
+        </div>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -266,7 +282,7 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
         ) : (
           <div className="space-y-3">
             {todayJobs.map(job => (
-              <DriverJobCard
+              <MobileJobCard
                 key={job.id}
                 job={job}
                 onStatusUpdate={handleStatusUpdate}
