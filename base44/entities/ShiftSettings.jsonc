@@ -1,0 +1,22 @@
+{
+  "name": "ShiftSettings",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "require_odometer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Require drivers to enter odometer on clock-in/out"
+    },
+    "require_location": {
+      "type": "boolean",
+      "default": false,
+      "description": "Require GPS capture on clock-in"
+    }
+  },
+  "required": [
+    "tenant_id"
+  ]
+}

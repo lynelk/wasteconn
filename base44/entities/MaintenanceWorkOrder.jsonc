@@ -61,11 +61,25 @@
       "type": "string",
       "format": "date"
     },
-    "cost_ugx": {
-      "type": "number"
+    "parts_cost_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Cost of parts/spare parts used"
     },
-    "parts_used": {
-      "type": "string"
+    "labour_cost_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Labour/mechanic cost"
+    },
+    "hired_truck_cost_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Cost of hiring a replacement truck"
+    },
+    "hired_driver_cost_ugx": {
+      "type": "number",
+      "default": 0,
+      "description": "Cost of hiring a replacement driver"
     },
     "ai_prediction_score": {
       "type": "number",

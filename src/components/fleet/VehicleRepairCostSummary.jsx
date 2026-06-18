@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Wrench, TrendingUp, AlertTriangle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [] }) {
   const vehicleStats = useMemo(() => {
@@ -13,12 +13,14 @@ export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [
         reg: v.registration_number || v.id.slice(0, 8),
         type: v.vehicle_type,
         status: v.status,
-        totalCost: 0,
+        partsCost: 0,
+        labourCost: 0,
+        hiredTruckCost: 0,
+        hiredDriverCost: 0,
         orderCount: 0,
         completedCount: 0,
         criticalCount: 0,
         faultCodes: new Set(),
-        orders: [],
       };
     }
 
@@ -30,32 +32,44 @@ export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [
           reg: wo.vehicle_id.slice(0, 8),
           type: '—',
           status: '—',
-          totalCost: 0,
+          partsCost: 0,
+          labourCost: 0,
+          hiredTruckCost: 0,
+          hiredDriverCost: 0,
           orderCount: 0,
           completedCount: 0,
           criticalCount: 0,
           faultCodes: new Set(),
-          orders: [],
         };
       }
-      const entry = map[wo.vehicle_id];
-      entry.totalCost += wo.cost_ugx || 0;
-      entry.orderCount += 1;
-      if (wo.status === 'completed') entry.completedCount += 1;
-      if (wo.priority === 'critical') entry.criticalCount += 1;
-      if (Array.isArray(wo.fault_codes)) wo.fault_codes.forEach(fc => entry.faultCodes.add(fc));
-      entry.orders.push(wo);
+      const e = map[wo.vehicle_id];
+      e.partsCost += wo.parts_cost_ugx || 0;
+      e.labourCost += wo.labour_cost_ugx || 0;
+      e.hiredTruckCost += wo.hired_truck_cost_ugx || 0;
+      e.hiredDriverCost += wo.hired_driver_cost_ugx || 0;
+      e.orderCount += 1;
+      if (wo.status === 'completed') e.completedCount += 1;
+      if (wo.priority === 'critical') e.criticalCount += 1;
+      if (Array.isArray(wo.fault_codes)) wo.fault_codes.forEach(fc => e.faultCodes.add(fc));
     }
 
     return Object.values(map)
+      .map(v => ({ ...v, totalCost: v.partsCost + v.labourCost + v.hiredTruckCost + v.hiredDriverCost }))
       .filter(v => v.orderCount > 0)
       .sort((a, b) => b.totalCost - a.totalCost);
   }, [vehicles, workOrders]);
 
   const totalFleetCost = vehicleStats.reduce((s, v) => s + v.totalCost, 0);
+  const totalParts = vehicleStats.reduce((s, v) => s + v.partsCost, 0);
+  const totalLabour = vehicleStats.reduce((s, v) => s + v.labourCost, 0);
+  const totalHired = vehicleStats.reduce((s, v) => s + v.hiredTruckCost + v.hiredDriverCost, 0);
+
   const chartData = vehicleStats.slice(0, 8).map(v => ({
     name: v.reg,
-    cost: v.totalCost,
+    Parts: v.partsCost,
+    Labour: v.labourCost,
+    'Hired Truck': v.hiredTruckCost,
+    'Hired Driver': v.hiredDriverCost,
   }));
 
   const typeColor = {
@@ -79,46 +93,52 @@ export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [
 
   return (
     <div className="space-y-4">
-      {/* Fleet total KPI */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* Fleet KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-border/60"><CardContent className="pt-4 pb-3">
           <p className="text-xs text-muted-foreground">Total Fleet Repair Cost</p>
           <p className="text-xl font-bold font-jakarta text-primary mt-1">UGX {totalFleetCost.toLocaleString()}</p>
         </CardContent></Card>
         <Card className="border-border/60"><CardContent className="pt-4 pb-3">
-          <p className="text-xs text-muted-foreground">Vehicles with Repairs</p>
-          <p className="text-2xl font-bold font-jakarta mt-1">{vehicleStats.length}</p>
+          <p className="text-xs text-muted-foreground">Parts Cost</p>
+          <p className="text-xl font-bold font-jakarta mt-1">UGX {totalParts.toLocaleString()}</p>
         </CardContent></Card>
-        <Card className="border-border/60 sm:col-span-1 col-span-2"><CardContent className="pt-4 pb-3">
-          <p className="text-xs text-muted-foreground">Avg Cost / Vehicle</p>
-          <p className="text-xl font-bold font-jakarta mt-1">
-            UGX {vehicleStats.length > 0 ? Math.round(totalFleetCost / vehicleStats.length).toLocaleString() : 0}
-          </p>
+        <Card className="border-border/60"><CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground">Labour Cost</p>
+          <p className="text-xl font-bold font-jakarta mt-1">UGX {totalLabour.toLocaleString()}</p>
+        </CardContent></Card>
+        <Card className="border-border/60"><CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground">Hired (Truck + Driver)</p>
+          <p className="text-xl font-bold font-jakarta mt-1">UGX {totalHired.toLocaleString()}</p>
         </CardContent></Card>
       </div>
 
-      {/* Bar chart */}
+      {/* Stacked bar chart */}
       <Card className="border-border/60">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold font-jakarta flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
-            Repair Cost by Vehicle (Top 8)
+            Cost Breakdown by Vehicle (Top 8)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={v => [`UGX ${v.toLocaleString()}`, 'Repair Cost']} />
-              <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Tooltip formatter={v => [`UGX ${Number(v).toLocaleString()}`]} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="Parts" stackId="a" fill="hsl(var(--chart-1))" />
+              <Bar dataKey="Labour" stackId="a" fill="hsl(var(--chart-2))" />
+              <Bar dataKey="Hired Truck" stackId="a" fill="hsl(var(--chart-3))" />
+              <Bar dataKey="Hired Driver" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Vehicle breakdown table */}
+      {/* Detail table */}
       <Card className="border-border/60">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold font-jakarta">Vehicle Repair Breakdown</CardTitle>
@@ -130,8 +150,11 @@ export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [
                 <th className="text-left text-xs text-muted-foreground pb-2">Vehicle</th>
                 <th className="text-left text-xs text-muted-foreground pb-2">Type</th>
                 <th className="text-right text-xs text-muted-foreground pb-2">Orders</th>
-                <th className="text-right text-xs text-muted-foreground pb-2">Total Cost (UGX)</th>
-                <th className="text-left text-xs text-muted-foreground pb-2 pl-3">Fault Codes</th>
+                <th className="text-right text-xs text-muted-foreground pb-2">Parts</th>
+                <th className="text-right text-xs text-muted-foreground pb-2">Labour</th>
+                <th className="text-right text-xs text-muted-foreground pb-2">Hired Truck</th>
+                <th className="text-right text-xs text-muted-foreground pb-2">Hired Driver</th>
+                <th className="text-right text-xs text-muted-foreground pb-2 font-bold">Total (UGX)</th>
                 <th className="text-left text-xs text-muted-foreground pb-2 pl-3">Flags</th>
               </tr>
             </thead>
@@ -145,20 +168,11 @@ export default function VehicleRepairCostSummary({ vehicles = [], workOrders = [
                     </Badge>
                   </td>
                   <td className="py-2 text-xs text-right">{v.orderCount}</td>
-                  <td className="py-2 text-xs text-right font-semibold text-primary">
-                    {v.totalCost.toLocaleString()}
-                  </td>
-                  <td className="py-2 pl-3">
-                    <div className="flex flex-wrap gap-1">
-                      {[...v.faultCodes].slice(0, 4).map(fc => (
-                        <Badge key={fc} className="text-xs bg-orange-100 text-orange-700" variant="secondary">{fc}</Badge>
-                      ))}
-                      {v.faultCodes.size > 4 && (
-                        <Badge className="text-xs bg-muted text-muted-foreground" variant="secondary">+{v.faultCodes.size - 4}</Badge>
-                      )}
-                      {v.faultCodes.size === 0 && <span className="text-xs text-muted-foreground">—</span>}
-                    </div>
-                  </td>
+                  <td className="py-2 text-xs text-right">{v.partsCost.toLocaleString()}</td>
+                  <td className="py-2 text-xs text-right">{v.labourCost.toLocaleString()}</td>
+                  <td className="py-2 text-xs text-right">{v.hiredTruckCost.toLocaleString()}</td>
+                  <td className="py-2 text-xs text-right">{v.hiredDriverCost.toLocaleString()}</td>
+                  <td className="py-2 text-xs text-right font-semibold text-primary">{v.totalCost.toLocaleString()}</td>
                   <td className="py-2 pl-3">
                     {v.criticalCount > 0 && (
                       <span className="flex items-center gap-1 text-xs text-red-600">

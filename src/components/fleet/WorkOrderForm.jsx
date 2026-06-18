@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 export default function WorkOrderForm({ workOrder, vehicles, onClose, onSaved }) {
   const [form, setForm] = useState(workOrder || {
     vehicle_id: '', order_type: 'corrective', title: '', description: '',
-    priority: 'medium', scheduled_date: '', assigned_technician: '', cost_ugx: '', notes: '',
+    priority: 'medium', scheduled_date: '', assigned_technician: '',
+    parts_cost_ugx: '', labour_cost_ugx: '', hired_truck_cost_ugx: '', hired_driver_cost_ugx: '',
+    notes: '',
   });
 
   const mutation = useMutation({
@@ -30,7 +32,6 @@ export default function WorkOrderForm({ workOrder, vehicles, onClose, onSaved })
             { label: 'Title', key: 'title', type: 'text', required: true },
             { label: 'Assigned Technician', key: 'assigned_technician', type: 'text' },
             { label: 'Scheduled Date', key: 'scheduled_date', type: 'date' },
-            { label: 'Cost (UGX)', key: 'cost_ugx', type: 'number' },
           ].map(f => (
             <div key={f.key}>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{f.label}</label>
@@ -52,6 +53,24 @@ export default function WorkOrderForm({ workOrder, vehicles, onClose, onSaved })
               </select>
             </div>
           ))}
+          {/* Cost Breakdown */}
+          <div className="pt-1">
+            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Cost Breakdown (UGX)</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Parts Cost', key: 'parts_cost_ugx' },
+                { label: 'Labour Cost', key: 'labour_cost_ugx' },
+                { label: 'Hired Truck Cost', key: 'hired_truck_cost_ugx' },
+                { label: 'Hired Driver Cost', key: 'hired_driver_cost_ugx' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">{f.label}</label>
+                  <input type="number" className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background"
+                    value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
+                </div>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
             <textarea className="w-full border border-input rounded-lg px-3 py-2 text-sm bg-background resize-none" rows={3}
