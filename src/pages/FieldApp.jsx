@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Truck, LogOut, RefreshCw, AlertTriangle, Users } from 'lucide-react';
+import { Truck, LogOut, RefreshCw, AlertTriangle, Users, Package } from 'lucide-react';
+import DistributionModal from '@/components/distributions/DistributionModal';
 import { Button } from '@/components/ui/button';
 import DriverJobCard from '@/components/driver/DriverJobCard';
 import DriverStats from '@/components/driver/DriverStats';
@@ -44,6 +45,8 @@ export default function FieldApp() {
   const [showPinSwitch, setShowPinSwitch] = useState(false);
   const [incidentOpen, setIncidentOpen] = useState(false);
   const [selectedJobForIncident, setSelectedJobForIncident] = useState(null);
+  const [distributionOpen, setDistributionOpen] = useState(false);
+  const [selectedJobForDistribution, setSelectedJobForDistribution] = useState(null);
 
   // Register current base44 user into sessions on first load
   useEffect(() => {
@@ -147,6 +150,11 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
   const handleReportIncident = (job) => {
     setSelectedJobForIncident(job);
     setIncidentOpen(true);
+  };
+
+  const handleGiveOutItems = (job) => {
+    setSelectedJobForDistribution(job);
+    setDistributionOpen(true);
   };
 
   const handleSwitchUser = (user) => {
@@ -264,6 +272,7 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
                 onStatusUpdate={handleStatusUpdate}
                 onPhotoUpload={handlePhotoUpload}
                 onReportIncident={handleReportIncident}
+                onGiveOutItems={handleGiveOutItems}
               />
             ))}
           </div>
@@ -287,6 +296,15 @@ Assign quality_score 0-100 (90-100: Excellent, 70-89: Good, 50-69: Acceptable, <
         user={activeUser}
         isOnline={isOnline}
       />
+
+      {distributionOpen && selectedJobForDistribution && (
+        <DistributionModal
+          job={selectedJobForDistribution}
+          activeUser={activeUser}
+          onClose={() => { setDistributionOpen(false); setSelectedJobForDistribution(null); }}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['field-jobs'] })}
+        />
+      )}
     </div>
   );
 }
