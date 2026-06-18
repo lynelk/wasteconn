@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import MobileSelect from '@/components/ui/MobileSelect';
+import EntitySelect from '@/components/common/EntitySelect';
 import { queueWBTransaction } from '@/lib/offlineDB';
 
 const WASTE_CATEGORIES = ['plastic','paper','glass','metal','organic','e_waste','textile','mixed'];
@@ -17,7 +18,7 @@ const PAYMENT_METHODS = ['mtn_momo','airtel_money','cash','wallet_credit'];
 const BASE_RATES = { plastic: 800, paper: 300, glass: 200, metal: 1200, organic: 150, e_waste: 2000, textile: 400, mixed: 200 };
 const GRADE_MULTIPLIER = { A: 1.2, B: 1.0, C: 0.7, rejected: 0 };
 
-export default function WasteBankTransactionForm({ transactionType, customers = [], onClose, isOnline = true }) {
+export default function WasteBankTransactionForm({ transactionType, onClose, isOnline = true }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     customer_id: '', waste_category: 'plastic', grade: 'B', weight_kg: '',
@@ -109,7 +110,14 @@ Return JSON: { grade: string, reason: string, fraud_risk: "low"|"medium"|"high" 
       <div>
         <Label className="text-xs">Customer *</Label>
         <div className="mt-1">
-          <MobileSelect value={form.customer_id || ''} onChange={v => set('customer_id', v)} options={[{ value: '', label: 'Select customer…' }, ...customers.map(c => ({ value: c.id, label: `${c.full_name} · ${c.phone}` }))]} placeholder="Select customer" />
+          <EntitySelect
+            entity="Customer"
+            value={form.customer_id || ''}
+            onChange={(id) => set('customer_id', id)}
+            searchFields={['full_name', 'phone', 'account_number']}
+            getLabel={(c) => `${c.full_name}${c.phone ? ` · ${c.phone}` : ''}`}
+            placeholder="Select customer"
+          />
         </div>
       </div>
 
