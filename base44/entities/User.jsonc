@@ -3,14 +3,6 @@
   "name": "User",
   "title": "User",
   "properties": {
-    "email": {
-      "type": "string",
-      "description": "The email of the user"
-    },
-    "full_name": {
-      "type": "string",
-      "description": "The full name of the user"
-    },
     "role": {
       "type": "string",
       "enum": [
@@ -80,21 +72,21 @@
     "last_active_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "driving_permit_number": {
+      "type": "string",
+      "description": "Driver's licence / permit number (drivers only)"
+    },
+    "driving_permit_expiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiry date of driving permit"
+    },
+    "nin": {
+      "type": "string",
+      "description": "National Identification Number (Uganda NIN)"
     }
   },
-  "required": [
-    "tenant_id",
-    "phone",
-    "email",
-    "branch_id",
-    "field_pin",
-    "last_active_at",
-    "full_name",
-    "avatar_url",
-    "rbac_role_id",
-    "zone_ids",
-    "facility_ids"
-  ],
   "rls": {
     "create": {
       "$or": [

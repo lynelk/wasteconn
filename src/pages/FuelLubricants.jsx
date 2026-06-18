@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import FuelLogForm from '@/components/fleet/FuelLogForm';
 import EfficiencyHeatmap from '@/components/fleet/EfficiencyHeatmap';
 import FuelEfficiencyDashboard from '@/components/fuel/FuelEfficiencyDashboard';
+import RouteEfficiencyComparison from '@/components/fuel/RouteEfficiencyComparison';
 
 export default function FuelLubricants() {
   const queryClient = useQueryClient();
@@ -148,6 +149,7 @@ export default function FuelLubricants() {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="management"><Fuel className="w-3.5 h-3.5 mr-1.5" />Fuel Log</TabsTrigger>
           <TabsTrigger value="analytics"><TrendingUp className="w-3.5 h-3.5 mr-1.5" />Efficiency Analysis</TabsTrigger>
+          <TabsTrigger value="routes"><BarChart2 className="w-3.5 h-3.5 mr-1.5" />Vehicle & Route Compare</TabsTrigger>
           <TabsTrigger value="heatmap"><BarChart2 className="w-3.5 h-3.5 mr-1.5" />Heatmap</TabsTrigger>
         </TabsList>
 
@@ -220,6 +222,11 @@ export default function FuelLubricants() {
         {/* ── Efficiency Analysis Tab ── */}
         <TabsContent value="analytics" className="mt-4">
           <FuelEfficiencyDashboard fuelLogs={filteredLogs} vehicles={vehicles} routes={routes} />
+        </TabsContent>
+
+        {/* ── Vehicle & Route Comparison Tab ── */}
+        <TabsContent value="routes" className="mt-4">
+          <RouteEfficiencyComparison fuelLogs={filteredLogs} vehicles={vehicles} routes={routes} />
         </TabsContent>
 
         {/* ── Heatmap Tab ── */}

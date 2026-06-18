@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
 } from 'recharts';
-import { ArrowLeft, User, CheckCircle2, Camera, AlertTriangle, Truck, Calendar, Clock, Fuel } from 'lucide-react';
+import { ArrowLeft, User, CheckCircle2, Camera, AlertTriangle, Truck, Calendar, Clock, Fuel, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import DriverFuelEfficiencyPanel from '@/components/fuel/DriverFuelEfficiencyPanel';
+import DriverProfileDetails from '@/components/driver/DriverProfileDetails';
 
 export default function DriverDetail() {
   const params = new URLSearchParams(window.location.search);
@@ -149,9 +150,10 @@ export default function DriverDetail() {
 
       {/* Tabbed Content */}
       <Tabs defaultValue="pickups">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="pickups"><Calendar className="w-3.5 h-3.5 mr-1.5" />Pickups</TabsTrigger>
           <TabsTrigger value="shifts"><Clock className="w-3.5 h-3.5 mr-1.5" />Shifts & Fuel</TabsTrigger>
+          <TabsTrigger value="profile"><FileText className="w-3.5 h-3.5 mr-1.5" />Profile & Docs</TabsTrigger>
         </TabsList>
 
         {/* Pickups Tab */}
@@ -240,6 +242,11 @@ export default function DriverDetail() {
         {/* Shifts & Fuel Tab */}
         <TabsContent value="shifts" className="mt-4">
           <DriverFuelEfficiencyPanel shifts={shifts} fuelLogs={fuelLogs} vehicles={vehicles} />
+        </TabsContent>
+
+        {/* Profile & Docs Tab */}
+        <TabsContent value="profile" className="mt-4">
+          <DriverProfileDetails driver={driver} driverId={driverId} />
         </TabsContent>
       </Tabs>
     </div>
