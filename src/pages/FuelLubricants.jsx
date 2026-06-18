@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Fuel, BarChart2, Plus, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
+import EVEfficiencyAnalytics from '@/components/fuel/EVEfficiencyAnalytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -149,6 +150,7 @@ export default function FuelLubricants() {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="management"><Fuel className="w-3.5 h-3.5 mr-1.5" />Fuel Log</TabsTrigger>
           <TabsTrigger value="analytics"><TrendingUp className="w-3.5 h-3.5 mr-1.5" />Efficiency Analysis</TabsTrigger>
+          <TabsTrigger value="ev"><Zap className="w-3.5 h-3.5 mr-1.5" />EV Analytics</TabsTrigger>
           <TabsTrigger value="routes"><BarChart2 className="w-3.5 h-3.5 mr-1.5" />Vehicle & Route Compare</TabsTrigger>
           <TabsTrigger value="heatmap"><BarChart2 className="w-3.5 h-3.5 mr-1.5" />Heatmap</TabsTrigger>
         </TabsList>
@@ -222,6 +224,11 @@ export default function FuelLubricants() {
         {/* ── Efficiency Analysis Tab ── */}
         <TabsContent value="analytics" className="mt-4">
           <FuelEfficiencyDashboard fuelLogs={filteredLogs} vehicles={vehicles} routes={routes} />
+        </TabsContent>
+
+        {/* ── EV Analytics Tab ── */}
+        <TabsContent value="ev" className="mt-4">
+          <EVEfficiencyAnalytics fuelLogs={filteredLogs} vehicles={vehicles} />
         </TabsContent>
 
         {/* ── Vehicle & Route Comparison Tab ── */}
