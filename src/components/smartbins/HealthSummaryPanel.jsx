@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Wrench, WifiOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { classifyFill, predictDaysToFull } from '@/lib/capacityAnalytics';
+import { predictDaysToFull } from '@/lib/capacityAnalytics';
 
 function HealthRow({ icon: Icon, label, items, iconClass }) {
   if (!items.length) return null;

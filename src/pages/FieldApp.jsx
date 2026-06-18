@@ -15,7 +15,6 @@ import IncidentReportModal from '@/components/field/IncidentReportModal';
 import { useSyncManager } from '@/lib/useSyncManager';
 import {
   cacheDriverJobs,
-  getCachedDriverJobs,
   updateCachedDriverJob,
   enqueueAction,
 } from '@/lib/offlineDB';
