@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { Fuel, Plus, Zap } from 'lucide-react';
+import { Fuel, Plus, Zap, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WorkOrderForm from '@/components/fleet/WorkOrderForm';
 import FuelLogForm from '@/components/fleet/FuelLogForm';
 import AIPredictiveMaintenance from '@/components/fleet/AIPredictiveMaintenance';
+import VehicleRepairCostSummary from '@/components/fleet/VehicleRepairCostSummary';
 
 const priorityColor = {
   low: 'bg-gray-100 text-gray-600',
@@ -100,6 +101,7 @@ export default function FleetMaintenance() {
             <TabsList className="mb-4">
               <TabsTrigger value="workorders">Work Orders ({workOrders.length})</TabsTrigger>
               <TabsTrigger value="fuel">Fuel Log ({fuelLogs.length})</TabsTrigger>
+              <TabsTrigger value="costs"><BarChart2 className="w-3.5 h-3.5 mr-1" />Repair Costs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="workorders">
@@ -151,6 +153,10 @@ export default function FleetMaintenance() {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="costs">
+              <VehicleRepairCostSummary vehicles={vehicles} workOrders={workOrders} />
             </TabsContent>
 
             <TabsContent value="fuel">
