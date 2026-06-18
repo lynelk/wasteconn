@@ -1,0 +1,99 @@
+{
+  "name": "EFRISInvoiceLog",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "payment_id": {
+      "type": "string",
+      "description": "Linked Payment record ID"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Customer who made the payment"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Customer name snapshot"
+    },
+    "customer_tin": {
+      "type": "string",
+      "description": "Customer Tax Identification Number"
+    },
+    "invoice_number": {
+      "type": "string",
+      "description": "EFRIS invoice number from URA"
+    },
+    "gross_amount_ugx": {
+      "type": "number",
+      "description": "Total invoice amount including tax"
+    },
+    "tax_amount_ugx": {
+      "type": "number",
+      "description": "VAT/tax amount"
+    },
+    "net_amount_ugx": {
+      "type": "number",
+      "description": "Amount before tax"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "success",
+        "failed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "EFRIS submission status"
+    },
+    "submission_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When invoice was submitted to EFRIS"
+    },
+    "ura_response_code": {
+      "type": "string",
+      "description": "Response code from URA EFRIS API"
+    },
+    "ura_response_message": {
+      "type": "string",
+      "description": "Response message from URA"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL to generated EFRIS invoice PDF"
+    },
+    "google_drive_url": {
+      "type": "string",
+      "description": "URL to archived PDF in Google Drive"
+    },
+    "google_sheet_row_id": {
+      "type": "string",
+      "description": "Row ID in monthly Google Sheets export"
+    },
+    "failure_reason": {
+      "type": "string",
+      "description": "Reason for submission failure"
+    },
+    "retry_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of retry attempts"
+    },
+    "month_year": {
+      "type": "string",
+      "description": "Month-Year string for grouping e.g. 2026-06"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "payment_id",
+    "gross_amount_ugx",
+    "status"
+  ]
+}
