@@ -1,31 +1,24 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// QuickBooks Integration - Provisioned and ready for OAuth connector setup.
-// This function handles:
-//   - action: "push_invoice"   → Create invoice in QuickBooks
-//   - action: "pull_invoices"  → Pull invoices from QuickBooks
-//   - action: "push_payment"   → Record payment in QuickBooks
-//
-// IMPORTANT: Requires QuickBooks Online OAuth credentials to be configured.
-// Set the following secrets when ready:
-//   - QBO_CLIENT_ID
-//   - QBO_CLIENT_SECRET
-//   - QBO_REFRESH_TOKEN
-//   - QBO_REALM_ID
+/**
+ * QuickBooks Online Integration
+ * Credentials resolution order:
+ *   1. IntegrationConfig DB record (api_key=ClientID, api_secret=ClientSecret,
+ *      refresh_token, access_token, token_expires_at, settings.realm_id)
+ *   2. Environment secrets fallback (QBO_CLIENT_ID, QBO_CLIENT_SECRET,
+ *      QBO_REFRESH_TOKEN, QBO_REALM_ID)
+ *
+ * Actions: push_invoice | pull_invoices | push_payment | get_rate | refresh_token
+ */
 
 const QBO_BASE_URL = 'https://quickbooks.api.intuit.com';
 const QBO_AUTH_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
 const FALLBACK_UGX_USD = 3700;
 
-async function refreshQboToken() {
-  const clientId = Deno.env.get('QBO_CLIENT_ID');
-  const clientSecret = Deno.env.get('QBO_CLIENT_SECRET');
-  const refreshToken = Deno.env.get('QBO_REFRESH_TOKEN');
-
+async function refreshQboToken(clientId, clientSecret, refreshToken) {
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error('QuickBooks credentials not configured. Please set QBO_CLIENT_ID, QBO_CLIENT_SECRET, and QBO_REFRESH_TOKEN secrets.');
+    throw new Error('QuickBooks credentials not configured. Provide Client ID, Client Secret, and Refresh Token in IntegrationConfig or environment secrets.');
   }
-
   const credentials = btoa(`${clientId}:${clientSecret}`);
   const res = await fetch(QBO_AUTH_URL, {
     method: 'POST',
@@ -33,12 +26,13 @@ async function refreshQboToken() {
       'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
+    body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
   });
-
-  if (!res.ok) throw new Error(`QBO token refresh failed: ${res.status}`);
-  const data = await res.json();
-  return data.access_token;
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`QBO token refresh failed (${res.status}): ${txt}`);
+  }
+  return res.json(); // { access_token, refresh_token, expires_in, ... }
 }
 
 async function qboRequest(accessToken, realmId, method, path, body = null) {
@@ -58,38 +52,15 @@ async function qboRequest(accessToken, realmId, method, path, body = null) {
   return res.json();
 }
 
-async function getLiveUgxRate(base44): Promise<number> {
-  // Try to get a cached rate from system config (valid 24h)
-  try {
-    const configs = await base44.asServiceRole.entities.SystemConfig.filter({ key: 'ugx_usd_rate' });
-    const cached = configs?.[0];
-    if (cached && cached.updated_date) {
-      const ageHours = (Date.now() - new Date(cached.updated_date).getTime()) / 3600000;
-      if (ageHours < 24 && cached.value) return parseFloat(cached.value);
-    }
-  } catch {}
-
-  // Fetch from ExchangeRate-API (free, no key needed for basic)
+async function getLiveUgxRate() {
   try {
     const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(5000) });
     if (res.ok) {
       const data = await res.json();
       const rate = data?.rates?.UGX;
-      if (rate && rate > 1000) {
-        // Cache in SystemConfig
-        try {
-          const configs = await base44.asServiceRole.entities.SystemConfig.filter({ key: 'ugx_usd_rate' });
-          if (configs?.[0]) {
-            await base44.asServiceRole.entities.SystemConfig.update(configs[0].id, { value: String(rate) });
-          } else {
-            await base44.asServiceRole.entities.SystemConfig.create({ key: 'ugx_usd_rate', value: String(rate) });
-          }
-        } catch {}
-        return rate;
-      }
+      if (rate && rate > 1000) return rate;
     }
-  } catch {}
-
+  } catch { /* fall through */ }
   return FALLBACK_UGX_USD;
 }
 
@@ -101,16 +72,70 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { action, invoice_id, payment_data } = await req.json();
-    const realmId = Deno.env.get('QBO_REALM_ID');
+    const body = await req.json();
+    const { action, invoice_id, payment_data } = body;
 
-    if (!realmId) {
-      return Response.json({ error: 'QuickBooks not configured. QBO_REALM_ID secret is missing.', provisioned: true }, { status: 503 });
+    // --- Resolve credentials from IntegrationConfig DB → env secrets fallback ---
+    let clientId, clientSecret, storedRefreshToken, storedAccessToken, tokenExpiresAt, realmId;
+    let configRecord = null;
+
+    const configs = await base44.asServiceRole.entities.IntegrationConfig.filter({ integration_id: 'quickbooks' });
+    configRecord = configs?.[0] || null;
+
+    if (configRecord) {
+      clientId = configRecord.api_key || null;
+      clientSecret = configRecord.api_secret || null;
+      storedRefreshToken = configRecord.refresh_token || null;
+      storedAccessToken = configRecord.access_token || null;
+      tokenExpiresAt = configRecord.token_expires_at || null;
+      realmId = configRecord.settings?.realm_id || null;
     }
 
-    const accessToken = await refreshQboToken();
-    const ugxToUsd = await getLiveUgxRate(base44);
+    // Env secret fallbacks
+    if (!clientId) clientId = Deno.env.get('QBO_CLIENT_ID') || null;
+    if (!clientSecret) clientSecret = Deno.env.get('QBO_CLIENT_SECRET') || null;
+    if (!storedRefreshToken) storedRefreshToken = Deno.env.get('QBO_REFRESH_TOKEN') || null;
+    if (!realmId) realmId = Deno.env.get('QBO_REALM_ID') || null;
 
+    if (!realmId) {
+      return Response.json({
+        error: 'QuickBooks Realm ID not configured. Set settings.realm_id in IntegrationConfig or QBO_REALM_ID secret.',
+        provisioned: true,
+      }, { status: 503 });
+    }
+
+    // --- Determine if we need a fresh access token ---
+    let accessToken = storedAccessToken;
+    const now = Date.now();
+    const expired = !tokenExpiresAt || new Date(tokenExpiresAt).getTime() - now < 60_000; // refresh 1 min before expiry
+
+    if (!accessToken || expired) {
+      const tokenData = await refreshQboToken(clientId, clientSecret, storedRefreshToken);
+      accessToken = tokenData.access_token;
+      const newExpiry = new Date(now + tokenData.expires_in * 1000).toISOString();
+
+      // Persist refreshed tokens back to IntegrationConfig
+      if (configRecord) {
+        await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+          access_token: tokenData.access_token,
+          token_expires_at: newExpiry,
+          // If QB returned a new refresh token (rolling token), persist it
+          ...(tokenData.refresh_token ? { refresh_token: tokenData.refresh_token } : {}),
+          status: 'healthy',
+          last_error: null,
+          last_successful_sync_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    // --- Handle "refresh_token" action: just test connectivity and return ---
+    if (action === 'refresh_token') {
+      return Response.json({ success: true, message: 'QuickBooks token refreshed successfully.' });
+    }
+
+    const ugxToUsd = await getLiveUgxRate();
+
+    // --- push_invoice ---
     if (action === 'push_invoice') {
       const invoices = await base44.asServiceRole.entities.Invoice.filter({ id: invoice_id });
       const invoice = invoices?.[0];
@@ -127,43 +152,64 @@ Deno.serve(async (req) => {
         Line: (invoice.items || []).map((item, i) => ({
           Id: String(i + 1),
           LineNum: i + 1,
-          Amount: (item.total_ugx || 0) / ugxToUsd,
+          Amount: parseFloat(((item.total_ugx || 0) / ugxToUsd).toFixed(2)),
           DetailType: 'SalesItemLineDetail',
           SalesItemLineDetail: {
             ItemRef: { value: '1', name: item.description },
             Qty: item.quantity || 1,
-            UnitPrice: (item.unit_price_ugx || 0) / ugxToUsd,
+            UnitPrice: parseFloat(((item.unit_price_ugx || 0) / ugxToUsd).toFixed(2)),
           },
         })),
       };
 
       const result = await qboRequest(accessToken, realmId, 'POST', '/invoice', { Invoice: qboInvoice });
+      if (configRecord) {
+        await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+          last_successful_sync_at: new Date().toISOString(),
+          last_error: null,
+        });
+      }
       return Response.json({ success: true, qbo_invoice_id: result.Invoice?.Id, rate_used: ugxToUsd });
     }
 
+    // --- pull_invoices ---
     if (action === 'pull_invoices') {
       const query = encodeURIComponent("SELECT * FROM Invoice WHERE TxnDate > '2026-01-01' MAXRESULTS 100");
       const result = await qboRequest(accessToken, realmId, 'GET', `/query?query=${query}`);
       return Response.json({ success: true, invoices: result.QueryResponse?.Invoice || [] });
     }
 
+    // --- push_payment ---
     if (action === 'push_payment') {
       const { amount, invoice_qbo_id, payment_date } = payment_data || {};
       const qboPayment = {
-        TotalAmt: amount,
+        TotalAmt: parseFloat((amount / ugxToUsd).toFixed(2)),
         TxnDate: payment_date || new Date().toISOString().slice(0, 10),
         LinkedTxn: [{ TxnId: invoice_qbo_id, TxnType: 'Invoice' }],
       };
       const result = await qboRequest(accessToken, realmId, 'POST', '/payment', { Payment: qboPayment });
-      return Response.json({ success: true, qbo_payment_id: result.Payment?.Id });
+      return Response.json({ success: true, qbo_payment_id: result.Payment?.Id, rate_used: ugxToUsd });
     }
 
+    // --- get_rate ---
     if (action === 'get_rate') {
       return Response.json({ success: true, ugx_usd_rate: ugxToUsd });
     }
 
-    return Response.json({ error: 'Unknown action. Use: push_invoice, pull_invoices, push_payment, get_rate' }, { status: 400 });
+    return Response.json({ error: 'Unknown action. Use: push_invoice, pull_invoices, push_payment, get_rate, refresh_token' }, { status: 400 });
+
   } catch (error) {
+    // Persist error to IntegrationConfig
+    try {
+      const base44 = createClientFromRequest(req);
+      const configs = await base44.asServiceRole.entities.IntegrationConfig.filter({ integration_id: 'quickbooks' });
+      if (configs?.[0]) {
+        await base44.asServiceRole.entities.IntegrationConfig.update(configs[0].id, {
+          status: 'error',
+          last_error: error.message,
+        });
+      }
+    } catch { /* ignore secondary failure */ }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

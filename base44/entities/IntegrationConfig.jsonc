@@ -19,15 +19,28 @@
     },
     "api_key": {
       "type": "string",
-      "description": "Primary API key or token"
+      "description": "Primary API key, token, or OAuth Client ID"
     },
     "api_secret": {
       "type": "string",
-      "description": "API secret or password (where applicable)"
+      "description": "API secret, password, or OAuth Client Secret (where applicable)"
     },
     "username": {
       "type": "string",
       "description": "Username credential (where applicable)"
+    },
+    "refresh_token": {
+      "type": "string",
+      "description": "OAuth refresh token \u2014 used by QuickBooks and similar OAuth 2.0 integrations to obtain new access tokens"
+    },
+    "access_token": {
+      "type": "string",
+      "description": "Short-lived OAuth access token \u2014 cached here after a token refresh to avoid unnecessary round-trips"
+    },
+    "token_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the current access_token expires \u2014 used to decide when to refresh"
     },
     "webhook_secret": {
       "type": "string",
@@ -35,7 +48,7 @@
     },
     "settings": {
       "type": "object",
-      "description": "Integration-specific settings e.g. poll_interval_minutes, alert_thresholds",
+      "description": "Integration-specific settings e.g. poll_interval_minutes, realm_id, alert_thresholds",
       "additionalProperties": true
     },
     "status": {

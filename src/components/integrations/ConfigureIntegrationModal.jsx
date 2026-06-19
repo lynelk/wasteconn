@@ -8,9 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle, XCircle, TestTube2 } from 'lucide-react';
 
 // Per-integration credential field definitions
+// Each field maps to a top-level IntegrationConfig property
 const CREDENTIAL_FIELDS = {
   citoconnect: [
     { key: 'api_url', label: 'API URL', placeholder: 'https://api.citoconnect.com', type: 'url' },
@@ -28,10 +29,23 @@ const CREDENTIAL_FIELDS = {
   quickbooks: [
     { key: 'api_key', label: 'Client ID', placeholder: 'QuickBooks OAuth Client ID', type: 'text' },
     { key: 'api_secret', label: 'Client Secret', placeholder: 'QuickBooks OAuth Client Secret', type: 'password' },
+    { key: 'refresh_token', label: 'Refresh Token', placeholder: 'OAuth Refresh Token (from initial auth flow)', type: 'password' },
+    { key: 'access_token', label: 'Access Token', placeholder: 'Cached access token (auto-managed)', type: 'password' },
   ],
   merx365: [
     { key: 'api_url', label: 'API URL', placeholder: 'https://api.merx365.com', type: 'url' },
     { key: 'api_key', label: 'API Key', placeholder: 'Enter Merx365 API key', type: 'password' },
+  ],
+};
+
+// Per-integration settings fields (stored in the `settings` object)
+const SETTINGS_FIELDS = {
+  wialon: [
+    { key: 'poll_interval_minutes', label: 'Poll Interval (minutes)', placeholder: '5', type: 'number', default: '5' },
+    { key: 'deviation_threshold_m', label: 'Route Deviation Threshold (metres)', placeholder: '500', type: 'number', default: '500' },
+  ],
+  quickbooks: [
+    { key: 'realm_id', label: 'Realm ID (Company ID)', placeholder: 'e.g. 1234567890', type: 'text' },
   ],
 };
 
@@ -45,6 +59,7 @@ const STATUS_BADGE = {
 export default function ConfigureIntegrationModal({ integration, config, open, onClose, onSaved }) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [showSecrets, setShowSecrets] = useState({});
   const [form, setForm] = useState({
     is_active: true,
@@ -52,8 +67,12 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
     api_key: '',
     api_secret: '',
     username: '',
+    refresh_token: '',
+    access_token: '',
+    token_expires_at: '',
     webhook_secret: '',
     notes: '',
+    settings: {},
   });
 
   useEffect(() => {
@@ -64,13 +83,26 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
         api_key: config.api_key || '',
         api_secret: config.api_secret || '',
         username: config.username || '',
+        refresh_token: config.refresh_token || '',
+        access_token: config.access_token || '',
+        token_expires_at: config.token_expires_at || '',
         webhook_secret: config.webhook_secret || '',
         notes: config.notes || '',
+        settings: config.settings || {},
       });
     } else {
-      setForm({ is_active: true, api_url: '', api_key: '', api_secret: '', username: '', webhook_secret: '', notes: '' });
+      setForm({
+        is_active: true, api_url: '', api_key: '', api_secret: '', username: '',
+        refresh_token: '', access_token: '', token_expires_at: '', webhook_secret: '',
+        notes: '', settings: {},
+      });
     }
+    setShowSecrets({});
   }, [config, open]);
+
+  const setSettingField = (key, value) => {
+    setForm(f => ({ ...f, settings: { ...f.settings, [key]: value } }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -81,9 +113,13 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
       api_key: form.api_key || undefined,
       api_secret: form.api_secret || undefined,
       username: form.username || undefined,
+      refresh_token: form.refresh_token || undefined,
+      access_token: form.access_token || undefined,
+      token_expires_at: form.token_expires_at || undefined,
       webhook_secret: form.webhook_secret || undefined,
       notes: form.notes || undefined,
-      status: form.is_active ? 'healthy' : 'disabled',
+      settings: Object.keys(form.settings).length > 0 ? form.settings : undefined,
+      status: form.is_active ? (config?.status === 'healthy' ? 'healthy' : 'unconfigured') : 'disabled',
     };
     if (config?.id) {
       await base44.entities.IntegrationConfig.update(config.id, payload);
@@ -96,12 +132,41 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
     onClose();
   };
 
+  const handleTestConnection = async () => {
+    if (integration.id !== 'quickbooks' && integration.id !== 'wialon') return;
+    setTesting(true);
+    try {
+      if (integration.id === 'quickbooks') {
+        const res = await base44.functions.invoke('quickbooksProvision', { action: 'refresh_token' });
+        if (res.data?.success) {
+          toast({ title: 'QuickBooks Connected', description: 'Token refreshed successfully.' });
+        } else {
+          toast({ title: 'Connection Failed', description: res.data?.error || 'Unknown error', variant: 'destructive' });
+        }
+      } else if (integration.id === 'wialon') {
+        const res = await base44.functions.invoke('wialonSync');
+        if (res.data?.stub) {
+          toast({ title: 'Token Missing', description: res.data.message, variant: 'destructive' });
+        } else if (res.data?.vehicles_synced !== undefined) {
+          toast({ title: 'Wialon Connected', description: `Synced ${res.data.vehicles_synced} vehicles.` });
+        } else {
+          toast({ title: 'Connection Failed', description: res.data?.error || 'Unknown error', variant: 'destructive' });
+        }
+      }
+    } catch (e) {
+      toast({ title: 'Test Failed', description: e.message, variant: 'destructive' });
+    }
+    setTesting(false);
+  };
+
   const toggleSecret = (key) => setShowSecrets(s => ({ ...s, [key]: !s[key] }));
 
   const fields = CREDENTIAL_FIELDS[integration?.id] || [];
+  const settingsFields = SETTINGS_FIELDS[integration?.id] || [];
   const status = config?.status || 'unconfigured';
   const StatusMeta = STATUS_BADGE[status] || STATUS_BADGE.unconfigured;
   const StatusIcon = StatusMeta.icon;
+  const canTest = integration?.id === 'quickbooks' || integration?.id === 'wialon';
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -116,8 +181,11 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
         <Tabs defaultValue="credentials">
           <TabsList className="w-full">
             <TabsTrigger value="credentials" className="flex-1">Credentials</TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+            {settingsFields.length > 0 && (
+              <TabsTrigger value="integration_settings" className="flex-1">Settings</TabsTrigger>
+            )}
             <TabsTrigger value="status" className="flex-1">Status</TabsTrigger>
+            <TabsTrigger value="notes" className="flex-1">Notes</TabsTrigger>
           </TabsList>
 
           {/* Credentials Tab */}
@@ -155,6 +223,12 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
                     </button>
                   )}
                 </div>
+                {field.key === 'refresh_token' && (
+                  <p className="text-xs text-muted-foreground">Obtain this by completing the QuickBooks OAuth authorization flow.</p>
+                )}
+                {field.key === 'access_token' && (
+                  <p className="text-xs text-muted-foreground">Auto-managed. Leave blank to let the system refresh it automatically.</p>
+                )}
               </div>
             ))}
 
@@ -180,31 +254,36 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
             </div>
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-4 mt-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="notes" className="text-sm">Notes</Label>
-              <Input
-                id="notes"
-                placeholder="Internal notes about this integration..."
-                value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              />
-            </div>
-            <div className="rounded-lg border border-border/50 p-4 text-sm text-muted-foreground bg-muted/30">
-              <p className="font-medium text-foreground mb-1">Integration Features</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {integration?.features?.map(f => (
-                  <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
-                ))}
+          {/* Integration-specific Settings Tab */}
+          {settingsFields.length > 0 && (
+            <TabsContent value="integration_settings" className="space-y-4 mt-4">
+              {settingsFields.map(field => (
+                <div key={field.key} className="space-y-1.5">
+                  <Label htmlFor={`settings_${field.key}`} className="text-sm">{field.label}</Label>
+                  <Input
+                    id={`settings_${field.key}`}
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={form.settings[field.key] ?? field.default ?? ''}
+                    onChange={e => setSettingField(field.key, e.target.value)}
+                  />
+                </div>
+              ))}
+              <div className="rounded-lg border border-border/50 p-4 text-sm text-muted-foreground bg-muted/30">
+                <p className="font-medium text-foreground mb-2">Features</p>
+                <div className="flex flex-wrap gap-1">
+                  {integration?.features?.map(f => (
+                    <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
+                  ))}
+                </div>
+                {integration?.docsUrl && (
+                  <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline mt-3 block">
+                    View Documentation ↗
+                  </a>
+                )}
               </div>
-              {integration?.docsUrl && (
-                <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline mt-3 block">
-                  View Documentation ↗
-                </a>
-              )}
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
 
           {/* Status Tab */}
           <TabsContent value="status" className="space-y-4 mt-4">
@@ -214,11 +293,29 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
                 <p className="text-sm font-medium">Current Status</p>
                 <Badge className={`text-[10px] mt-0.5 ${StatusMeta.className}`}>{StatusMeta.label}</Badge>
               </div>
+              {canTest && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto gap-1.5 text-xs"
+                  onClick={handleTestConnection}
+                  disabled={testing}
+                >
+                  {testing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <TestTube2 className="w-3 h-3" />}
+                  Test Connection
+                </Button>
+              )}
             </div>
             {config?.last_successful_sync_at && (
               <div className="text-sm text-muted-foreground p-3 rounded-lg bg-muted/30 border border-border/40">
                 <span className="font-medium text-foreground">Last successful sync:</span>{' '}
                 {new Date(config.last_successful_sync_at).toLocaleString()}
+              </div>
+            )}
+            {config?.token_expires_at && (
+              <div className="text-sm text-muted-foreground p-3 rounded-lg bg-muted/30 border border-border/40">
+                <span className="font-medium text-foreground">Token expires:</span>{' '}
+                {new Date(config.token_expires_at).toLocaleString()}
               </div>
             )}
             {config?.last_error && (
@@ -229,9 +326,35 @@ export default function ConfigureIntegrationModal({ integration, config, open, o
             )}
             {!config && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No configuration saved yet. Add credentials to activate this integration.
+                No configuration saved yet. Add credentials in the Credentials tab to activate this integration.
               </p>
             )}
+          </TabsContent>
+
+          {/* Notes Tab */}
+          <TabsContent value="notes" className="space-y-4 mt-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="notes" className="text-sm">Internal Notes</Label>
+              <Input
+                id="notes"
+                placeholder="Internal notes about this integration..."
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+            <div className="rounded-lg border border-border/50 p-4 text-sm text-muted-foreground bg-muted/30">
+              <p className="font-medium text-foreground mb-2">Features</p>
+              <div className="flex flex-wrap gap-1">
+                {integration?.features?.map(f => (
+                  <Badge key={f} variant="secondary" className="text-[10px]">{f}</Badge>
+                ))}
+              </div>
+              {integration?.docsUrl && (
+                <a href={integration.docsUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline mt-3 block">
+                  View Documentation ↗
+                </a>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 

@@ -1,11 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * Wialon telematics sync:
- * 1. Authenticates with Wialon API using token
- * 2. Fetches unit (vehicle) list and syncs to Vehicle entity
- * 3. Fetches latest positions and ingests into VehicleTelematics
- * 4. Computes idling and route deviation flags
+ * 1. Reads credentials from IntegrationConfig DB record (falls back to env secrets)
+ * 2. Authenticates with Wialon API using token
+ * 3. Fetches unit (vehicle) list and syncs to Vehicle entity
+ * 4. Fetches latest positions and ingests into VehicleTelematics
+ * 5. Computes idling and route deviation flags
+ * 6. Updates last_successful_sync_at / last_error on IntegrationConfig
  */
 
 const ROUTE_DEVIATION_THRESHOLD_M = 500;
@@ -54,144 +56,205 @@ function parseLineString(geojson) {
   } catch { /* malformed geojson */ }
   return [];
 }
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user || !['admin', 'super_admin'].includes(user.role)) {
-    return Response.json({ error: 'Admin access required' }, { status: 403 });
+
+  // Allow both authenticated admin calls and scheduled (service-role) calls
+  let isScheduled = false;
+  try {
+    const user = await base44.auth.me();
+    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    }
+  } catch {
+    // Scheduled/service-role invocation — no user token present
+    isScheduled = true;
   }
 
-  const wialonToken = Deno.env.get('WIALON_API_TOKEN');
-  const wialonUrl = Deno.env.get('WIALON_API_URL') || 'https://hst-api.wialon.com/wialon/ajax.php';
+  // --- Resolve credentials: IntegrationConfig DB record → env secrets fallback ---
+  let wialonToken = null;
+  let wialonUrl = 'https://hst-api.wialon.com/wialon/ajax.php';
+  let configRecord = null;
+
+  try {
+    const configs = await base44.asServiceRole.entities.IntegrationConfig.filter({ integration_id: 'wialon' });
+    configRecord = configs?.[0] || null;
+    if (configRecord) {
+      wialonToken = configRecord.api_key || null;
+      if (configRecord.api_url) wialonUrl = configRecord.api_url + '/wialon/ajax.php';
+      if (configRecord.settings?.polling_url_override) wialonUrl = configRecord.settings.polling_url_override;
+    }
+  } catch { /* DB unavailable — fall through to env */ }
+
+  // Env secret fallback
+  if (!wialonToken) wialonToken = Deno.env.get('WIALON_API_TOKEN') || null;
+  if (!wialonUrl || wialonUrl === 'https://hst-api.wialon.com/wialon/ajax.php') {
+    const envUrl = Deno.env.get('WIALON_API_URL');
+    if (envUrl) wialonUrl = envUrl;
+  }
 
   if (!wialonToken) {
-    // Return stub response if no token configured
+    if (configRecord) {
+      await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+        status: 'unconfigured',
+        last_error: 'Wialon access token not configured. Set api_key in IntegrationConfig or WIALON_API_TOKEN secret.',
+      });
+    }
     return Response.json({
       vehicles_synced: 0,
       positions_ingested: 0,
-      message: 'Wialon token not configured. Set WIALON_API_TOKEN secret to enable live sync.',
+      message: 'Wialon token not configured. Set api_key in IntegrationConfig or WIALON_API_TOKEN secret.',
       stub: true,
     });
   }
 
-  // Step 1: Login to Wialon
-  const loginRes = await fetch(`${wialonUrl}?svc=token/login&params={"token":"${wialonToken}"}`);
-  const loginData = await loginRes.json();
+  try {
+    // Step 1: Login to Wialon
+    const loginRes = await fetch(`${wialonUrl}?svc=token/login&params=${encodeURIComponent(JSON.stringify({ token: wialonToken }))}`);
+    const loginData = await loginRes.json();
 
-  if (loginData.error) {
-    return Response.json({ error: `Wialon login failed: ${loginData.error}` }, { status: 500 });
-  }
-
-  const sid = loginData.eid;
-
-  // Step 2: Get units list
-  const unitsRes = await fetch(`${wialonUrl}?svc=core/search_items&params={"spec":{"itemsType":"avl_unit","propName":"sys_name","propValueMask":"*","sortType":"sys_name"},"force":1,"flags":1025,"from":0,"to":0}&sid=${sid}`);
-  const unitsData = await unitsRes.json();
-  const units = unitsData.items || [];
-
-  let vehiclesSynced = 0;
-  let positionsIngested = 0;
-  let deviationAlerts = 0;
-
-  // Fetch existing vehicles
-  const existingVehicles = await base44.asServiceRole.entities.Vehicle.list();
-
-  for (const unit of units) {
-    // Match by registration number or create
-    let vehicle = existingVehicles.find(v =>
-      v.registration_number === unit.nm ||
-      v.notes?.includes(`wialon:${unit.id}`)
-    );
-
-    if (!vehicle) {
-      vehicle = await base44.asServiceRole.entities.Vehicle.create({
-        registration_number: unit.nm,
-        make: 'Unknown',
-        model: unit.cls?.toString() || 'Unit',
-        status: 'active',
-        notes: `wialon:${unit.id}`,
-      });
+    if (loginData.error) {
+      const errMsg = `Wialon login failed: error code ${loginData.error}`;
+      if (configRecord) {
+        await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+          status: 'error',
+          last_error: errMsg,
+        });
+      }
+      return Response.json({ error: errMsg }, { status: 500 });
     }
 
-    vehiclesSynced++;
+    const sid = loginData.eid;
 
-    // Step 3: Get last position
-    if (unit.pos) {
-      const pos = unit.pos;
-      const idleSeconds = pos.s === 0 && pos.t ? Math.min((Date.now()/1000 - pos.t), 7200) : 0;
+    // Step 2: Get units list
+    const unitsParams = JSON.stringify({
+      spec: { itemsType: 'avl_unit', propName: 'sys_name', propValueMask: '*', sortType: 'sys_name' },
+      force: 1,
+      flags: 1025,
+      from: 0,
+      to: 0,
+    });
+    const unitsRes = await fetch(`${wialonUrl}?svc=core/search_items&params=${encodeURIComponent(unitsParams)}&sid=${sid}`);
+    const unitsData = await unitsRes.json();
+    const units = unitsData.items || [];
 
-      // Check existing routes for deviation
-      const routes = await base44.asServiceRole.entities.Route.filter({ vehicle_id: vehicle.id });
-      const activeRoute = routes.find(r => r.status === 'in_progress');
+    let vehiclesSynced = 0;
+    let positionsIngested = 0;
+    let deviationAlerts = 0;
 
-      // Route deviation: distance from current position to the planned route polyline
-      let deviationFlag = false;
-      let deviationMeters = 0;
-      if (activeRoute?.path_geojson) {
-        const coords = parseLineString(activeRoute.path_geojson);
-        if (coords.length > 0) {
-          deviationMeters = distanceToPolylineMeters(pos.y, pos.x, coords);
-          deviationFlag = deviationMeters > ROUTE_DEVIATION_THRESHOLD_M;
-        }
+    const existingVehicles = await base44.asServiceRole.entities.Vehicle.list();
+
+    for (const unit of units) {
+      let vehicle = existingVehicles.find(v =>
+        v.registration_number === unit.nm ||
+        v.notes?.includes(`wialon:${unit.id}`)
+      );
+
+      if (!vehicle) {
+        vehicle = await base44.asServiceRole.entities.Vehicle.create({
+          registration_number: unit.nm,
+          vehicle_type: 'truck',
+          status: 'available',
+          notes: `wialon:${unit.id}`,
+          tenant_id: configRecord?.tenant_id || null,
+        });
       }
 
-      await base44.asServiceRole.entities.VehicleTelematics.create({
-        vehicle_id: vehicle.id,
-        registration_number: unit.nm,
-        latitude: pos.y,
-        longitude: pos.x,
-        speed_kmh: pos.s || 0,
-        heading: pos.c || 0,
-        ignition_on: pos.s > 0,
-        engine_idle_seconds: Math.round(idleSeconds),
-        odometer_km: unit.mileage || 0,
-        fuel_level_pct: null,
-        provider: 'wialon',
-        provider_unit_id: unit.id?.toString(),
-        route_id: activeRoute?.id || null,
-        timestamp: new Date(pos.t * 1000).toISOString(),
-        is_active: true,
-        deviation_alert_sent: deviationFlag,
-      });
+      vehiclesSynced++;
 
-      // Raise a FleetAlert on deviation, deduped to one open alert per vehicle+route
-      if (deviationFlag && activeRoute) {
-        const existingAlerts = await base44.asServiceRole.entities.FleetAlert.filter({
+      if (unit.pos) {
+        const pos = unit.pos;
+        const idleSeconds = pos.s === 0 && pos.t ? Math.min((Date.now() / 1000 - pos.t), 7200) : 0;
+
+        const routes = await base44.asServiceRole.entities.Route.filter({ vehicle_id: vehicle.id });
+        const activeRoute = routes.find(r => r.status === 'in_progress');
+
+        let deviationFlag = false;
+        let deviationMeters = 0;
+        if (activeRoute?.path_geojson) {
+          const coords = parseLineString(activeRoute.path_geojson);
+          if (coords.length > 0) {
+            deviationMeters = distanceToPolylineMeters(pos.y, pos.x, coords);
+            deviationFlag = deviationMeters > ROUTE_DEVIATION_THRESHOLD_M;
+          }
+        }
+
+        await base44.asServiceRole.entities.VehicleTelematics.create({
           vehicle_id: vehicle.id,
-          alert_type: 'route_deviation',
-          status: 'new',
+          registration_number: unit.nm,
+          latitude: pos.y,
+          longitude: pos.x,
+          speed_kmh: pos.s || 0,
+          heading: pos.c || 0,
+          ignition_on: pos.s > 0,
+          engine_idle_seconds: Math.round(idleSeconds),
+          odometer_km: unit.mileage || 0,
+          fuel_level_pct: null,
+          provider: 'wialon',
+          provider_unit_id: unit.id?.toString(),
+          route_id: activeRoute?.id || null,
+          timestamp: new Date(pos.t * 1000).toISOString(),
+          is_active: true,
+          deviation_alert_sent: deviationFlag,
         });
-        const alreadyOpen = existingAlerts.some(a => a.route_id === activeRoute.id);
-        if (!alreadyOpen) {
-          await base44.asServiceRole.entities.FleetAlert.create({
-            tenant_id: activeRoute.tenant_id || vehicle.tenant_id,
+
+        if (deviationFlag && activeRoute) {
+          const existingAlerts = await base44.asServiceRole.entities.FleetAlert.filter({
             vehicle_id: vehicle.id,
-            registration_number: unit.nm,
-            driver_id: activeRoute.driver_id || null,
             alert_type: 'route_deviation',
-            severity: deviationMeters > ROUTE_DEVIATION_THRESHOLD_M * 4 ? 'high' : 'medium',
-            message: `Vehicle ${unit.nm} is ${Math.round(deviationMeters)}m off its planned route "${activeRoute.route_name || activeRoute.id}".`,
-            latitude: pos.y,
-            longitude: pos.x,
-            route_id: activeRoute.id,
-            deviation_meters: Math.round(deviationMeters),
             status: 'new',
           });
-          deviationAlerts++;
+          const alreadyOpen = existingAlerts.some(a => a.route_id === activeRoute.id);
+          if (!alreadyOpen) {
+            await base44.asServiceRole.entities.FleetAlert.create({
+              tenant_id: activeRoute.tenant_id || vehicle.tenant_id,
+              vehicle_id: vehicle.id,
+              registration_number: unit.nm,
+              driver_id: activeRoute.driver_id || null,
+              alert_type: 'route_deviation',
+              severity: deviationMeters > ROUTE_DEVIATION_THRESHOLD_M * 4 ? 'high' : 'medium',
+              message: `Vehicle ${unit.nm} is ${Math.round(deviationMeters)}m off its planned route "${activeRoute.route_name || activeRoute.id}".`,
+              latitude: pos.y,
+              longitude: pos.x,
+              route_id: activeRoute.id,
+              deviation_meters: Math.round(deviationMeters),
+              status: 'new',
+            });
+            deviationAlerts++;
+          }
         }
+
+        positionsIngested++;
       }
-
-      positionsIngested++;
     }
+
+    // Logout from Wialon
+    await fetch(`${wialonUrl}?svc=core/logout&params={}&sid=${sid}`);
+
+    // Update IntegrationConfig with success
+    if (configRecord) {
+      await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+        status: 'healthy',
+        last_successful_sync_at: new Date().toISOString(),
+        last_error: null,
+      });
+    }
+
+    return Response.json({
+      vehicles_synced: vehiclesSynced,
+      positions_ingested: positionsIngested,
+      deviation_alerts: deviationAlerts,
+      message: `Successfully synced ${vehiclesSynced} vehicles and ${positionsIngested} positions from Wialon`,
+    });
+
+  } catch (error) {
+    if (configRecord) {
+      await base44.asServiceRole.entities.IntegrationConfig.update(configRecord.id, {
+        status: 'error',
+        last_error: error.message,
+      });
+    }
+    return Response.json({ error: error.message }, { status: 500 });
   }
-
-  // Logout from Wialon
-  await fetch(`${wialonUrl}?svc=core/logout&params={}&sid=${sid}`);
-
-  return Response.json({
-    vehicles_synced: vehiclesSynced,
-    positions_ingested: positionsIngested,
-    deviation_alerts: deviationAlerts,
-    message: `Successfully synced ${vehiclesSynced} vehicles and ${positionsIngested} positions from Wialon`,
-  });
 });
