@@ -36,6 +36,9 @@ const MyPickups = lazy(() => import('@/pages/MyPickups'));
 const MyPayments = lazy(() => import('@/pages/MyPayments'));
 const MyComplaints = lazy(() => import('@/pages/MyComplaints'));
 const DriverDetail = lazy(() => import('@/pages/DriverDetail'));
+const FuelLubricants = lazy(() => import('@/pages/FuelLubricants'));
+const DriverShiftTracker = lazy(() => import('@/pages/DriverShiftTracker'));
+const ItemDistributionAudit = lazy(() => import('@/pages/ItemDistributionAudit'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -73,5 +76,8 @@ export const authenticatedRoutes = [
   { path: '/my-pickups', component: MyPickups, domain: 'Public' },
   { path: '/my-payments', component: MyPayments, domain: 'Finance' },
   { path: '/my-complaints', component: MyComplaints, domain: 'Public' },
-  { path: '/driver-detail', component: DriverDetail, domain: 'Operations' }
+  { path: '/driver-detail', component: DriverDetail, domain: 'Operations' },
+  { path: '/fuel-lubricants', component: FuelLubricants, domain: 'Operations' },
+  { path: '/driver-shifts', component: DriverShiftTracker, domain: 'Operations' },
+  { path: '/distribution-audit', component: ItemDistributionAudit, domain: 'Operations' },
 ];

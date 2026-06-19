@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
-import { Fuel, Plus, Zap, BarChart2 } from 'lucide-react';
+import { Fuel, Plus, Zap, BarChart2, TrendingUp, Truck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,9 @@ import WorkOrderForm from '@/components/fleet/WorkOrderForm';
 import FuelLogForm from '@/components/fleet/FuelLogForm';
 import AIPredictiveMaintenance from '@/components/fleet/AIPredictiveMaintenance';
 import VehicleRepairCostSummary from '@/components/fleet/VehicleRepairCostSummary';
+import MaintenanceTrendChart from '@/components/fleet/MaintenanceTrendChart';
+import HiredVehicleProviderList from '@/components/fleet/HiredVehicleProviderList';
+import DriverShiftReportPanel from '@/components/fleet/DriverShiftReportPanel';
 
 const priorityColor = {
   low: 'bg-gray-100 text-gray-600',
@@ -98,10 +101,13 @@ export default function FleetMaintenance() {
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Tabs defaultValue="workorders">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="workorders">Work Orders ({workOrders.length})</TabsTrigger>
               <TabsTrigger value="fuel">Fuel Log ({fuelLogs.length})</TabsTrigger>
               <TabsTrigger value="costs"><BarChart2 className="w-3.5 h-3.5 mr-1" />Repair Costs</TabsTrigger>
+              <TabsTrigger value="trend"><TrendingUp className="w-3.5 h-3.5 mr-1" />Cost Trend</TabsTrigger>
+              <TabsTrigger value="hired"><Truck className="w-3.5 h-3.5 mr-1" />Hired Providers</TabsTrigger>
+              <TabsTrigger value="shifts"><FileText className="w-3.5 h-3.5 mr-1" />Shift Reports</TabsTrigger>
             </TabsList>
 
             <TabsContent value="workorders">
@@ -157,6 +163,18 @@ export default function FleetMaintenance() {
 
             <TabsContent value="costs">
               <VehicleRepairCostSummary vehicles={vehicles} workOrders={workOrders} />
+            </TabsContent>
+
+            <TabsContent value="trend">
+              <MaintenanceTrendChart workOrders={workOrders} vehicles={vehicles} />
+            </TabsContent>
+
+            <TabsContent value="hired">
+              <HiredVehicleProviderList />
+            </TabsContent>
+
+            <TabsContent value="shifts">
+              <DriverShiftReportPanel />
             </TabsContent>
 
             <TabsContent value="fuel">

@@ -10,13 +10,14 @@ import WialonIntegration from '@/pages/WialonIntegration';
 import CoverageAnalytics from '@/pages/CoverageAnalytics';
 import RouteEfficiencyAnalysis from '@/components/analytics/RouteEfficiencyAnalysis';
 import PickupHeatmap from '@/components/analytics/PickupHeatmap';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const COLORS = ['hsl(152,60%,32%)', 'hsl(38,92%,50%)', 'hsl(210,70%,50%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)'];
 
 export default function Analytics() {
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list() });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
-  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list() });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list() });
 
   // Revenue by method

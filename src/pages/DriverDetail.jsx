@@ -4,12 +4,16 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
 } from 'recharts';
-import { ArrowLeft, User, CheckCircle2, Camera, AlertTriangle, Truck, Calendar } from 'lucide-react';
+import { ArrowLeft, User, CheckCircle2, Camera, AlertTriangle, Truck, Calendar, Clock, Fuel, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import DriverFuelEfficiencyPanel from '@/components/fuel/DriverFuelEfficiencyPanel';
+import DriverProfileDetails from '@/components/driver/DriverProfileDetails';
+import DriverShiftHistoryTab from '@/components/driver/DriverShiftHistoryTab';
 
 export default function DriverDetail() {
   const params = new URLSearchParams(window.location.search);
@@ -25,6 +29,22 @@ export default function DriverDetail() {
     queryKey: ['driver-jobs', driverId],
     queryFn: () => base44.entities.PickupRequest.filter({ assigned_driver_id: driverId }, '-completed_at', 200),
     enabled: !!driverId,
+  });
+
+  const { data: shifts = [] } = useQuery({
+    queryKey: ['driver-shifts', driverId],
+    queryFn: () => base44.entities.DriverShift.filter({ driver_id: driverId }, '-clock_in', 200),
+    enabled: !!driverId,
+  });
+
+  const { data: fuelLogs = [] } = useQuery({
+    queryKey: ['fuel-logs'],
+    queryFn: () => base44.entities.FuelLog.list('-fuel_date', 500),
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list(),
   });
 
   const stats = useMemo(() => {
@@ -129,87 +149,113 @@ export default function DriverDetail() {
         </CardContent></Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold font-jakarta flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> Weekly Pickup Activity (Last 6 Weeks)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={stats.weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="pickups" name="Pickups" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="pickups">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="pickups"><Calendar className="w-3.5 h-3.5 mr-1.5" />Pickups</TabsTrigger>
+          <TabsTrigger value="shift-history"><Clock className="w-3.5 h-3.5 mr-1.5" />Shift History</TabsTrigger>
+          <TabsTrigger value="shifts"><Fuel className="w-3.5 h-3.5 mr-1.5" />Fuel Efficiency</TabsTrigger>
+          <TabsTrigger value="profile"><FileText className="w-3.5 h-3.5 mr-1.5" />Profile & Docs</TabsTrigger>
+        </TabsList>
 
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold font-jakarta">Pickups by Waste Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats.wasteData.length === 0 ? (
-              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">No data yet</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={stats.wasteData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="type" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" name="Pickups" fill="hsl(38,92%,50%)" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        {/* Pickups Tab */}
+        <TabsContent value="pickups" className="mt-4 space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold font-jakarta flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" /> Weekly Pickup Activity (Last 6 Weeks)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={stats.weeklyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="pickups" name="Pickups" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-      {/* Recent Jobs */}
-      <Card className="border-border/60">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold font-jakarta">Recent Pickups</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allJobs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No jobs assigned yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/60">
-                    <th className="text-left text-xs text-muted-foreground pb-2">Date</th>
-                    <th className="text-left text-xs text-muted-foreground pb-2">Address</th>
-                    <th className="text-left text-xs text-muted-foreground pb-2">Waste Type</th>
-                    <th className="text-left text-xs text-muted-foreground pb-2">Weight (kg)</th>
-                    <th className="text-left text-xs text-muted-foreground pb-2">Status</th>
-                    <th className="text-left text-xs text-muted-foreground pb-2">Evidence</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {allJobs.slice(0, 20).map(j => (
-                    <tr key={j.id}>
-                      <td className="py-2 text-xs">{j.completed_at ? format(new Date(j.completed_at), 'MMM d, yyyy') : j.scheduled_date || '—'}</td>
-                      <td className="py-2 text-xs truncate max-w-[160px]">{j.address || '—'}</td>
-                      <td className="py-2 text-xs capitalize">{j.waste_type || '—'}</td>
-                      <td className="py-2 text-xs">{j.actual_weight_kg ?? '—'}</td>
-                      <td className="py-2"><Badge className={`text-[10px] ${j.status === 'completed' ? 'bg-green-100 text-green-700' : j.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`} variant="secondary">{j.status}</Badge></td>
-                      <td className="py-2 text-xs">{j.evidence_quality_score != null ? `${j.evidence_quality_score}%` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold font-jakarta">Pickups by Waste Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stats.wasteData.length === 0 ? (
+                  <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">No data yet</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={stats.wasteData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="count" name="Pickups" fill="hsl(38,92%,50%)" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold font-jakarta">Recent Pickups</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allJobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No jobs assigned yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/60">
+                        <th className="text-left text-xs text-muted-foreground pb-2">Date</th>
+                        <th className="text-left text-xs text-muted-foreground pb-2">Address</th>
+                        <th className="text-left text-xs text-muted-foreground pb-2">Waste Type</th>
+                        <th className="text-left text-xs text-muted-foreground pb-2">Weight (kg)</th>
+                        <th className="text-left text-xs text-muted-foreground pb-2">Status</th>
+                        <th className="text-left text-xs text-muted-foreground pb-2">Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {allJobs.slice(0, 20).map(j => (
+                        <tr key={j.id}>
+                          <td className="py-2 text-xs">{j.completed_at ? format(new Date(j.completed_at), 'MMM d, yyyy') : j.scheduled_date || '—'}</td>
+                          <td className="py-2 text-xs truncate max-w-[160px]">{j.address || '—'}</td>
+                          <td className="py-2 text-xs capitalize">{j.waste_type || '—'}</td>
+                          <td className="py-2 text-xs">{j.actual_weight_kg ?? '—'}</td>
+                          <td className="py-2"><Badge className={`text-[10px] ${j.status === 'completed' ? 'bg-green-100 text-green-700' : j.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`} variant="secondary">{j.status}</Badge></td>
+                          <td className="py-2 text-xs">{j.evidence_quality_score != null ? `${j.evidence_quality_score}%` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Shift History Tab */}
+        <TabsContent value="shift-history" className="mt-4">
+          <DriverShiftHistoryTab shifts={shifts} pickups={allJobs} vehicles={vehicles} />
+        </TabsContent>
+
+        {/* Fuel Efficiency Tab */}
+        <TabsContent value="shifts" className="mt-4">
+          <DriverFuelEfficiencyPanel shifts={shifts} fuelLogs={fuelLogs} vehicles={vehicles} />
+        </TabsContent>
+
+        {/* Profile & Docs Tab */}
+        <TabsContent value="profile" className="mt-4">
+          <DriverProfileDetails driver={driver} driverId={driverId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

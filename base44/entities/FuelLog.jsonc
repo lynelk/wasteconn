@@ -16,7 +16,12 @@
       "format": "date"
     },
     "litres": {
-      "type": "number"
+      "type": "number",
+      "description": "Litres purchased (ICE vehicles)"
+    },
+    "kwh_consumed": {
+      "type": "number",
+      "description": "kWh consumed for electric vehicles"
     },
     "cost_ugx": {
       "type": "number"
@@ -38,7 +43,15 @@
     },
     "efficiency_km_per_litre": {
       "type": "number",
-      "description": "Calculated fuel efficiency"
+      "description": "Calculated fuel efficiency (km/L for ICE)"
+    },
+    "efficiency_km_per_kwh": {
+      "type": "number",
+      "description": "Calculated energy efficiency for EVs (km/kWh)"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Associated route for cross-analysis"
     },
     "notes": {
       "type": "string"
@@ -48,7 +61,6 @@
     "tenant_id",
     "vehicle_id",
     "fuel_date",
-    "litres",
     "cost_ugx"
   ]
 }

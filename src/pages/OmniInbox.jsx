@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { Plus, MessageSquare, Clock, Search, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,9 +54,11 @@ export default function OmniInbox() {
     queryFn: () => base44.entities.Ticket.list('-created_date', 200),
   });
 
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
   const { data: zones = [] } = useQuery({ queryKey: ['zones'], queryFn: () => base44.entities.ServiceZone.list() });
-  const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list() });
+  // Resolve only the customers / service points referenced by the loaded
+  // tickets (for labels), instead of fetching whole tables.
+  const { rows: customers } = useEntitiesByIds('Customer', tickets.map(t => t.customer_id));
+  const { rows: servicePoints } = useEntitiesByIds('ServicePoint', tickets.map(t => t.service_point_id));
 
   const filtered = tickets.filter(t => {
     const matchSearch = !search || t.subject?.toLowerCase().includes(search.toLowerCase()) ||
@@ -198,9 +201,7 @@ export default function OmniInbox() {
             <DialogTitle className="font-jakarta">New Support Ticket</DialogTitle>
           </DialogHeader>
           <TicketForm
-            customers={customers}
             zones={zones}
-            servicePoints={servicePoints}
             onClose={() => setOpen(false)}
           />
         </DialogContent>

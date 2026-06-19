@@ -1,0 +1,150 @@
+{
+  "name": "ItemDistribution",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "inventory_item_id": {
+      "type": "string",
+      "description": "Linked Inventory item ID"
+    },
+    "item_name_snapshot": {
+      "type": "string",
+      "description": "Item name at time of distribution (audit snapshot)"
+    },
+    "item_category_snapshot": {
+      "type": "string",
+      "description": "Item category at time of distribution"
+    },
+    "unit_cost_snapshot_ugx": {
+      "type": "number",
+      "description": "Unit cost captured at time of distribution"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Number of units distributed"
+    },
+    "total_value_ugx": {
+      "type": "number",
+      "description": "Computed: quantity x unit_cost_snapshot_ugx"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Customer receiving the items"
+    },
+    "customer_name_snapshot": {
+      "type": "string",
+      "description": "Customer name at time of distribution"
+    },
+    "customer_address_snapshot": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "pickup_request_id": {
+      "type": "string",
+      "description": "Linked pickup job (optional)"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Linked route (optional)"
+    },
+    "distributed_by_user_id": {
+      "type": "string",
+      "description": "Field staff who issued the items"
+    },
+    "distributed_by_name_snapshot": {
+      "type": "string",
+      "description": "Staff name at time of distribution"
+    },
+    "distribution_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "gps_lat": {
+      "type": "number",
+      "description": "GPS latitude at time of distribution"
+    },
+    "gps_lng": {
+      "type": "number",
+      "description": "GPS longitude at time of distribution"
+    },
+    "customer_lat": {
+      "type": "number",
+      "description": "Customer registered GPS latitude"
+    },
+    "customer_lng": {
+      "type": "number",
+      "description": "Customer registered GPS longitude"
+    },
+    "gps_distance_m": {
+      "type": "number",
+      "description": "Calculated distance in metres from customer location"
+    },
+    "gps_radius_breach": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if distribution occurred outside authorized radius"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "disputed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "pending=logged by field, confirmed=customer acknowledgement captured, disputed=admin raised issue"
+    },
+    "proof_photo_url": {
+      "type": "string",
+      "description": "Photo proof of item handover"
+    },
+    "customer_confirmation_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When customer digitally confirmed receipt"
+    },
+    "confirmed_by": {
+      "type": "string",
+      "description": "Who confirmed (field staff id)"
+    },
+    "pilferage_flag": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-flagged by audit function"
+    },
+    "pilferage_reason": {
+      "type": "string",
+      "description": "Reason for pilferage flag"
+    },
+    "audit_reviewed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin has reviewed this flagged record"
+    },
+    "audit_reviewed_by": {
+      "type": "string"
+    },
+    "audit_reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audit_notes": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "inventory_item_id",
+    "quantity",
+    "customer_id",
+    "distributed_by_user_id"
+  ]
+}

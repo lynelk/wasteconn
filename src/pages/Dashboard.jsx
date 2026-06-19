@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const DashboardMap = lazy(() => import('@/components/dashboard/DashboardMap'));
 
@@ -41,13 +42,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role || 'user';
 
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
-  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list() });
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list() });
-  const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list() });
+  // Bound the high-cardinality scans to the most recent N records (disclosed
+  // below) so the dashboard never pulls whole tables. Low-cardinality entities
+  // (vehicles, inventory, routes, zones, tenants) stay unbounded.
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: () => base44.entities.Vehicle.list() });
   const { data: inventory = [] } = useQuery({ queryKey: ['inventory'], queryFn: () => base44.entities.Inventory.list() });
-  const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list() });
+  const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: routes = [] } = useQuery({ queryKey: ['routes-today'], queryFn: () => base44.entities.Route.filter({ route_date: format(new Date(), 'yyyy-MM-dd') }) });
   const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list(), enabled: role === 'super_admin' });
   const { data: zones = [] } = useQuery({ queryKey: ['service-zones'], queryFn: () => base44.entities.ServiceZone.list() });
@@ -59,6 +63,7 @@ export default function Dashboard() {
   const vehiclesOnRoute = vehicles.filter(v => v.status === 'on_route').length;
 
   const recentPickups = [...pickups].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 5);
+  const dataCapped = [customers, pickups, payments, complaints, servicePoints].some(a => a.length >= ANALYTICS_SCAN_LIMIT);
 
   return (
     <div className="space-y-8">
@@ -109,6 +114,9 @@ export default function Dashboard() {
       {/* Charts */}
       <div>
         <h2 className="font-semibold font-jakarta text-base mb-4">Performance Analytics</h2>
+        {dataCapped && (
+          <p className="text-xs text-muted-foreground mb-3">Based on the most recent {ANALYTICS_SCAN_LIMIT.toLocaleString()} records per dataset.</p>
+        )}
         <DashboardCharts pickups={pickups} payments={payments} complaints={complaints} zones={zones} />
       </div>
 

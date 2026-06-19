@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Truck, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Truck, Edit2, Trash2, Search, Eye } from 'lucide-react';
 import ExportButton from '@/components/export/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import VehicleForm from '@/components/vehicles/VehicleForm';
+import VehicleDetailModal from '@/components/vehicles/VehicleDetailModal';
 
 const statusColor = {
   available: 'bg-green-100 text-green-700',
@@ -24,6 +25,7 @@ export default function Vehicles() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewVehicle, setViewVehicle] = useState(null);
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['vehicles'],
@@ -123,6 +125,7 @@ export default function Vehicles() {
                   {tenantName(v.tenant_id) && <span className="block mt-0.5">{tenantName(v.tenant_id)}</span>}
                 </div>
                 <div className="flex justify-end gap-1">
+                  <button onClick={() => setViewVehicle(v)} className="text-muted-foreground hover:text-primary p-1.5" title="View details"><Eye className="w-3.5 h-3.5" /></button>
                   <button onClick={() => { setEditing(v); setOpen(true); }} className="text-muted-foreground hover:text-foreground p-1.5"><Edit2 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => deleteMutation.mutate(v.id)} className="text-muted-foreground hover:text-destructive p-1.5"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
@@ -138,6 +141,10 @@ export default function Vehicles() {
           <VehicleForm vehicle={editing} onClose={() => { setOpen(false); setEditing(null); }} />
         </DialogContent>
       </Dialog>
+
+      {viewVehicle && (
+        <VehicleDetailModal vehicle={viewVehicle} onClose={() => setViewVehicle(null)} />
+      )}
     </div>
   );
 }

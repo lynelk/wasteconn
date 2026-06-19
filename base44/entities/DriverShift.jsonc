@@ -1,0 +1,60 @@
+{
+  "name": "DriverShift",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "route_id": {
+      "type": "string"
+    },
+    "clock_in": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the driver clocked in"
+    },
+    "clock_out": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the driver clocked out"
+    },
+    "start_odometer": {
+      "type": "number",
+      "description": "Odometer reading at clock-in (km)"
+    },
+    "end_odometer": {
+      "type": "number",
+      "description": "Odometer reading at clock-out (km)"
+    },
+    "start_lat": {
+      "type": "number",
+      "description": "GPS latitude at clock-in"
+    },
+    "start_lng": {
+      "type": "number",
+      "description": "GPS longitude at clock-in"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "driver_id",
+    "clock_in"
+  ]
+}

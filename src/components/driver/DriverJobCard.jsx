@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star, MapPinOff } from 'lucide-react';
+import { MapPin, Camera, ChevronDown, ChevronUp, CheckCircle2, Play, AlertTriangle, Star, MapPinOff, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NavigationAssist, { recordJobCompletion } from '@/components/driver/NavigationAssist';
 import LocationCorrectionModal from '@/components/driver/LocationCorrectionModal';
@@ -18,7 +18,7 @@ const wasteColor = {
   organic: 'text-lime-400', hazardous: 'text-red-400', bulky: 'text-orange-400',
 };
 
-export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
+export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload, onGiveOutItems }) {
   const [expanded, setExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showLocationCorrection, setShowLocationCorrection] = useState(false);
@@ -123,6 +123,15 @@ export default function DriverJobCard({ job, onStatusUpdate, onPhotoUpload }) {
           >
             <MapPinOff className="w-3.5 h-3.5" />
           </button>
+          {onGiveOutItems && (
+            <button
+              onClick={() => onGiveOutItems(job)}
+              className="flex items-center gap-1.5 text-xs text-purple-400 bg-purple-950/50 px-3 py-1.5 rounded-lg hover:bg-purple-900/50"
+              title="Give out bin liners / supplies"
+            >
+              <Package className="w-3.5 h-3.5" /> Give Items
+            </button>
+          )}
         </div>
       </div>
 

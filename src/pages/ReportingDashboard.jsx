@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 function exportCSV(rows, filename) {
   if (!rows.length) return;
@@ -25,7 +26,7 @@ export default function ReportingDashboard() {
 
   const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-scheduled_date', 1000) });
   const { data: invoices = [] } = useQuery({ queryKey: ['invoices'], queryFn: () => base44.entities.Invoice.list('-created_date', 500) });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: zones = [] } = useQuery({ queryKey: ['zones'], queryFn: () => base44.entities.ServiceZone.list() });
   const { data: tickets = [] } = useQuery({ queryKey: ['tickets'], queryFn: () => base44.entities.Ticket.list() });
   const { data: snapshots = [] } = useQuery({ queryKey: ['report-snapshots'], queryFn: () => base44.entities.ReportSnapshot.list('-created_date', 24) });

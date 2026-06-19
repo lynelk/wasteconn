@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import ArrearsAgingTable from '@/components/billing/ArrearsAgingTable';
 import CollectionsRiskPanel from '@/components/billing/CollectionsRiskPanel';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const statusColors = {
   issued: 'bg-blue-100 text-blue-700',
@@ -41,7 +42,7 @@ export default function BillingPage() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT),
   });
 
   const { data: stats } = useQuery({
@@ -157,6 +158,7 @@ export default function BillingPage() {
           <TabsTrigger value="invoices" className="gap-1.5"><CreditCard className="w-3.5 h-3.5" /> Invoices</TabsTrigger>
           <TabsTrigger value="arrears" className="gap-1.5"><TrendingDown className="w-3.5 h-3.5" /> Arrears Aging</TabsTrigger>
           <TabsTrigger value="risk" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Collections AI</TabsTrigger>
+          <TabsTrigger value="efris" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> EFRIS Tax</TabsTrigger>
         </TabsList>
 
         <TabsContent value="invoices" className="mt-4 space-y-4">
@@ -254,6 +256,19 @@ export default function BillingPage() {
 
         <TabsContent value="risk" className="mt-4">
           <CollectionsRiskPanel />
+        </TabsContent>
+        <TabsContent value="efris" className="mt-4">
+          <div className="text-center py-8">
+            <FileText className="w-12 h-12 mx-auto mb-3 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">EFRIS Tax Compliance Module</h3>
+            <p className="text-muted-foreground mb-4">
+              Manage URA EFRIS invoice generation, reconciliation, and tax reporting
+            </p>
+            <Button onClick={() => window.location.href = '/efris'} className="gap-2">
+              Open EFRIS Dashboard
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
       {showAdHoc && (

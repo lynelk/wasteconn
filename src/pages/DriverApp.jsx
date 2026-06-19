@@ -10,6 +10,7 @@ import GPSTracker from '@/components/driver/GPSTracker';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 import IncidentReportModal from '@/components/field/IncidentReportModal';
+import ShiftClockWidget from '@/components/driver/ShiftClockWidget';
 import { cacheDriverJobs, getCachedDriverJobs } from '@/lib/offlineDB';
 
 const statusOrder = ['assigned', 'in_progress', 'completed', 'cancelled'];
@@ -208,6 +209,9 @@ Be concise in your analysis_notes.`,
 
       {/* Pull-to-refresh indicator */}
       <PullToRefreshIndicator pullDistance={pullDistance} refreshing={refreshing} />
+
+      {/* Shift Clock */}
+      <ShiftClockWidget user={user} />
 
       {/* Stats */}
       <DriverStats jobs={todayJobs} completedToday={completedToday} />
