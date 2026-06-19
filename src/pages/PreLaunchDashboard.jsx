@@ -8,6 +8,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw,
   Shield, Smartphone, Wifi, Database, Zap, Play, Server
 } from 'lucide-react';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 // ─── Health check helpers ───────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export default function PreLaunchDashboard() {
   const { data: tenants  = [] } = useQuery({ queryKey: ['tenants'],  queryFn: () => base44.entities.Tenant.list() });
   const { data: zones    = [] } = useQuery({ queryKey: ['zones'],    queryFn: () => base44.entities.ServiceZone.list() });
   const { data: plans    = [] } = useQuery({ queryKey: ['plans'],    queryFn: () => base44.entities.ServicePlan.list() });
-  const { data: customers= [] } = useQuery({ queryKey: ['customers'],queryFn: () => base44.entities.Customer.list() });
+  const { data: customers= [] } = useQuery({ queryKey: ['customers'],queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: roles    = [] } = useQuery({ queryKey: ['rbac'],     queryFn: () => base44.entities.RBACRole.list() });
 
   // ─── Security audit ───────────────────────────────────────────────────────
@@ -150,7 +151,7 @@ export default function PreLaunchDashboard() {
         base44.entities.Tenant.list(),
         base44.entities.ServiceZone.list(),
         base44.entities.ServicePlan.list(),
-        base44.entities.Customer.list(),
+        base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT),
       ]);
       const allOk = t2.length > 0 && z2.length > 0 && p2.length > 0;
       c.entity_counts = {

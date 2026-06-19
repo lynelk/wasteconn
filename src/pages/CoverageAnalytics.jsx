@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 function exportCSV(rows, filename) {
   if (!rows.length) return;
@@ -23,7 +24,7 @@ export default function CoverageAnalytics() {
 
   const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-route_date', 500) });
   const { data: zones = [] } = useQuery({ queryKey: ['zones'], queryFn: () => base44.entities.ServiceZone.list() });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
   const { data: exceptions = [] } = useQuery({ queryKey: ['exceptions'], queryFn: () => base44.entities.ExceptionQueue.list('-created_date', 200) });
 
   const cutoff = useMemo(() => {

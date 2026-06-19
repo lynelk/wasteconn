@@ -6,6 +6,12 @@
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 500;
 
+// Largest single bounded scan for analytics screens that compute client-side
+// metrics over recent activity. Matches the Base44 per-request projection cap.
+// Pages using this should disclose "based on the most recent N records" when the
+// cap is reached, so totals are never silently truncated.
+export const ANALYTICS_SCAN_LIMIT = 5000;
+
 // Entities that grow with usage and must never be fetched unbounded on the client.
 export const HIGH_CARDINALITY_ENTITIES = [
   'Customer',

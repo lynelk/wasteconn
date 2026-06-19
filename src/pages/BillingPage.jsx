@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import ArrearsAgingTable from '@/components/billing/ArrearsAgingTable';
 import CollectionsRiskPanel from '@/components/billing/CollectionsRiskPanel';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const statusColors = {
   issued: 'bg-blue-100 text-blue-700',
@@ -41,7 +42,7 @@ export default function BillingPage() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT),
   });
 
   const { data: stats } = useQuery({

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 import {
   Plus, CreditCard, Search, CheckCircle, Smartphone, FileText,
   BarChart2, AlertTriangle, RefreshCw, Landmark, Link, RotateCcw,
@@ -58,7 +59,7 @@ export default function Payments() {
   });
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices-all'],
-    queryFn: () => base44.entities.Invoice.list(),
+    queryFn: () => base44.entities.Invoice.list('-created_date', ANALYTICS_SCAN_LIMIT),
   });
 
   // Resolve only the customers referenced by the loaded payments, instead of
