@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { useAuth } from '@/lib/AuthContext';
 import { Ticket, CheckCircle2, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,13 +27,10 @@ export default function Redemptions() {
     queryKey: ['reward-redemptions'],
     queryFn: () => base44.entities.RewardRedemption.list('-created_date', 500),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
-  const customerNameById = useMemo(() => {
-    const m = new Map();
-    for (const c of customers) m.set(c.id, c.full_name);
-    return m;
-  }, [customers]);
-  const customerName = (id) => customerNameById.get(id) || '—';
+  // Resolve only the customers referenced by the loaded redemptions, instead of
+  // fetching the whole customer table to label rows.
+  const { map: customerById } = useEntitiesByIds('Customer', redemptions.map(r => r.customer_id));
+  const customerName = (id) => customerById[id]?.full_name || '—';
 
   const claim = useMutation({
     mutationFn: (r) => base44.entities.RewardRedemption.update(r.id, {

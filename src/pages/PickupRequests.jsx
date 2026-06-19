@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import PickupForm from '@/components/pickups/PickupForm';
+import EntitySelect from '@/components/common/EntitySelect';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -57,11 +59,13 @@ export default function PickupRequests() {
     queryKey: ['pickups'],
     queryFn: () => base44.entities.PickupRequest.list('-created_date'),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  // Resolve only the customers referenced by the loaded pickups (label/search),
+  // rather than fetching the whole customer table.
+  const { rows: referencedCustomers } = useEntitiesByIds('Customer', pickups.map(p => p.customer_id));
 
   const customerMap = Object.fromEntries([
-    ...customers.map(c => [c.id, c]),
-    ...customers.filter(c => c.account_number).map(c => [c.account_number, c]),
+    ...referencedCustomers.map(c => [c.id, c]),
+    ...referencedCustomers.filter(c => c.account_number).map(c => [c.account_number, c]),
   ]);
 
   const updateMutation = useMutation({
@@ -164,12 +168,14 @@ export default function PickupRequests() {
             <p className="text-sm text-muted-foreground">Automatically generates recurring pickup schedules based on service plan, zone collection days, and demand history.</p>
             <div>
               <Label>Customer</Label>
-              <Select value={scheduleForm.customer_id} onValueChange={v => setScheduleForm(f => ({ ...f, customer_id: v }))}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select customer..." /></SelectTrigger>
-                <SelectContent>
-                  {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <EntitySelect
+                entity="Customer"
+                value={scheduleForm.customer_id}
+                onChange={(id) => setScheduleForm(f => ({ ...f, customer_id: id }))}
+                searchFields={['full_name', 'account_number', 'phone']}
+                placeholder="Select customer..."
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>Horizon (days)</Label>

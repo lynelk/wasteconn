@@ -18,7 +18,12 @@ export default function CustomerForm({ customer, onClose }) {
   const qc = useQueryClient();
   const { data: zones = [] } = useQuery({ queryKey: ['zones'], queryFn: () => base44.entities.ServiceZone.list() });
   const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list() });
-  const { data: allCustomers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
+  // Only institution customers can be a parent — fetch just those (bounded)
+  // rather than the entire customer table.
+  const { data: institutions = [] } = useQuery({
+    queryKey: ['customers', 'institutions'],
+    queryFn: () => base44.entities.Customer.filter({ customer_segment: 'institution' }, 'full_name', 500),
+  });
 
   const [form, setForm] = useState({
     full_name: customer?.full_name || '',
@@ -53,7 +58,7 @@ export default function CustomerForm({ customer, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const segment = form.customer_segment;
-  const parentCandidates = allCustomers.filter(c => c.customer_segment === 'institution' && c.id !== customer?.id);
+  const parentCandidates = institutions.filter(c => c.id !== customer?.id);
 
   // Auto-classify tier based on profile signals
   const classifyTier = () => {
