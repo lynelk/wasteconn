@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { enqueueAction } from '@/lib/offlineDB';
+import { useSyncManager } from '@/lib/useSyncManager';
+import { useToast } from '@/components/ui/use-toast';
+import { WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
@@ -34,6 +38,8 @@ const statusColor = {
 export default function CustomerApp() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { isOnline, pendingCount: queuedCount } = useSyncManager();
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [activeTab, setActiveTab] = useState('history');
   const [activeSurvey, setActiveSurvey] = useState(null);
@@ -91,16 +97,26 @@ export default function CustomerApp() {
   const { t, lang, setLang } = useTranslation(customer);
 
   const requestPickupMutation = useMutation({
-    mutationFn: (data) => base44.entities.PickupRequest.create({
-      ...data,
-      customer_id: customer.id,
-      tenant_id: customer.tenant_id,
-      request_type: 'on_demand',
-      status: 'pending',
-    }),
-    onSuccess: () => {
+    mutationFn: async (data) => {
+      const payload = {
+        ...data,
+        customer_id: customer.id,
+        tenant_id: customer.tenant_id,
+        request_type: 'on_demand',
+        status: 'pending',
+      };
+      // Light offline support: queue the request when offline so it isn't lost;
+      // useSyncManager flushes the queue (PickupRequest.create) on reconnect.
+      if (!navigator.onLine) {
+        await enqueueAction('PickupRequest', 'create', payload);
+        return { queued: true };
+      }
+      return base44.entities.PickupRequest.create(payload);
+    },
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['my-pickups'] });
       setShowPickupModal(false);
+      if (res?.queued) toast({ title: 'Saved offline', description: 'Your pickup request will be submitted when you reconnect.' });
     },
   });
 
@@ -208,6 +224,14 @@ export default function CustomerApp() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 -mt-4">
+        {/* Offline banner — pickup requests are queued and sync on reconnect */}
+        {!isOnline && (
+          <div className="mb-3 flex items-center gap-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 rounded-xl px-4 py-2.5 text-sm text-yellow-800 dark:text-yellow-200">
+            <WifiOff className="w-4 h-4 shrink-0" />
+            <span>You're offline. New pickup requests are saved and sent when you reconnect{queuedCount > 0 ? ` (${queuedCount} pending)` : ''}.</span>
+          </div>
+        )}
+
         {/* Pending Survey Banner */}
         {pendingSurveys.length > 0 && (
           <button

@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'nlswms_offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let _db = null;
 
@@ -31,6 +31,11 @@ function openDB() {
       if (!db.objectStoreNames.contains('sync_queue')) {
         const sq = db.createObjectStore('sync_queue', { keyPath: 'local_id' });
         sq.createIndex('entity', 'entity', { unique: false });
+      }
+      // Generic entity row cache (powers offline EntitySelect pickers)
+      if (!db.objectStoreNames.contains('entity_cache')) {
+        const ec = db.createObjectStore('entity_cache', { keyPath: 'cache_key' });
+        ec.createIndex('entity', 'entity', { unique: false });
       }
     };
     req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
@@ -123,4 +128,31 @@ export async function markActionSynced(local_id) {
   const store = await tx('sync_queue', 'readwrite');
   const rec = await promisify(store.get(local_id));
   if (rec) return promisify(store.put({ ...rec, synced: true }));
+}
+
+// ─── Generic Entity Cache (offline EntitySelect pickers) ────────────────────
+// Rows fetched online are cached here so async pickers (EntitySelect) can still
+// resolve a selection (e.g. a customer_id) when offline — without which an
+// offline-capable form like the WasteBank transaction form can't be completed.
+
+export async function cacheEntities(entity, rows = []) {
+  if (!entity || !Array.isArray(rows) || rows.length === 0) return;
+  try {
+    const store = await tx('entity_cache', 'readwrite');
+    const now = new Date().toISOString();
+    for (const row of rows) {
+      if (!row?.id) continue;
+      store.put({ cache_key: `${entity}:${row.id}`, entity, id: row.id, row, cached_at: now });
+    }
+  } catch { /* caching is best-effort; never block the online path */ }
+}
+
+export async function getCachedEntities(entity) {
+  try {
+    const store = await tx('entity_cache', 'readonly');
+    const all = await promisify(store.index('entity').getAll(entity));
+    return all.map((r) => r.row);
+  } catch {
+    return [];
+  }
 }
