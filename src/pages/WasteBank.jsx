@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WasteBankTransactionForm from '@/components/wastebank/WasteBankTransactionForm';
 import CustomerWalletView from '@/components/wastebank/CustomerWalletView';
+import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import MobileSelect from '@/components/ui/MobileSelect';
 import OfflineSyncBanner from '@/components/wastebank/OfflineSyncBanner';
 import { useSyncManager } from '@/lib/useSyncManager';
@@ -40,8 +41,13 @@ export default function WasteBank() {
     queryKey: ['waste-bank-transactions'],
     queryFn: () => base44.entities.WasteBankTransaction.list('-created_date', 200),
   });
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list() });
   const { data: wallets = [] } = useQuery({ queryKey: ['wallets'], queryFn: () => base44.entities.CustomerWallet.list() });
+  // Resolve only the customers referenced by the loaded transactions/wallets,
+  // instead of fetching the whole customer table to label rows.
+  const { rows: customers } = useEntitiesByIds('Customer', [
+    ...transactions.map(t => t.customer_id),
+    ...wallets.map(w => w.customer_id),
+  ]);
 
   const filtered = typeFilter === 'all' ? transactions : transactions.filter(t => t.transaction_type === typeFilter);
   const fraudFlags = transactions.filter(t => t.fraud_flag);
@@ -195,7 +201,6 @@ export default function WasteBank() {
           </DialogHeader>
           <WasteBankTransactionForm
             transactionType={txType}
-            customers={customers}
             onClose={() => setOpen(false)}
             isOnline={isOnline}
           />
