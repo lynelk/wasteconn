@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { usePrewarmOfflineCache } from '@/hooks/usePrewarmOfflineCache';
 
 const navGroups = [
   {
@@ -203,6 +204,10 @@ export default function Layout() {
 
   const role = user?.role || 'user';
   const handleLogout = () => base44.auth.logout('/');
+
+  // Warm the offline customer cache for staff so pickers work on a cold
+  // offline start (e.g. the WasteBank transaction form).
+  usePrewarmOfflineCache({ enabled: !!user && role !== 'customer' });
 
   return (
     <div className="min-h-screen bg-background flex">
