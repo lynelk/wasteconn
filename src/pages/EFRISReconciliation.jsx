@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,10 +19,14 @@ import {
     BarChart3,
     Activity,
     User,
-    FileCheck
+    FileCheck,
+    ChevronDown
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
+import { hasNextPage, DEFAULT_PAGE_SIZE, dedupeById } from "@/lib/pagination";
+
+const PAGE_SIZE = DEFAULT_PAGE_SIZE; // 50
 
 const statusColors = {
     success: "bg-green-100 text-green-800 border-green-300",
@@ -42,16 +46,49 @@ export default function EFRISReconciliation() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
-    const [activityLogId, setActivityLogId] = useState(null);
     const [manualNote, setManualNote] = useState("");
+    const [efrisPage, setEfrisPage] = useState(1);
+    const [allEfrisLogs, setAllEfrisLogs] = useState([]);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const queryClient = useQueryClient();
 
-    // Fetch EFRIS invoice logs
-    const { data: efrisLogs, isLoading: isLoadingEFRIS } = useQuery({
-        queryKey: ['efris-logs', monthFilter],
-        queryFn: () => base44.entities.EFRISInvoiceLog.filter({ month_year: monthFilter }, '-submission_timestamp', 100)
+    // Fetch EFRIS invoice logs — paginated 50 per page
+    const { data: efrisPage1 = [], isLoading: isLoadingEFRIS } = useQuery({
+        queryKey: ['efris-logs', monthFilter, efrisPage],
+        queryFn: async () => {
+            const results = await base44.entities.EFRISInvoiceLog.filter(
+                { month_year: monthFilter },
+                '-submission_timestamp',
+                PAGE_SIZE * efrisPage
+            );
+            setAllEfrisLogs(dedupeById(results));
+            return results;
+        }
     });
+
+    const efrisLogs = allEfrisLogs.length > 0 ? allEfrisLogs : efrisPage1;
+    const canLoadMoreEfris = hasNextPage(efrisPage1, PAGE_SIZE * efrisPage);
+
+    const handleLoadMoreEfris = useCallback(async () => {
+        setLoadingMore(true);
+        const nextPage = efrisPage + 1;
+        const results = await base44.entities.EFRISInvoiceLog.filter(
+            { month_year: monthFilter },
+            '-submission_timestamp',
+            PAGE_SIZE * nextPage
+        );
+        setAllEfrisLogs(dedupeById(results));
+        setEfrisPage(nextPage);
+        setLoadingMore(false);
+    }, [efrisPage, monthFilter]);
+
+    // Reset pagination when month changes
+    const handleMonthChange = (newMonth) => {
+        setMonthFilter(newMonth);
+        setEfrisPage(1);
+        setAllEfrisLogs([]);
+    };
 
     // Fetch payments for the same month
     const { data: payments, isLoading: isLoadingPayments } = useQuery({
@@ -282,7 +319,7 @@ export default function EFRISReconciliation() {
                     <Card>
                         <CardHeader>
                             <CardTitle>All EFRIS Invoices</CardTitle>
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex gap-2 mt-2 flex-wrap">
                                 <Input
                                     placeholder="Search by customer, invoice #..."
                                     value={searchTerm}
@@ -302,47 +339,66 @@ export default function EFRISReconciliation() {
                                 <Input
                                     type="month"
                                     value={monthFilter}
-                                    onChange={(e) => setMonthFilter(e.target.value)}
+                                    onChange={(e) => handleMonthChange(e.target.value)}
                                     className="max-w-[180px]"
                                 />
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
-                                {filteredLogs.map((log) => (
-                                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-full border ${statusColors[log.status]}`}>
-                                                {statusIcons[log.status]}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">{log.customer_name}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Invoice: {log.invoice_number || 'N/A'} • UGX {log.gross_amount_ugx?.toLocaleString()}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Tax: UGX {log.tax_amount_ugx?.toLocaleString()} • {log.submission_timestamp ? format(new Date(log.submission_timestamp), 'PPp') : 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className={statusColors[log.status]}>
-                                                {log.status}
-                                            </Badge>
-                                            {log.status === 'failed' && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => retryMutation.mutate(log.id)}
-                                                    disabled={retryMutation.isPending}
-                                                >
-                                                    <RefreshCw className="w-3 h-3 mr-1" />
-                                                    Retry
-                                                </Button>
-                                            )}
-                                        </div>
+                                {isLoadingEFRIS ? (
+                                    [1,2,3].map(i => <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />)
+                                ) : filteredLogs.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                        <p>No invoices found</p>
                                     </div>
-                                ))}
+                                ) : (
+                                    <>
+                                        {filteredLogs.map((log) => (
+                                            <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-full border ${statusColors[log.status]}`}>
+                                                        {statusIcons[log.status]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{log.customer_name}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Invoice: {log.invoice_number || 'N/A'} • UGX {log.gross_amount_ugx?.toLocaleString()}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Tax: UGX {log.tax_amount_ugx?.toLocaleString()} • {log.submission_timestamp ? format(new Date(log.submission_timestamp), 'PPp') : 'N/A'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className={statusColors[log.status]}>
+                                                        {log.status}
+                                                    </Badge>
+                                                    {log.status === 'failed' && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => retryMutation.mutate(log.id)}
+                                                            disabled={retryMutation.isPending}
+                                                        >
+                                                            <RefreshCw className="w-3 h-3 mr-1" />
+                                                            Retry
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {canLoadMoreEfris && !searchTerm && statusFilter === 'all' && (
+                                            <div className="pt-2 flex justify-center">
+                                                <Button variant="outline" onClick={handleLoadMoreEfris} disabled={loadingMore} className="gap-2">
+                                                    {loadingMore ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
+                                                    {loadingMore ? 'Loading...' : `Load more (showing ${efrisLogs.length})`}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

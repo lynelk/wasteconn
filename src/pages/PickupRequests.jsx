@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar, Edit2, Search, Zap, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Edit2, Search, Zap, RefreshCw, ChevronDown } from 'lucide-react';
 import PickupDetailPanel from '@/components/pickups/PickupDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,9 @@ import EntitySelect from '@/components/common/EntitySelect';
 import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
+import { hasNextPage, DEFAULT_PAGE_SIZE, dedupeById } from '@/lib/pagination';
+
+const PAGE_SIZE = DEFAULT_PAGE_SIZE; // 50
 
 const statusColor = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -39,6 +42,9 @@ export default function PickupRequests() {
   const [scheduleForm, setScheduleForm] = useState({ customer_id: '', horizon_days: 30 });
   const [scheduling, setScheduling] = useState(false);
   const [selectedPickup, setSelectedPickup] = useState(null);
+  const [page, setPage] = useState(1);
+  const [allPickups, setAllPickups] = useState([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const handleAISchedule = async () => {
     if (!scheduleForm.customer_id) return;
@@ -55,10 +61,27 @@ export default function PickupRequests() {
     }
   };
 
-  const { data: pickups = [], isLoading } = useQuery({
-    queryKey: ['pickups'],
-    queryFn: () => base44.entities.PickupRequest.list('-created_date'),
+  const { data: pickupsPage = [], isLoading } = useQuery({
+    queryKey: ['pickups', page],
+    queryFn: async () => {
+      const results = await base44.entities.PickupRequest.list('-created_date', PAGE_SIZE * page);
+      setAllPickups(dedupeById(results));
+      return results;
+    },
   });
+
+  const pickups = allPickups.length > 0 ? allPickups : pickupsPage;
+  const canLoadMore = hasNextPage(pickupsPage, PAGE_SIZE * page);
+
+  const handleLoadMore = useCallback(async () => {
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const results = await base44.entities.PickupRequest.list('-created_date', PAGE_SIZE * nextPage);
+    setAllPickups(dedupeById(results));
+    setPage(nextPage);
+    setLoadingMore(false);
+  }, [page]);
+
   // Resolve only the customers referenced by the loaded pickups (label/search),
   // rather than fetching the whole customer table.
   const { rows: referencedCustomers } = useEntitiesByIds('Customer', pickups.map(p => p.customer_id));
@@ -75,7 +98,7 @@ export default function PickupRequests() {
 
   const filtered = pickups.filter(p => {
     const c = customerMap[p.customer_id];
-    const matchSearch = c?.full_name?.toLowerCase().includes(search.toLowerCase()) || p.address?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || c?.full_name?.toLowerCase().includes(search.toLowerCase()) || p.address?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === 'all' || p.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -139,12 +162,12 @@ export default function PickupRequests() {
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge className={`text-xs ${statusColor[p.status]}`} variant="secondary">{p.status?.replace('_',' ')}</Badge>
                   {p.status === 'pending' && (
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateMutation.mutate({ id: p.id, data: { status: 'assigned' } })}>
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: p.id, data: { status: 'assigned' } }); }}>
                       Assign
                     </Button>
                   )}
                   {p.status === 'assigned' && (
-                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => updateMutation.mutate({ id: p.id, data: { status: 'completed' } })}>
+                    <Button size="sm" variant="outline" className="text-xs h-7" onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: p.id, data: { status: 'completed' } }); }}>
                       Complete
                     </Button>
                   )}
@@ -155,6 +178,15 @@ export default function PickupRequests() {
               </div>
             );
           })}
+
+          {canLoadMore && (
+            <div className="pt-2 flex justify-center">
+              <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore} className="gap-2">
+                {loadingMore ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
+                {loadingMore ? 'Loading...' : `Load more (showing ${pickups.length})`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
