@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { clampLimit, dedupeById, DEFAULT_PAGE_SIZE } from '@/lib/pagination';
 import { cacheEntities, getCachedEntities } from '@/lib/offlineDB';
 
@@ -55,6 +56,8 @@ export function useEntitySearch({
   limit = DEFAULT_PAGE_SIZE,
   enabled = true,
 }) {
+  const { user } = useAuth();
+  const scope = user?.tenant_id || '';
   const [query, setQuery] = useState('');
   const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const cap = clampLimit(limit);
@@ -83,10 +86,10 @@ export function useEntitySearch({
     staleTime: 60_000,
   });
 
-  // Offline: search the locally-cached rows for this entity.
+  // Offline: search the locally-cached rows for this entity (tenant-scoped).
   const cached = useQuery({
-    queryKey: ['entity-search-offline', entity],
-    queryFn: () => getCachedEntities(entity),
+    queryKey: ['entity-search-offline', scope, entity],
+    queryFn: () => getCachedEntities(entity, scope),
     enabled: available && !isOnline,
     staleTime: 60_000,
   });
@@ -96,9 +99,9 @@ export function useEntitySearch({
   // Persist whatever the server returned so it's available offline next time.
   useEffect(() => {
     if (isOnline && Array.isArray(serverActive.data) && serverActive.data.length) {
-      cacheEntities(entity, serverActive.data);
+      cacheEntities(entity, serverActive.data, scope);
     }
-  }, [isOnline, entity, serverActive.data]);
+  }, [isOnline, entity, scope, serverActive.data]);
 
   const options = useMemo(() => {
     if (!isOnline) return matchCachedEntities(cached.data || [], searchFields, q, cap);
