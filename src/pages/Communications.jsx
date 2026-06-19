@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SendNotificationModal from '@/components/comms/SendNotificationModal';
 import AIMessageComposer from '@/components/comms/AIMessageComposer';
+import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const statusColor = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -34,7 +35,7 @@ export default function Communications() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => base44.entities.Customer.list(),
+    queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT),
   });
 
   const sent = notifications.filter(n => ['sent','delivered'].includes(n.status)).length;
