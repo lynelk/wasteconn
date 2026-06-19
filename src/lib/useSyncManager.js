@@ -49,6 +49,8 @@ export function useSyncManager() {
       for (const action of pendingActions) {
         if (action.entity === 'PickupRequest' && action.action === 'update') {
           await base44.entities.PickupRequest.update(action.payload.id, action.payload.data);
+        } else if (action.entity === 'PickupRequest' && action.action === 'create') {
+          await base44.entities.PickupRequest.create(action.payload);
         } else if (action.entity === 'Ticket' && action.action === 'create') {
           await base44.entities.Ticket.create(action.payload);
         } else if (action.entity === 'ExceptionQueue' && action.action === 'create') {
