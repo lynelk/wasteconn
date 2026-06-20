@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Calendar, Edit2, Search, Zap, RefreshCw, ChevronDown } from 'lucide-react';
+import { useDateRange } from '@/hooks/useDateRange';
+import DateRangeFilter from '@/components/common/DateRangeFilter';
 import PickupDetailPanel from '@/components/pickups/PickupDetailPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +47,10 @@ export default function PickupRequests() {
   const [page, setPage] = useState(1);
   const [allPickups, setAllPickups] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const { startDate, endDate } = useDateRange();
+
+  // Build date filter for entity queries
+  const dateFilter = startDate && endDate ? { created_date: { $gte: startDate, $lte: endDate } } : {};
 
   const handleAISchedule = async () => {
     if (!scheduleForm.customer_id) return;
@@ -62,9 +68,9 @@ export default function PickupRequests() {
   };
 
   const { data: pickupsPage = [], isLoading } = useQuery({
-    queryKey: ['pickups', page],
+    queryKey: ['pickups', page, startDate, endDate],
     queryFn: async () => {
-      const results = await base44.entities.PickupRequest.list('-created_date', PAGE_SIZE * page);
+      const results = await base44.entities.PickupRequest.filter(dateFilter, '-created_date', PAGE_SIZE * page);
       setAllPickups(dedupeById(results));
       return results;
     },
@@ -76,11 +82,11 @@ export default function PickupRequests() {
   const handleLoadMore = useCallback(async () => {
     setLoadingMore(true);
     const nextPage = page + 1;
-    const results = await base44.entities.PickupRequest.list('-created_date', PAGE_SIZE * nextPage);
+    const results = await base44.entities.PickupRequest.filter(dateFilter, '-created_date', PAGE_SIZE * nextPage);
     setAllPickups(dedupeById(results));
     setPage(nextPage);
     setLoadingMore(false);
-  }, [page]);
+  }, [page, dateFilter]);
 
   // Resolve only the customers referenced by the loaded pickups (label/search),
   // rather than fetching the whole customer table.
@@ -105,12 +111,13 @@ export default function PickupRequests() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Pickup Requests</h1>
           <p className="text-muted-foreground text-sm mt-1">{pickups.filter(p=>p.status==='pending').length} pending</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <DateRangeFilter />
           <Button variant="outline" onClick={() => setScheduleOpen(true)} className="gap-2">
             <Zap className="w-4 h-4" /> AI Schedule
           </Button>

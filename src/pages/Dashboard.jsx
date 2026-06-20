@@ -2,11 +2,13 @@ import { Suspense, lazy } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Users, MapPin, Calendar, CreditCard, MessageSquare, Truck, AlertCircle, Package, Map } from 'lucide-react';
+import { Users, MapPin, Calendar as CalendarIcon, CreditCard, MessageSquare, Truck, AlertCircle, Package, Map, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import DateRangeFilter from '@/components/common/DateRangeFilter';
+import { useDateRange } from '@/hooks/useDateRange';
 import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
 
 const DashboardMap = lazy(() => import('@/components/dashboard/DashboardMap'));
@@ -41,17 +43,36 @@ const statusColor = {
 export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role || 'user';
+  const { startDate, endDate } = useDateRange();
+
+  // Build date filter for entity queries
+  const dateFilter = startDate && endDate ? { created_date: { $gte: startDate, $lte: endDate } } : {};
 
   // Bound the high-cardinality scans to the most recent N records (disclosed
   // below) so the dashboard never pulls whole tables. Low-cardinality entities
   // (vehicles, inventory, routes, zones, tenants) stay unbounded.
-  const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: () => base44.entities.Customer.list('-created_date', ANALYTICS_SCAN_LIMIT) });
-  const { data: pickups = [] } = useQuery({ queryKey: ['pickups'], queryFn: () => base44.entities.PickupRequest.list('-created_date', ANALYTICS_SCAN_LIMIT) });
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', ANALYTICS_SCAN_LIMIT) });
-  const { data: complaints = [] } = useQuery({ queryKey: ['complaints'], queryFn: () => base44.entities.Complaint.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: customers = [] } = useQuery({ 
+    queryKey: ['customers', startDate, endDate], 
+    queryFn: () => base44.entities.Customer.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT) 
+  });
+  const { data: pickups = [] } = useQuery({ 
+    queryKey: ['pickups', startDate, endDate], 
+    queryFn: () => base44.entities.PickupRequest.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT) 
+  });
+  const { data: payments = [] } = useQuery({ 
+    queryKey: ['payments', startDate, endDate], 
+    queryFn: () => base44.entities.Payment.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT) 
+  });
+  const { data: complaints = [] } = useQuery({ 
+    queryKey: ['complaints', startDate, endDate], 
+    queryFn: () => base44.entities.Complaint.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT) 
+  });
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: () => base44.entities.Vehicle.list() });
   const { data: inventory = [] } = useQuery({ queryKey: ['inventory'], queryFn: () => base44.entities.Inventory.list() });
-  const { data: servicePoints = [] } = useQuery({ queryKey: ['service-points'], queryFn: () => base44.entities.ServicePoint.list('-created_date', ANALYTICS_SCAN_LIMIT) });
+  const { data: servicePoints = [] } = useQuery({ 
+    queryKey: ['service-points', startDate, endDate], 
+    queryFn: () => base44.entities.ServicePoint.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT) 
+  });
   const { data: routes = [] } = useQuery({ queryKey: ['routes-today'], queryFn: () => base44.entities.Route.filter({ route_date: format(new Date(), 'yyyy-MM-dd') }) });
   const { data: tenants = [] } = useQuery({ queryKey: ['tenants'], queryFn: () => base44.entities.Tenant.list(), enabled: role === 'super_admin' });
   const { data: zones = [] } = useQuery({ queryKey: ['service-zones'], queryFn: () => base44.entities.ServiceZone.list() });
@@ -68,11 +89,19 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold font-jakarta">
-          Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'} 👋
-        </h1>
-        <p className="text-muted-foreground mt-1">Here's what's happening today — {format(new Date(), 'EEEE, MMMM d yyyy')}</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold font-jakarta">
+            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {startDate && endDate 
+              ? `Viewing data from ${format(new Date(startDate), 'MMM d')} - ${format(new Date(endDate), 'MMM d, yyyy')}`
+              : `Here's what's happening today — ${format(new Date(), 'EEEE, MMMM d yyyy')}`
+            }
+          </p>
+        </div>
+        <DateRangeFilter />
       </div>
 
       {/* Stats Grid */}

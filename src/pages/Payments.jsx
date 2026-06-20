@@ -3,6 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEntitiesByIds } from '@/hooks/useEntitiesByIds';
 import { ANALYTICS_SCAN_LIMIT } from '@/lib/pagination';
+import { useDateRange } from '@/hooks/useDateRange';
+import DateRangeFilter from '@/components/common/DateRangeFilter';
 import {
   Plus, CreditCard, Search, CheckCircle, Smartphone, FileText,
   BarChart2, AlertTriangle, RefreshCw, Landmark, Link, RotateCcw,
@@ -52,14 +54,18 @@ export default function Payments() {
   const [settlements, setSettlements] = useState([]);
   const [refundingId, setRefundingId] = useState(null);
   const [linkGeneratingId, setLinkGeneratingId] = useState(null);
+  const { startDate, endDate } = useDateRange();
+
+  // Build date filter for entity queries
+  const dateFilter = startDate && endDate ? { created_date: { $gte: startDate, $lte: endDate } } : {};
 
   const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['payments'],
-    queryFn: () => base44.entities.Payment.list('-created_date'),
+    queryKey: ['payments', startDate, endDate],
+    queryFn: () => base44.entities.Payment.filter(dateFilter, '-created_date'),
   });
   const { data: invoices = [] } = useQuery({
-    queryKey: ['invoices-all'],
-    queryFn: () => base44.entities.Invoice.list('-created_date', ANALYTICS_SCAN_LIMIT),
+    queryKey: ['invoices-all', startDate, endDate],
+    queryFn: () => base44.entities.Invoice.filter(dateFilter, '-created_date', ANALYTICS_SCAN_LIMIT),
   });
 
   // Resolve only the customers referenced by the loaded payments, instead of
@@ -158,7 +164,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-jakarta">Payments</h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -168,7 +174,8 @@ export default function Payments() {
             )}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap justify-end">
+        <div className="flex gap-2 flex-wrap justify-end items-center">
+          <DateRangeFilter />
           <Button variant="outline" onClick={() => setStatementOpen(true)} className="gap-2">
             <FileText className="w-4 h-4" /> Statement
           </Button>
