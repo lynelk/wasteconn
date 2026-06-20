@@ -1,0 +1,58 @@
+{
+  "name": "ChargingSession",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "charger_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "start_soc_pct": {
+      "type": "number"
+    },
+    "end_soc_pct": {
+      "type": "number"
+    },
+    "energy_kwh": {
+      "type": "number"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "grid",
+        "solar",
+        "battery"
+      ],
+      "default": "grid"
+    },
+    "cost_ugx": {
+      "type": "number"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_progress",
+        "completed",
+        "interrupted"
+      ],
+      "default": "in_progress"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "charger_id",
+    "vehicle_id"
+  ]
+}

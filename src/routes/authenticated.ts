@@ -41,6 +41,10 @@ const DriverShiftTracker = lazy(() => import('@/pages/DriverShiftTracker'));
 const ItemDistributionAudit = lazy(() => import('@/pages/ItemDistributionAudit'));
 const AssetMovements = lazy(() => import('@/pages/AssetMovements'));
 const PricingRules = lazy(() => import('@/pages/PricingRules'));
+const CapacityPlanning = lazy(() => import('@/pages/CapacityPlanning'));
+const EprReporting = lazy(() => import('@/pages/EprReporting'));
+const DepotEnergy = lazy(() => import('@/pages/DepotEnergy'));
+const DeviceManagement = lazy(() => import('@/pages/DeviceManagement'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -84,4 +88,8 @@ export const authenticatedRoutes = [
   { path: '/distribution-audit', component: ItemDistributionAudit, domain: 'Operations' },
   { path: '/asset-movements', component: AssetMovements, domain: 'Operations' },
   { path: '/pricing-rules', component: PricingRules, domain: 'Finance' },
+  { path: '/capacity-planning', component: CapacityPlanning, domain: 'Operations' },
+  { path: '/epr-reporting', component: EprReporting, domain: 'Operations' },
+  { path: '/depot-energy', component: DepotEnergy, domain: 'Operations' },
+  { path: '/devices', component: DeviceManagement, domain: 'Admin' },
 ];

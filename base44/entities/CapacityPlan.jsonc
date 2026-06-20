@@ -1,0 +1,50 @@
+{
+  "name": "CapacityPlan",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "plan_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "zone_id": {
+      "type": "string"
+    },
+    "forecast_demand_t": {
+      "type": "number"
+    },
+    "forecast_stops": {
+      "type": "number"
+    },
+    "available_vehicles": {
+      "type": "number"
+    },
+    "available_crew": {
+      "type": "number"
+    },
+    "planned_capacity_t": {
+      "type": "number"
+    },
+    "utilisation_pct": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "tight",
+        "over"
+      ],
+      "default": "ok"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "plan_date"
+  ]
+}

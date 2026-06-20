@@ -1,0 +1,46 @@
+{
+  "name": "SensorReadingRaw",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    },
+    "metric_type": {
+      "type": "string",
+      "enum": [
+        "fill_level",
+        "gps_location",
+        "weight",
+        "temperature"
+      ]
+    },
+    "value": {
+      "type": "number"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "processed": {
+      "type": "boolean",
+      "default": false
+    },
+    "idempotency_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "device_id",
+    "recorded_at"
+  ]
+}

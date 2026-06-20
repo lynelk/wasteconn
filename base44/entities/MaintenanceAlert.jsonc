@@ -1,0 +1,62 @@
+{
+  "name": "MaintenanceAlert",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "service_due",
+        "fault_code",
+        "excessive_idle",
+        "harsh_driving",
+        "low_fuel"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "default": "warning"
+    },
+    "fault_code": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "predicted_service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "ai_recommended_action": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "scheduled",
+        "resolved"
+      ],
+      "default": "open"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "alert_type"
+  ]
+}

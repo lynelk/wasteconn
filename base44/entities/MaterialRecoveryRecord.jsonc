@@ -1,0 +1,57 @@
+{
+  "name": "MaterialRecoveryRecord",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "producer_id": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "waste_bank",
+        "weighbridge",
+        "facility"
+      ]
+    },
+    "source_ref": {
+      "type": "string"
+    },
+    "material": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "mixed"
+      ]
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "recovery_facility_id": {
+      "type": "string"
+    },
+    "evidence_url": {
+      "type": "string"
+    },
+    "recovery_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "attributed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "tenant_id",
+    "material",
+    "weight_kg"
+  ]
+}

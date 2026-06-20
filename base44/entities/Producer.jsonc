@@ -1,0 +1,49 @@
+{
+  "name": "Producer",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "registration_no": {
+      "type": "string"
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "plastic",
+          "paper",
+          "glass",
+          "metal",
+          "organic",
+          "e_waste",
+          "textile",
+          "mixed"
+        ]
+      }
+    },
+    "epr_scheme": {
+      "type": "string"
+    },
+    "contract_ref": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "tenant_id",
+    "company_name"
+  ]
+}

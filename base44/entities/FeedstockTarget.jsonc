@@ -1,0 +1,38 @@
+{
+  "name": "FeedstockTarget",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "facility_id": {
+      "type": "string"
+    },
+    "period": {
+      "type": "string"
+    },
+    "target_t_per_day": {
+      "type": "number"
+    },
+    "min_t_per_day": {
+      "type": "number"
+    },
+    "calorific_target": {
+      "type": "number"
+    },
+    "priority_waste_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "facility_id",
+    "target_t_per_day"
+  ]
+}

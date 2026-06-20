@@ -12,7 +12,7 @@ import {
   Activity, Database, Lock, GitBranch, Inbox, Scale,
   FileBarChart, Recycle, Megaphone, Rocket,
   Trash2, Leaf, PackagePlus, Gift, Ticket, Fuel, Clock, Shield,
-  MoveRight, Tags
+  MoveRight, Tags, Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -68,6 +68,7 @@ const navGroups = [
       { label: 'Fuel & Lubricants', icon: Fuel, path: '/fuel-lubricants', roles: ['admin', 'super_admin'] },
       { label: 'Driver Performance', icon: TrendingUp, path: '/driver-performance', roles: ['admin', 'super_admin'] },
       { label: 'Driver Shifts', icon: Clock, path: '/driver-shifts', roles: ['admin', 'super_admin'] },
+      { label: 'Depot Energy', icon: Zap, path: '/depot-energy', roles: ['admin', 'super_admin'] },
     ]
   },
   {
@@ -102,6 +103,8 @@ const navGroups = [
       { label: 'Analytics', icon: BarChart3, path: '/analytics', roles: ['admin', 'super_admin'] },
       { label: 'Reporting', icon: FileBarChart, path: '/reporting', roles: ['admin', 'super_admin'] },
       { label: 'Sustainability', icon: Leaf, path: '/sustainability', roles: ['admin', 'super_admin'] },
+      { label: 'Capacity Planning', icon: TrendingUp, path: '/capacity-planning', roles: ['admin', 'super_admin'] },
+      { label: 'EPR Reporting', icon: Recycle, path: '/epr-reporting', roles: ['admin', 'super_admin'] },
     ]
   },
   // Customer-only items + Settings
@@ -111,6 +114,7 @@ const navGroups = [
       { label: 'My Pickups', icon: Calendar, path: '/my-pickups', roles: ['customer'] },
       { label: 'My Payments', icon: CreditCard, path: '/my-payments', roles: ['customer'] },
       { label: 'My Complaints', icon: MessageSquare, path: '/my-complaints', roles: ['customer'] },
+      { label: 'Device Management', icon: Radio, path: '/devices', roles: ['admin', 'super_admin'] },
       { label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'super_admin'] },
       { label: 'RBAC Management', icon: Lock, path: '/rbac', roles: ['super_admin'] },
       { label: 'Tenant Health', icon: Activity, path: '/tenant-health', roles: ['super_admin'] },

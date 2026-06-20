@@ -1,0 +1,48 @@
+{
+  "name": "TelematicsReading",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "vehicle_id": {
+      "type": "string"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "odometer_km": {
+      "type": "number"
+    },
+    "engine_hours": {
+      "type": "number"
+    },
+    "fuel_level_pct": {
+      "type": "number"
+    },
+    "fault_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "battery_soc_pct": {
+      "type": "number"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "wialon",
+        "samsara",
+        "manual"
+      ],
+      "default": "manual"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "vehicle_id",
+    "recorded_at"
+  ]
+}

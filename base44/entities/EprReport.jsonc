@@ -1,0 +1,45 @@
+{
+  "name": "EprReport",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "producer_id": {
+      "type": "string"
+    },
+    "period_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_to": {
+      "type": "string",
+      "format": "date"
+    },
+    "recovered_kg_by_material": {
+      "type": "string"
+    },
+    "diversion_rate": {
+      "type": "number"
+    },
+    "total_recovered_kg": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "accepted"
+      ],
+      "default": "draft"
+    },
+    "document_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "producer_id"
+  ]
+}

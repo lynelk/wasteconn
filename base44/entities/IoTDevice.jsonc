@@ -1,0 +1,55 @@
+{
+  "name": "IoTDevice",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    },
+    "secret_hash": {
+      "type": "string"
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "ultrasonic_bin",
+        "gps_vehicle",
+        "weigh_cell",
+        "temperature"
+      ]
+    },
+    "binding_type": {
+      "type": "string",
+      "enum": [
+        "container",
+        "vehicle"
+      ]
+    },
+    "binding_id": {
+      "type": "string"
+    },
+    "firmware_version": {
+      "type": "string"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline",
+        "faulted"
+      ],
+      "default": "online"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "device_id",
+    "device_type"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "Charger",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "depot_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "charger_type": {
+      "type": "string",
+      "enum": [
+        "ac",
+        "dc_fast"
+      ]
+    },
+    "power_kw": {
+      "type": "number"
+    },
+    "connector_type": {
+      "type": "string"
+    },
+    "ocpp_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "charging",
+        "faulted",
+        "offline"
+      ],
+      "default": "available"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "depot_id",
+    "charger_type",
+    "power_kw"
+  ]
+}
