@@ -11,7 +11,8 @@ import {
   Radio, Wrench, Send, TrendingUp, Star, FileCheck, Package,
   Activity, Database, Lock, GitBranch, Inbox, Scale,
   FileBarChart, Recycle, Megaphone, Rocket,
-  Trash2, Leaf, PackagePlus, Gift, Ticket, Fuel, Clock, Shield
+  Trash2, Leaf, PackagePlus, Gift, Ticket, Fuel, Clock, Shield,
+  MoveRight, Tags
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ const navGroups = [
       { label: 'Communications', icon: Send, path: '/communications', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Waste Bank', icon: Scale, path: '/waste-bank', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Circular Economy', icon: Recycle, path: '/circular-economy', roles: ['admin', 'super_admin', 'dispatcher'] },
+      { label: 'Asset Movements', icon: MoveRight, path: '/asset-movements', roles: ['admin', 'super_admin'] },
     ]
   },
   {
@@ -78,6 +80,7 @@ const navGroups = [
       { label: 'Subscriptions', icon: ClipboardList, path: '/subscriptions', roles: ['admin', 'super_admin'] },
       { label: 'Inventory', icon: Package, path: '/inventory', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Distribution Audit', icon: Shield, path: '/distribution-audit', roles: ['admin', 'super_admin'] },
+      { label: 'Pricing Rules', icon: Tags, path: '/pricing-rules', roles: ['admin', 'super_admin'] },
       { label: 'Marketing Hub', icon: Megaphone, path: '/marketing', roles: ['admin', 'super_admin'] },
     ]
   },

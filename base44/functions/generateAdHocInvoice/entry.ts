@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
       customer_id,
       tenant_id,
       line_items,         // [{ description, amount_ugx, quantity }]
+      surcharge_line_items, // optional: from computePrice [{ rule_name, amount_ugx }]
       period_from,
       period_to,
       due_days = 14,
@@ -29,7 +30,15 @@ Deno.serve(async (req) => {
     const customer = customerArr?.[0];
     if (!customer) return Response.json({ error: 'Customer not found' }, { status: 404 });
 
-    const total = line_items.reduce((sum, item) => sum + (item.amount_ugx * (item.quantity || 1)), 0);
+    // Merge surcharge line items from computePrice if provided
+    const surchargeItems = (surcharge_line_items || []).map(s => ({
+      description: `Surcharge: ${s.rule_name}`,
+      amount_ugx: s.amount_ugx,
+      quantity: 1,
+    }));
+    const allLineItems = [...line_items, ...surchargeItems];
+
+    const total = allLineItems.reduce((sum, item) => sum + (item.amount_ugx * (item.quantity || 1)), 0);
     const today = new Date().toISOString().split('T')[0];
     const dueDate = new Date(Date.now() + due_days * 86400000).toISOString().split('T')[0];
 
@@ -50,7 +59,7 @@ Deno.serve(async (req) => {
       due_date: dueDate,
       issued_at: new Date().toISOString(),
       issued_by: user.email,
-      line_items: JSON.stringify(line_items),
+      line_items: JSON.stringify(allLineItems),
       notes: notes || 'Ad-hoc invoice',
     });
 

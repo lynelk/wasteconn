@@ -1,0 +1,81 @@
+{
+  "name": "PricingRule",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "global",
+        "zone",
+        "customer_type",
+        "service_plan",
+        "waste_type"
+      ],
+      "default": "global"
+    },
+    "scope_id": {
+      "type": "string",
+      "description": "zone_id or plan_id depending on scope"
+    },
+    "rule_type": {
+      "type": "string",
+      "enum": [
+        "distance_surcharge",
+        "contamination_fee",
+        "bulky_fee",
+        "hazardous_handling",
+        "after_hours",
+        "demand_surge"
+      ]
+    },
+    "condition_json": {
+      "type": "string",
+      "description": "JSON string describing when rule applies e.g. {\"waste_type\":\"hazardous\"}"
+    },
+    "amount_type": {
+      "type": "string",
+      "enum": [
+        "flat",
+        "per_km",
+        "per_kg",
+        "percentage"
+      ]
+    },
+    "amount": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "UGX"
+    },
+    "priority": {
+      "type": "number",
+      "default": 0
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "effective_to": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "name",
+    "rule_type",
+    "amount_type",
+    "amount"
+  ]
+}

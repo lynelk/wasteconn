@@ -1,0 +1,93 @@
+{
+  "name": "AssetMovement",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "movement_type": {
+      "type": "string",
+      "enum": [
+        "delivery",
+        "swap",
+        "recovery",
+        "repair",
+        "transfer",
+        "write_off"
+      ]
+    },
+    "container_id": {
+      "type": "string"
+    },
+    "from_location_type": {
+      "type": "string",
+      "enum": [
+        "depot",
+        "service_point",
+        "vehicle"
+      ]
+    },
+    "from_location_id": {
+      "type": "string"
+    },
+    "to_location_type": {
+      "type": "string",
+      "enum": [
+        "depot",
+        "service_point",
+        "vehicle"
+      ]
+    },
+    "to_location_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "service_point_id": {
+      "type": "string"
+    },
+    "pickup_request_id": {
+      "type": "string"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "good",
+        "damaged",
+        "destroyed"
+      ]
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "performed_by": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "planned"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "movement_type",
+    "container_id"
+  ]
+}

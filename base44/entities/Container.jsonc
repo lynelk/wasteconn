@@ -116,6 +116,41 @@
       "type": "string",
       "format": "date-time"
     },
+    "custody_status": {
+      "type": "string",
+      "enum": [
+        "in_stock",
+        "deployed",
+        "in_transit",
+        "in_repair",
+        "retired",
+        "lost"
+      ],
+      "default": "in_stock",
+      "description": "Current custody lifecycle status of the asset"
+    },
+    "current_custodian_type": {
+      "type": "string",
+      "enum": [
+        "customer",
+        "depot",
+        "vehicle"
+      ],
+      "description": "Who currently holds this asset"
+    },
+    "current_custodian_id": {
+      "type": "string",
+      "description": "ID of the current custodian (customer_id, depot_id, or vehicle_id)"
+    },
+    "deployed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the asset was first delivered to a customer"
+    },
+    "last_movement_id": {
+      "type": "string",
+      "description": "ID of the most recent AssetMovement record"
+    },
     "notes": {
       "type": "string"
     }
