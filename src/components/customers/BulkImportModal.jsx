@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Download, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Loader2, FileSpreadsheet } from 'lucide-react';
+import DownloadTemplateButton from '@/components/common/DownloadTemplateButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -146,15 +147,24 @@ export default function BulkImportModal({ open, onClose, tenantId, onComplete })
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ALL_COLS.join(',');
-    const sample = '"John Doe","+256700123456","john@example.com","residential","individual","Makerere Hill Rd","Kampala","1","50","1","","","mtn","+256700123456","english","New customer"';
-    const blob = new Blob([headers + '\n' + sample], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'customer_import_template.csv';
-    a.click();
-  };
+  const TEMPLATE_COLUMNS = [
+    { key: 'full_name', sample: 'John Doe', notes: 'Full name of customer' },
+    { key: 'phone', sample: '+256700123456', notes: 'Phone number including country code' },
+    { key: 'email', sample: 'john@example.com', notes: 'Email address (optional)' },
+    { key: 'customer_type', sample: 'residential', notes: 'residential | commercial | industrial' },
+    { key: 'customer_segment', sample: 'individual', notes: 'individual | sme | institution' },
+    { key: 'address', sample: 'Makerere Hill Rd', notes: 'Physical address' },
+    { key: 'district', sample: 'Kampala', notes: 'District / Parish / Region' },
+    { key: 'bin_count', sample: '1', notes: 'Number of bins' },
+    { key: 'estimated_waste_kg_month', sample: '50', notes: 'Estimated waste in kg per month' },
+    { key: 'num_branches', sample: '1', notes: 'Number of branches (commercial)' },
+    { key: 'institution_name', sample: '', notes: 'Organisation name (institutions only)' },
+    { key: 'contact_person', sample: '', notes: 'Contact person name' },
+    { key: 'mobile_money_provider', sample: 'mtn', notes: 'mtn | airtel' },
+    { key: 'mobile_money_number', sample: '+256700123456', notes: 'Mobile money number' },
+    { key: 'preferred_language', sample: 'english', notes: 'english | luganda | swahili' },
+    { key: 'notes', sample: 'New customer', notes: 'Any additional notes' },
+  ];
 
   const reset = () => {
     setFile(null);
@@ -184,11 +194,13 @@ export default function BulkImportModal({ open, onClose, tenantId, onComplete })
             {/* Template download */}
             <div className="flex items-center justify-between bg-secondary/50 rounded-xl p-3">
               <p className="text-sm text-muted-foreground">
-                Download the CSV template with all supported columns.
+                Download the template with all supported columns.
               </p>
-              <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-1 shrink-0">
-                <Download className="w-3.5 h-3.5" /> Template
-              </Button>
+              <DownloadTemplateButton
+                filename="customer_import_template"
+                columns={TEMPLATE_COLUMNS}
+                required={REQUIRED_COLS}
+              />
             </div>
 
             {/* Column reference */}

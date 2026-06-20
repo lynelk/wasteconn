@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { X, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import DownloadTemplateButton from '@/components/common/DownloadTemplateButton';
 
 const CSV_TEMPLATE = `provider_code,client_name,contact_person,phone,email,vehicle_type,capacity,rate_per_trip_ugx,rate_per_day_ugx,availability,mou_status
 HV-001,ABC Transport Ltd,John Doe,+256700000001,abc@example.com,truck,5 tonnes,150000,600000,on_call,MOU Signed
@@ -66,14 +67,19 @@ export default function HiredVehicleImportModal({ onClose }) {
     qc.invalidateQueries({ queryKey: ['hired-providers'] });
   };
 
-  const downloadTemplate = () => {
-    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'hired_vehicle_providers_template.csv';
-    a.click();
-  };
+  const TEMPLATE_COLUMNS = [
+    { key: 'provider_code', sample: 'HV-001', notes: 'Unique provider code' },
+    { key: 'client_name', sample: 'ABC Transport Ltd', notes: 'Company / provider name' },
+    { key: 'contact_person', sample: 'John Doe', notes: 'Primary contact name' },
+    { key: 'phone', sample: '+256700000001', notes: 'Phone number' },
+    { key: 'email', sample: 'abc@example.com', notes: 'Email address' },
+    { key: 'vehicle_type', sample: 'truck', notes: 'truck | tipper | pickup | van' },
+    { key: 'capacity', sample: '5 tonnes', notes: 'Vehicle capacity description' },
+    { key: 'rate_per_trip_ugx', sample: '150000', notes: 'Rate per trip in UGX' },
+    { key: 'rate_per_day_ugx', sample: '600000', notes: 'Rate per day in UGX' },
+    { key: 'availability', sample: 'on_call', notes: 'on_call | weekdays | weekends | fulltime' },
+    { key: 'mou_status', sample: 'MOU Signed', notes: 'MOU Signed | No MOU | Pending' },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -92,9 +98,14 @@ export default function HiredVehicleImportModal({ onClose }) {
           </div>
         ) : (
           <div className="space-y-4">
-            <button onClick={downloadTemplate} className="text-sm text-primary hover:underline">
-              ↓ Download CSV template
-            </button>
+            <div className="flex items-center justify-between bg-secondary/30 rounded-xl p-3">
+              <p className="text-sm text-muted-foreground">Download the import template</p>
+              <DownloadTemplateButton
+                filename="hired_vehicle_providers_template"
+                columns={TEMPLATE_COLUMNS}
+                required={['provider_code', 'client_name', 'phone']}
+              />
+            </div>
 
             <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
