@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'nlswms_offline';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let _db = null;
 
@@ -32,11 +32,14 @@ function openDB() {
         const sq = db.createObjectStore('sync_queue', { keyPath: 'local_id' });
         sq.createIndex('entity', 'entity', { unique: false });
       }
-      // Generic entity row cache (powers offline EntitySelect pickers)
-      if (!db.objectStoreNames.contains('entity_cache')) {
-        const ec = db.createObjectStore('entity_cache', { keyPath: 'cache_key' });
-        ec.createIndex('entity', 'entity', { unique: false });
+      // Generic entity row cache (powers offline EntitySelect pickers).
+      // Scoped by tenant via the 'scope_entity' index. Recreated when upgrading
+      // from the unscoped v3 layout so reads are always tenant-isolated.
+      if (db.objectStoreNames.contains('entity_cache')) {
+        db.deleteObjectStore('entity_cache');
       }
+      const ec = db.createObjectStore('entity_cache', { keyPath: 'cache_key' });
+      ec.createIndex('scope_entity', 'scope_entity', { unique: false });
     };
     req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
     req.onerror = () => reject(req.error);
@@ -135,24 +138,38 @@ export async function markActionSynced(local_id) {
 // resolve a selection (e.g. a customer_id) when offline — without which an
 // offline-capable form like the WasteBank transaction form can't be completed.
 
-export async function cacheEntities(entity, rows = []) {
+export async function cacheEntities(entity, rows = [], scope = '') {
   if (!entity || !Array.isArray(rows) || rows.length === 0) return;
   try {
     const store = await tx('entity_cache', 'readwrite');
     const now = new Date().toISOString();
+    const s = scope || '';
     for (const row of rows) {
       if (!row?.id) continue;
-      store.put({ cache_key: `${entity}:${row.id}`, entity, id: row.id, row, cached_at: now });
+      // Scope by tenant (or any caller-supplied scope) so a shared device never
+      // surfaces another tenant's cached rows offline.
+      store.put({ cache_key: `${s}:${entity}:${row.id}`, scope_entity: `${s}:${entity}`, entity, scope: s, id: row.id, row, cached_at: now });
     }
   } catch { /* caching is best-effort; never block the online path */ }
 }
 
-export async function getCachedEntities(entity) {
+export async function getCachedEntities(entity, scope = '') {
   try {
     const store = await tx('entity_cache', 'readonly');
-    const all = await promisify(store.index('entity').getAll(entity));
+    const all = await promisify(store.index('scope_entity').getAll(`${scope || ''}:${entity}`));
     return all.map((r) => r.row);
   } catch {
     return [];
+  }
+}
+
+// Drop the entire entity cache (e.g. on logout) so cached rows don't leak across
+// accounts on a shared device.
+export async function clearEntityCache() {
+  try {
+    const store = await tx('entity_cache', 'readwrite');
+    return promisify(store.clear());
+  } catch {
+    /* best-effort */
   }
 }
