@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CustomerForm from '@/components/customers/CustomerForm';
 import BulkImportModal from '@/components/customers/BulkImportModal';
 import ServicePointForm from '@/components/customers/ServicePointForm';
+import NotificationSettings from '@/components/customers/NotificationSettings';
 
 const statusColor = {
   active: 'bg-green-100 text-green-700',
@@ -164,11 +165,12 @@ export default function Customers() {
               {filtered.map(c => {
                 const SegIcon = segmentIcon[c.customer_segment] || User;
                 return (
-                  <div key={c.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card hover:shadow-sm transition-shadow">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <SegIcon className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
+                  <div key={c.id} className="space-y-3">
+                   <div className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card hover:shadow-sm transition-shadow">
+                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                       <SegIcon className="w-4 h-4 text-primary" />
+                     </div>
+                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm">{c.institution_name || c.full_name}</p>
                         {c.is_branch && <Badge variant="outline" className="text-xs">Branch</Badge>}
@@ -192,12 +194,14 @@ export default function Customers() {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => deleteMutation.mutate(c.id)} className="text-muted-foreground hover:text-destructive p-1.5">
-                        <Trash2 className="w-3.5 h-3.5" />
+                       <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
+                      </div>
+                      </div>
+                      <NotificationSettings customer={c} />
+                      </div>
+                      );
+                      })}
             </div>
           )}
         </TabsContent>

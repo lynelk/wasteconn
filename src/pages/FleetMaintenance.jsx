@@ -14,6 +14,7 @@ import VehicleRepairCostSummary from '@/components/fleet/VehicleRepairCostSummar
 import MaintenanceTrendChart from '@/components/fleet/MaintenanceTrendChart';
 import HiredVehicleProviderList from '@/components/fleet/HiredVehicleProviderList';
 import DriverShiftReportPanel from '@/components/fleet/DriverShiftReportPanel';
+import MaintenanceAlertsPanel from '@/components/fleet/MaintenanceAlertsPanel';
 
 const priorityColor = {
   low: 'bg-gray-100 text-gray-600',
@@ -108,6 +109,7 @@ export default function FleetMaintenance() {
               <TabsTrigger value="trend"><TrendingUp className="w-3.5 h-3.5 mr-1" />Cost Trend</TabsTrigger>
               <TabsTrigger value="hired"><Truck className="w-3.5 h-3.5 mr-1" />Hired Providers</TabsTrigger>
               <TabsTrigger value="shifts"><FileText className="w-3.5 h-3.5 mr-1" />Shift Reports</TabsTrigger>
+              <TabsTrigger value="maintenance">Maintenance Alerts</TabsTrigger>
             </TabsList>
 
             <TabsContent value="workorders">
@@ -175,6 +177,10 @@ export default function FleetMaintenance() {
 
             <TabsContent value="shifts">
               <DriverShiftReportPanel />
+            </TabsContent>
+
+            <TabsContent value="maintenance">
+              <MaintenanceAlertsPanel vehicles={vehicles} />
             </TabsContent>
 
             <TabsContent value="fuel">

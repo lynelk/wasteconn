@@ -147,6 +147,21 @@
       "type": "number",
       "description": "AI-calculated churn risk 0-100"
     },
+    "notification_email_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable email notifications for pickups"
+    },
+    "notification_whatsapp_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable WhatsApp notifications for pickups"
+    },
+    "notification_inapp_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable in-app notifications for pickups"
+    },
     "notes": {
       "type": "string"
     }

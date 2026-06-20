@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Radio, Map, TrendingUp, MapPin, Route } from 'lucide-react';
 import CitoReportExport from '@/components/analytics/CitoReportExport';
 import HistoricalTrendWidget from '@/components/analytics/HistoricalTrendWidget';
+import DemandForecastChart from '@/components/analytics/DemandForecastChart';
 import WialonIntegration from '@/pages/WialonIntegration';
 import CoverageAnalytics from '@/pages/CoverageAnalytics';
 import RouteEfficiencyAnalysis from '@/components/analytics/RouteEfficiencyAnalysis';
@@ -65,7 +66,8 @@ export default function Analytics() {
           <TabsTrigger value="heatmap"><MapPin className="w-3.5 h-3.5 mr-1" />Demand Heatmap</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-4">
+        <TabsContent value="overview" className="mt-4 space-y-6">
+          <DemandForecastChart />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-border/60"><CardContent className="pt-5">
           <p className="text-xs text-muted-foreground">Total Revenue</p>
