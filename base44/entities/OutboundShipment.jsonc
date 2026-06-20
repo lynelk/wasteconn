@@ -1,0 +1,44 @@
+{
+  "name": "OutboundShipment",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "facility_id": {
+      "type": "string",
+      "description": "DisposalSite ID"
+    },
+    "material": {
+      "type": "string"
+    },
+    "buyer_id": {
+      "type": "string",
+      "description": "Optional RecyclerBuyer ID"
+    },
+    "quantity_kg": {
+      "type": "number"
+    },
+    "shipped_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "description": "Optional Vehicle ID"
+    },
+    "manifest_url": {
+      "type": "string"
+    },
+    "settlement_ugx": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "facility_id",
+    "material",
+    "quantity_kg"
+  ]
+}

@@ -48,6 +48,9 @@ export const ROUTE_ROLES = {
   '/my-pickups': ['customer'],
   '/my-payments': ['customer'],
   '/my-complaints': ['customer'],
+  '/subcontractor-hub': ['admin', 'super_admin'],
+  '/recycler-marketplace': ['admin', 'super_admin', 'dispatcher'],
+  '/facility-yield': ['admin', 'super_admin'],
   // Field/driver apps
   '/field-app': ['admin', 'super_admin', 'dispatcher', 'driver'],
   '/driver-app': ['admin', 'super_admin', 'dispatcher', 'driver'],

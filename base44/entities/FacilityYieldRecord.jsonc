@@ -1,0 +1,54 @@
+{
+  "name": "FacilityYieldRecord",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "facility_id": {
+      "type": "string",
+      "description": "DisposalSite ID"
+    },
+    "period": {
+      "type": "string",
+      "description": "e.g. 2026-06-19"
+    },
+    "inbound_t": {
+      "type": "number",
+      "description": "Inbound waste in tonnes"
+    },
+    "sorted_recyclable_t": {
+      "type": "number"
+    },
+    "sorted_organic_t": {
+      "type": "number"
+    },
+    "sorted_residue_t": {
+      "type": "number"
+    },
+    "recovered_energy_kwh": {
+      "type": "number",
+      "description": "W2E facilities only"
+    },
+    "contamination_rate_pct": {
+      "type": "number"
+    },
+    "outbound_shipments_json": {
+      "type": "string",
+      "description": "JSON array of {material, buyer, quantity_kg}"
+    },
+    "diversion_rate_pct": {
+      "type": "number",
+      "description": "Computed: (1 - sorted_residue_t / inbound_t) * 100"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "facility_id",
+    "period"
+  ]
+}

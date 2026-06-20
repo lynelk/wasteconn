@@ -1,0 +1,57 @@
+{
+  "name": "Subcontractor",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "service_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of ServiceZone IDs"
+    },
+    "vehicle_count": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "partner_app_id": {
+      "type": "string",
+      "description": "Optional link to PartnerApp for API access"
+    },
+    "onboarded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "company_name"
+  ]
+}

@@ -12,7 +12,7 @@ import {
   Activity, Database, Lock, GitBranch, Inbox, Scale,
   FileBarChart, Recycle, Megaphone, Rocket,
   Trash2, Leaf, PackagePlus, Gift, Ticket, Fuel, Clock, Shield,
-  MoveRight, Tags, Zap
+  MoveRight, Tags, Zap, Users2, ShoppingCart, Factory
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,9 @@ const navGroups = [
       { label: 'Communications', icon: Send, path: '/communications', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Waste Bank', icon: Scale, path: '/waste-bank', roles: ['admin', 'super_admin', 'dispatcher'] },
       { label: 'Circular Economy', icon: Recycle, path: '/circular-economy', roles: ['admin', 'super_admin', 'dispatcher'] },
+      { label: 'Subcontractor Hub', icon: Users2, path: '/subcontractor-hub', roles: ['admin', 'super_admin'] },
+      { label: 'Recycler Marketplace', icon: ShoppingCart, path: '/recycler-marketplace', roles: ['admin', 'super_admin', 'dispatcher'] },
+      { label: 'Facility Yield', icon: Factory, path: '/facility-yield', roles: ['admin', 'super_admin'] },
       { label: 'Asset Movements', icon: MoveRight, path: '/asset-movements', roles: ['admin', 'super_admin'] },
     ]
   },

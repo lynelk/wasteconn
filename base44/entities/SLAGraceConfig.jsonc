@@ -1,0 +1,55 @@
+{
+  "name": "SLAGraceConfig",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "name": {
+      "type": "string",
+      "description": "Descriptive name e.g. Residential Standard"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "global",
+        "zone",
+        "service_plan",
+        "customer_type",
+        "product"
+      ],
+      "default": "global"
+    },
+    "scope_id": {
+      "type": "string",
+      "description": "ID of the referenced scope entity (zone_id, plan_id, etc.)"
+    },
+    "grace_period_days": {
+      "type": "number",
+      "default": 1,
+      "description": "Standard grace period in days"
+    },
+    "ad_hoc_grace_period_days": {
+      "type": "number",
+      "default": 2,
+      "description": "Grace period in days for ad hoc requests"
+    },
+    "applies_to_ad_hoc": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "name",
+    "grace_period_days"
+  ]
+}

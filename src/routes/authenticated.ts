@@ -45,6 +45,9 @@ const CapacityPlanning = lazy(() => import('@/pages/CapacityPlanning'));
 const EprReporting = lazy(() => import('@/pages/EprReporting'));
 const DepotEnergy = lazy(() => import('@/pages/DepotEnergy'));
 const DeviceManagement = lazy(() => import('@/pages/DeviceManagement'));
+const SubcontractorHub = lazy(() => import('@/pages/SubcontractorHub'));
+const RecyclerMarketplace = lazy(() => import('@/pages/RecyclerMarketplace'));
+const FacilityYield = lazy(() => import('@/pages/FacilityYield'));
 
 export const authenticatedRoutes = [
   { path: '/', component: Dashboard, domain: 'Operations' },
@@ -92,4 +95,7 @@ export const authenticatedRoutes = [
   { path: '/epr-reporting', component: EprReporting, domain: 'Operations' },
   { path: '/depot-energy', component: DepotEnergy, domain: 'Operations' },
   { path: '/devices', component: DeviceManagement, domain: 'Admin' },
+  { path: '/subcontractor-hub', component: SubcontractorHub, domain: 'Operations' },
+  { path: '/recycler-marketplace', component: RecyclerMarketplace, domain: 'Operations' },
+  { path: '/facility-yield', component: FacilityYield, domain: 'Operations' },
 ];

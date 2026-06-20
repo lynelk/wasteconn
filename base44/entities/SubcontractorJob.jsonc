@@ -1,0 +1,83 @@
+{
+  "name": "SubcontractorJob",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "subcontractor_id": {
+      "type": "string",
+      "description": "Reference to Subcontractor"
+    },
+    "pickup_request_id": {
+      "type": "string",
+      "description": "Reference to PickupRequest"
+    },
+    "route_id": {
+      "type": "string",
+      "description": "Optional reference to Route"
+    },
+    "allocated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completion_evidence_url": {
+      "type": "string"
+    },
+    "gps_lat": {
+      "type": "number"
+    },
+    "gps_lng": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "allocated",
+        "accepted",
+        "in_progress",
+        "completed",
+        "disputed"
+      ],
+      "default": "allocated"
+    },
+    "payout_ugx": {
+      "type": "number"
+    },
+    "payout_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "disputed"
+      ],
+      "default": "pending"
+    },
+    "dispute_notes": {
+      "type": "string"
+    },
+    "grace_period_days": {
+      "type": "number",
+      "default": 1,
+      "description": "Configurable grace period for SLA compliance checks"
+    },
+    "sla_policy_ref": {
+      "type": "string",
+      "description": "SLAPolicy ID this job is evaluated against"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "subcontractor_id",
+    "pickup_request_id"
+  ]
+}

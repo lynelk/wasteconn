@@ -1,0 +1,59 @@
+{
+  "name": "MaterialListing",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "waste_bank_agent_id": {
+      "type": "string",
+      "description": "User ID of waste bank agent posting listing"
+    },
+    "material": {
+      "type": "string",
+      "description": "Material type e.g. plastic, paper, metal"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "quantity_kg": {
+      "type": "number"
+    },
+    "location_zone_id": {
+      "type": "string",
+      "description": "Reference to ServiceZone"
+    },
+    "available_from": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "reserved",
+        "sold"
+      ],
+      "default": "available"
+    },
+    "ai_estimated_price_ugx": {
+      "type": "number",
+      "description": "AI-estimated market price per kg"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "material",
+    "quantity_kg"
+  ]
+}

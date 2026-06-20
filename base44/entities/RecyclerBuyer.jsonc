@@ -1,0 +1,60 @@
+{
+  "name": "RecyclerBuyer",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Reference to Tenant"
+    },
+    "company_name": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string",
+      "format": "email"
+    },
+    "materials_wanted": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of material types the buyer wants"
+    },
+    "min_grade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "price_per_kg_ugx": {
+      "type": "number"
+    },
+    "pickup_radius_km": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "partner_app_id": {
+      "type": "string",
+      "description": "Optional link to PartnerApp for API access"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "company_name"
+  ]
+}
