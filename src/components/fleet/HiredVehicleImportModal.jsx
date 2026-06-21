@@ -84,20 +84,20 @@ export default function HiredVehicleImportModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[90dvh]">
+        <div className="flex items-center justify-between p-6 pb-0 safe-top shrink-0 mb-5">
           <h3 className="font-semibold font-jakarta text-lg">Import Providers from CSV</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
 
         {status === 'success' ? (
-          <div className="text-center py-8 space-y-3">
+          <div className="text-center py-8 space-y-3 px-6 pb-6 safe-bottom overflow-y-auto">
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
             <p className="font-semibold">{importCount} providers imported successfully!</p>
             <Button onClick={onClose}>Close</Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto px-6 pb-6 safe-bottom">
             <div className="flex items-center justify-between bg-secondary/30 rounded-xl p-3">
               <p className="text-sm text-muted-foreground">Download the import template</p>
               <DownloadTemplateButton

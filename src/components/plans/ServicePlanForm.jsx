@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 
@@ -51,39 +51,38 @@ export default function ServicePlanForm({ plan, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Billing Cycle</Label>
-          <Select value={form.billing_cycle} onValueChange={v => set('billing_cycle', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-              <SelectItem value="annually">Annually</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.billing_cycle}
+            onChange={v => set('billing_cycle', v)}
+            options={[{ value: 'monthly', label: 'Monthly' }, { value: 'quarterly', label: 'Quarterly' }, { value: 'annually', label: 'Annually' }]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Collection Frequency</Label>
-          <Select value={form.frequency} onValueChange={v => set('frequency', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="twice_weekly">Twice Weekly</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="biweekly">Bi-weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.frequency}
+            onChange={v => set('frequency', v)}
+            options={[
+              { value: 'daily', label: 'Daily' },
+              { value: 'twice_weekly', label: 'Twice Weekly' },
+              { value: 'weekly', label: 'Weekly' },
+              { value: 'biweekly', label: 'Bi-weekly' },
+              { value: 'monthly', label: 'Monthly' },
+            ]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Customer Type</Label>
-          <Select value={form.customer_type} onValueChange={v => set('customer_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="residential">Residential</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-              <SelectItem value="industrial">Industrial</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.customer_type}
+            onChange={v => set('customer_type', v)}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'residential', label: 'Residential' },
+              { value: 'commercial', label: 'Commercial' },
+              { value: 'industrial', label: 'Industrial' },
+            ]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Max Bins</Label>

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Textarea } from '@/components/ui/textarea';
 
 const UGANDA_DISTRICTS = ['Kampala','Wakiso','Mukono','Jinja','Mbarara','Gulu','Lira','Arua','Fort Portal','Mbale','Soroti','Masaka'];
@@ -51,24 +51,21 @@ export default function TenantForm({ tenant, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Tenant Type *</Label>
-          <Select value={form.tenant_type} onValueChange={v => set('tenant_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="city">🏛️ City Authority</SelectItem>
-              <SelectItem value="operator">🚛 Operator</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.tenant_type}
+            onChange={v => set('tenant_type', v)}
+            options={[{ value: 'city', label: '🏛️ City Authority' }, { value: 'operator', label: '🚛 Operator' }]}
+          />
         </div>
         {form.tenant_type === 'operator' && (
           <div className="space-y-1.5">
             <Label>Parent City</Label>
-            <Select value={form.parent_city_tenant_id} onValueChange={v => set('parent_city_tenant_id', v)}>
-              <SelectTrigger><SelectValue placeholder="Select city…" /></SelectTrigger>
-              <SelectContent>
-                {cityTenants.length === 0 && <SelectItem value="none" disabled>No city tenant yet</SelectItem>}
-                {cityTenants.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MobileSelect
+              value={form.parent_city_tenant_id}
+              onChange={v => set('parent_city_tenant_id', v)}
+              placeholder="Select city…"
+              options={cityTenants.map(c => ({ value: c.id, label: c.company_name }))}
+            />
           </div>
         )}
         <div className="space-y-1.5">
@@ -81,10 +78,12 @@ export default function TenantForm({ tenant, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Primary District *</Label>
-          <Select value={form.district} onValueChange={v => set('district', v)}>
-            <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-            <SelectContent>{UGANDA_DISTRICTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.district}
+            onChange={v => set('district', v)}
+            placeholder="Select district"
+            options={UGANDA_DISTRICTS.map(d => ({ value: d, label: d }))}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Registration No.</Label>
@@ -96,25 +95,19 @@ export default function TenantForm({ tenant, onClose }) {
         </div>
         <div className="space-y-1.5">
           <Label>Subscription Plan</Label>
-          <Select value={form.subscription_plan} onValueChange={v => set('subscription_plan', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="basic">Basic</SelectItem>
-              <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.subscription_plan}
+            onChange={v => set('subscription_plan', v)}
+            options={[{ value: 'basic', label: 'Basic' }, { value: 'standard', label: 'Standard' }, { value: 'premium', label: 'Premium' }]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Status</Label>
-          <Select value={form.status} onValueChange={v => set('status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.status}
+            onChange={v => set('status', v)}
+            options={[{ value: 'pending', label: 'Pending' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]}
+          />
         </div>
         <div className="col-span-2 space-y-1.5">
           <Label>Address</Label>

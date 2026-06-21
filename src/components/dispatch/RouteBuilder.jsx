@@ -38,13 +38,13 @@ export default function RouteBuilder({ jobs, vehicles, zones, selectedDate, onCl
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col max-h-[90dvh]">
+        <div className="flex items-center justify-between p-6 pb-0 safe-top shrink-0 mb-5">
           <h3 className="font-semibold font-jakarta text-lg">Build Route</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto px-6 pb-6 safe-bottom">
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Route Name</label>
             <input

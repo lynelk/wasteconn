@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MobileSelect from '@/components/ui/MobileSelect';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,25 +78,19 @@ function RuleFormDialog({ rule, tenantId, onClose }) {
         </div>
         <div>
           <Label>Rule Type</Label>
-          <Select value={form.rule_type} onValueChange={v => set('rule_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(RULE_TYPE_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.rule_type}
+            onChange={v => set('rule_type', v)}
+            options={Object.entries(RULE_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+          />
         </div>
         <div>
           <Label>Scope</Label>
-          <Select value={form.scope} onValueChange={v => set('scope', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {['global','zone','customer_type','service_plan','waste_type'].map(s => (
-                <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.scope}
+            onChange={v => set('scope', v)}
+            options={['global','zone','customer_type','service_plan','waste_type'].map(s => ({ value: s, label: s.replace('_', ' ') }))}
+          />
         </div>
         {form.scope !== 'global' && (
           <div className="col-span-2">
@@ -106,15 +100,16 @@ function RuleFormDialog({ rule, tenantId, onClose }) {
         )}
         <div>
           <Label>Amount Type</Label>
-          <Select value={form.amount_type} onValueChange={v => set('amount_type', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="flat">Flat</SelectItem>
-              <SelectItem value="per_km">Per KM</SelectItem>
-              <SelectItem value="per_kg">Per KG</SelectItem>
-              <SelectItem value="percentage">Percentage (%)</SelectItem>
-            </SelectContent>
-          </Select>
+          <MobileSelect
+            value={form.amount_type}
+            onChange={v => set('amount_type', v)}
+            options={[
+              { value: 'flat', label: 'Flat' },
+              { value: 'per_km', label: 'Per KM' },
+              { value: 'per_kg', label: 'Per KG' },
+              { value: 'percentage', label: 'Percentage (%)' },
+            ]}
+          />
         </div>
         <div>
           <Label>Amount <span className="text-destructive">*</span></Label>
@@ -211,25 +206,19 @@ function SimulationModal({ tenantId, onClose }) {
           </div>
           <div>
             <Label className="text-xs">Waste Type</Label>
-            <Select value={inputs.waste_type} onValueChange={v => setIn('waste_type', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {['general','recyclable','organic','hazardous','e_waste','bulky'].map(t => (
-                  <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MobileSelect
+              value={inputs.waste_type}
+              onChange={v => setIn('waste_type', v)}
+              options={['general','recyclable','organic','hazardous','e_waste','bulky'].map(t => ({ value: t, label: t.replace('_', ' ') }))}
+            />
           </div>
           <div>
             <Label className="text-xs">Customer Type</Label>
-            <Select value={inputs.customer_type} onValueChange={v => setIn('customer_type', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="residential">Residential</SelectItem>
-                <SelectItem value="commercial">Commercial</SelectItem>
-                <SelectItem value="industrial">Industrial</SelectItem>
-              </SelectContent>
-            </Select>
+            <MobileSelect
+              value={inputs.customer_type}
+              onChange={v => setIn('customer_type', v)}
+              options={[{ value: 'residential', label: 'Residential' }, { value: 'commercial', label: 'Commercial' }, { value: 'industrial', label: 'Industrial' }]}
+            />
           </div>
           <div>
             <Label className="text-xs">Zone ID (optional)</Label>
