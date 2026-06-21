@@ -43,6 +43,11 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this location record",
+      "maxLength": 1000
     }
   },
   "required": [

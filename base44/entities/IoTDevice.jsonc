@@ -45,6 +45,11 @@
         "faulted"
       ],
       "default": "online"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this IoT device",
+      "maxLength": 1000
     }
   },
   "required": [

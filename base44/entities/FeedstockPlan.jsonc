@@ -32,6 +32,11 @@
         "surplus"
       ],
       "default": "balanced"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this feedstock plan",
+      "maxLength": 1000
     }
   },
   "required": [

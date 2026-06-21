@@ -49,6 +49,11 @@
         "bidirectional"
       ],
       "default": "push_only"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about these sync settings",
+      "maxLength": 1000
     }
   },
   "required": []

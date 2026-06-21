@@ -50,6 +50,11 @@
     "ml_flagged_for_review": {
       "type": "boolean",
       "default": false
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this permission usage record",
+      "maxLength": 1000
     }
   },
   "required": [

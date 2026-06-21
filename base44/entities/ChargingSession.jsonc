@@ -48,6 +48,11 @@
         "interrupted"
       ],
       "default": "in_progress"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this charging session",
+      "maxLength": 1000
     }
   },
   "required": [

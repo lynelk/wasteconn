@@ -36,6 +36,11 @@
     },
     "document_url": {
       "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this EPR report",
+      "maxLength": 1000
     }
   },
   "required": [

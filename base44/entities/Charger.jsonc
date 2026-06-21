@@ -36,6 +36,11 @@
         "offline"
       ],
       "default": "available"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this charger",
+      "maxLength": 1000
     }
   },
   "required": [

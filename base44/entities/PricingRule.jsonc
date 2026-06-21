@@ -69,6 +69,11 @@
     "effective_to": {
       "type": "string",
       "format": "date"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of this pricing rule",
+      "maxLength": 1000
     }
   },
   "required": [

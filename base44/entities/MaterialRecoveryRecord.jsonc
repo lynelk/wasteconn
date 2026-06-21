@@ -47,6 +47,11 @@
     "attributed": {
       "type": "boolean",
       "default": false
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this recovery record",
+      "maxLength": 1000
     }
   },
   "required": [

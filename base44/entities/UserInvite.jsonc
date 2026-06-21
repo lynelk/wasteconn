@@ -42,6 +42,11 @@
       "type": "number",
       "default": 0,
       "description": "Number of times resent"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this invite",
+      "maxLength": 1000
     }
   },
   "required": [

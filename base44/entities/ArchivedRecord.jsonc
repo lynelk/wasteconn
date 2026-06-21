@@ -24,6 +24,11 @@
     "payload": {
       "type": "object",
       "description": "Full JSON snapshot of the archived record"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about why this record was archived",
+      "maxLength": 1000
     }
   },
   "required": [

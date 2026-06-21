@@ -15,6 +15,11 @@
       "type": "string",
       "format": "date-time",
       "description": "Start of the current fixed window"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this rate limit bucket",
+      "maxLength": 1000
     }
   },
   "required": [

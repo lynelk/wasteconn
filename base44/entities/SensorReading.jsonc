@@ -51,6 +51,11 @@
     "raw_payload": {
       "type": "string",
       "description": "Original JSON payload for audit/debug"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this sensor reading",
+      "maxLength": 1000
     }
   },
   "required": [

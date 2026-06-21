@@ -14,6 +14,11 @@
       "type": "boolean",
       "default": false,
       "description": "Require GPS capture on clock-in"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about these shift settings",
+      "maxLength": 1000
     }
   },
   "required": [

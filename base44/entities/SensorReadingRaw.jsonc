@@ -36,6 +36,11 @@
     },
     "idempotency_key": {
       "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes about this raw reading",
+      "maxLength": 1000
     }
   },
   "required": [
