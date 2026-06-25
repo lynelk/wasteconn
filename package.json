@@ -19,7 +19,7 @@
     "lint:ci": "eslint src/App.jsx src/routes src/api src/lib/errorHandler.js src/lib/logger.js src/lib/ErrorBoundary.jsx src/hooks/queries src/components/common src/__tests__ --quiet"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.32",
+    "@base44/sdk": "^0.8.34",
     "@base44/vite-plugin": "^1.0.23",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",
