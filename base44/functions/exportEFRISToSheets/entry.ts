@@ -4,13 +4,13 @@ import { google } from 'npm:googleapis@128.0.0';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
-        
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const user = await base44.auth.me().catch(() => null);
 
-        if (user.role !== 'admin') {
+        // Service-role guard: scheduled automations have no user session
+        let client = base44;
+        if (!user) {
+            client = base44.asServiceRole;
+        } else if (user.role !== 'admin') {
             return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
         const monthYear = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
 
         // Fetch all successful EFRIS invoices for the month
-        const invoices = await base44.entities.EFRISInvoiceLog.filter({
+        const invoices = await client.entities.EFRISInvoiceLog.filter({
             month_year: monthYear,
             status: 'success'
         });
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
         const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
         
         for (const inv of invoices) {
-            await base44.entities.EFRISInvoiceLog.update(inv.id, {
+            await client.entities.EFRISInvoiceLog.update(inv.id, {
                 google_sheet_row_id: spreadsheetId
             });
         }
