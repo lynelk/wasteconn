@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     // For scheduled automation, use service role
-    const user = await base44.auth.me();
+    const user = await base44.auth.me().catch(() => null);
     const isScheduled = !user;
     const sdk = isScheduled ? base44.asServiceRole : base44;
 

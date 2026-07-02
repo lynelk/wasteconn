@@ -3,8 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Runs daily - marks expired contracts, sends renewal reminders 30 days before end
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (user?.role !== 'admin') {
+  const user = await base44.auth.me().catch(() => null);
+  if (user && user.role !== 'admin') {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 

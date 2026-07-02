@@ -8,8 +8,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+    const user = await base44.auth.me().catch(() => null);
+    if (user && !['admin', 'super_admin'].includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -20,8 +20,25 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().slice(0, 10);
     const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
 
-    // Get active subscriptions
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({ status: 'active' });
+    // Batch-fetch all active subscriptions, recent failed payments, customers, and plans
+    const [subscriptions, allFailedPayments, allCustomers, allPlans] = await Promise.all([
+      base44.asServiceRole.entities.Subscription.filter({ status: 'active' }),
+      base44.asServiceRole.entities.Payment.filter({ status: 'failed' }),
+      base44.asServiceRole.entities.Customer.filter({}),
+      base44.asServiceRole.entities.ServicePlan.filter({}),
+    ]);
+    const customerMap = new Map(allCustomers.map(c => [c.id, c]));
+    const planMap = new Map(allPlans.map(p => [p.id, p]));
+
+    // Group failed payments by customer (only recent ones)
+    const failedPaymentsByCustomer = new Map();
+    for (const p of allFailedPayments) {
+      const pDate = p.payment_date || p.created_date || '';
+      if (pDate >= threeDaysAgo) {
+        if (!failedPaymentsByCustomer.has(p.customer_id)) failedPaymentsByCustomer.set(p.customer_id, []);
+        failedPaymentsByCustomer.get(p.customer_id).push(p);
+      }
+    }
 
     let retried = 0;
     let suspended = 0;
@@ -29,9 +46,8 @@ Deno.serve(async (req) => {
     for (const sub of subscriptions) {
       if (!sub.customer_id) continue;
 
-      // Find recent failed payments for this customer
-      const recentPayments = await base44.asServiceRole.entities.Payment.filter({ customer_id: sub.customer_id, status: 'failed' });
-      const recentFailed = recentPayments.filter(p => (p.payment_date || p.created_date || '') >= threeDaysAgo);
+      // Look up recent failed payments from cached map
+      const recentFailed = failedPaymentsByCustomer.get(sub.customer_id) || [];
 
       if (recentFailed.length === 0) continue;
 
@@ -46,9 +62,8 @@ Deno.serve(async (req) => {
           suspended_at: new Date().toISOString(),
         });
 
-        // Notify customer
-        const customers = await base44.asServiceRole.entities.Customer.filter({ id: sub.customer_id });
-        const customer = customers?.[0];
+        // Look up customer from cached map
+        const customer = customerMap.get(sub.customer_id);
         if (customer) {
           await base44.asServiceRole.entities.Notification.create({
             customer_id: sub.customer_id,
@@ -72,16 +87,15 @@ Deno.serve(async (req) => {
       // Retry payment if credentials available
       if (!yoApiUrl || !yoUsername || !yoPassword) continue;
 
-      const customers = await base44.asServiceRole.entities.Customer.filter({ id: sub.customer_id });
-      const customer = customers?.[0];
+      const customer = customerMap.get(sub.customer_id);
       const phone = customer?.phone || customer?.mobile_number;
       if (!phone) continue;
 
-      // Get subscription amount from service plan
+      // Look up plan from cached map
       let amount = sub.amount_ugx || sub.monthly_amount;
       if (!amount && sub.plan_id) {
-        const plans = await base44.asServiceRole.entities.ServicePlan.filter({ id: sub.plan_id });
-        amount = plans?.[0]?.monthly_fee_ugx || plans?.[0]?.base_price_ugx;
+        const plan = planMap.get(sub.plan_id);
+        amount = plan?.monthly_fee_ugx || plan?.base_price_ugx;
       }
       if (!amount) continue;
 

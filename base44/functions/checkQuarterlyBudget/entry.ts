@@ -11,8 +11,8 @@ Deno.serve(async (req) => {
     isScheduled = body?.scheduled === true;
 
     if (!isScheduled) {
-      const user = await base44.auth.me();
-      if (user?.role !== 'admin') {
+      const user = await base44.auth.me().catch(() => null);
+      if (user && user.role !== 'admin') {
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
     }

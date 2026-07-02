@@ -25,12 +25,12 @@ Deno.serve(async (req) => {
     byDevice[key].readings.push(r);
   }
 
-  // Fetch all devices
+  // Batch-fetch all needed devices (avoid N+1 per device_id)
   const deviceIds = [...new Set(unprocessed.map(r => r.device_id))];
+  const allDevices = await base44.asServiceRole.entities.IoTDevice.filter({});
   const deviceMap = {};
-  for (const did of deviceIds) {
-    const devs = await base44.asServiceRole.entities.IoTDevice.filter({ device_id: did });
-    if (devs.length) deviceMap[did] = devs[0];
+  for (const dev of allDevices) {
+    if (deviceIds.includes(dev.device_id)) deviceMap[dev.device_id] = dev;
   }
 
   let fillLevelUpdates = 0;
@@ -95,11 +95,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Mark all as processed
+  // Mark all as processed (single bulk update instead of N individual updates)
   const processedIds = unprocessed.map(r => r.id);
-  for (const id of processedIds) {
-    await base44.asServiceRole.entities.SensorReadingRaw.update(id, { processed: true });
-  }
+  await base44.asServiceRole.entities.SensorReadingRaw.bulkUpdate(
+    processedIds.map(id => ({ id, processed: true }))
+  );
 
   return Response.json({ ok: true, processed: unprocessed.length, fillLevelUpdates, gpsUpdates });
 });

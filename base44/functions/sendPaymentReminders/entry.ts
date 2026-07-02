@@ -43,6 +43,16 @@ Deno.serve(async (req) => {
     const planMap = new Map(allPlans.map(p => [p.id, p]));
     const customerMap = new Map(allCustomers.map(c => [c.id, c]));
 
+    // Duplicate-send protection: skip invoices already reminded today
+    const todayNotifications = await base44.asServiceRole.entities.Notification.filter({
+      related_entity_type: 'Invoice',
+    });
+    const alreadySentToday = new Set(
+      todayNotifications
+        .filter(n => n.sent_at && n.sent_at.slice(0, 10) === today)
+        .map(n => n.related_entity_id)
+    );
+
     let sent = 0;
     let smsSent = 0;
 
@@ -62,6 +72,9 @@ Deno.serve(async (req) => {
       }
 
       if (!reminderDays.includes(daysUntilDue)) continue;
+
+      // Skip if already sent a reminder today for this invoice
+      if (alreadySentToday.has(invoice.id)) continue;
 
       // Look up customer from cached map
       const customer = customerMap.get(invoice.customer_id);

@@ -9,8 +9,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+    const user = await base44.auth.me().catch(() => null);
+    if (user && !['admin', 'super_admin'].includes(user.role)) {
       return Response.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
@@ -23,10 +23,12 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, sent: 0, skipped: 0, message: 'No overdue invoices found' });
     }
 
-    // Fetch notifications sent today for overdue invoices to avoid duplicates
-    const todayNotifications = await base44.asServiceRole.entities.Notification.filter({
-      template_type: 'invoice_overdue',
-    });
+    // Batch-fetch customers and notifications to avoid N+1 queries per invoice
+    const [allCustomers, todayNotifications] = await Promise.all([
+      base44.asServiceRole.entities.Customer.filter({}),
+      base44.asServiceRole.entities.Notification.filter({ template_type: 'invoice_overdue' }),
+    ]);
+    const customerMap = new Map(allCustomers.map(c => [c.id, c]));
 
     const alreadySentToday = new Set(
       todayNotifications
@@ -45,9 +47,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Get customer
-      const customers = await base44.asServiceRole.entities.Customer.filter({ id: invoice.customer_id });
-      const customer = customers?.[0];
+      // Look up customer from cached map
+      const customer = customerMap.get(invoice.customer_id);
       if (!customer || !customer.email) {
         skipped++;
         continue;

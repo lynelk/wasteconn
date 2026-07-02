@@ -92,6 +92,8 @@ Deno.serve(async (req) => {
           items,
         });
         count++;
+        // Throttle creates to avoid entity rate limiting on bulk invoice generation
+        if (count % 10 === 0) await new Promise(r => setTimeout(r, 500));
       } catch (e) {
         errors.push({ subscription_id: sub.id, error: e.message });
       }
