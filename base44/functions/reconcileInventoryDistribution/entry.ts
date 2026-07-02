@@ -3,21 +3,29 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
-        
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const user = await base44.auth.me().catch(() => null);
 
-        if (user.role !== 'admin') {
+        // Service-role guard: scheduled automations have no user session
+        let client = base44;
+        let tenantId = user?.data?.tenant_id || 'default';
+        let generatedBy = user?.id || 'system';
+
+        if (!user) {
+            client = base44.asServiceRole;
+        } else if (user.role !== 'admin') {
             return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
+        // Calculate period bounds for ComplianceReport required fields
+        const now = new Date();
+        const periodFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        const periodTo = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
         // Fetch all inventory items
-        const inventoryItems = await base44.entities.Inventory.filter({});
+        const inventoryItems = await client.entities.Inventory.filter({});
         
         // Fetch all item distributions
-        const distributions = await base44.entities.ItemDistribution.filter({ 
+        const distributions = await client.entities.ItemDistribution.filter({ 
             status: 'confirmed' 
         }, '-distribution_date', 500);
 
@@ -63,12 +71,14 @@ Deno.serve(async (req) => {
         });
 
         // Create reconciliation report record
-        const report = await base44.entities.ComplianceReport.create({
-            tenant_id: user.data?.tenant_id || 'default',
+        const report = await client.entities.ComplianceReport.create({
+            tenant_id: tenantId,
             report_type: 'inventory_reconciliation',
+            period_from: periodFrom,
+            period_to: periodTo,
             report_period: new Date().toISOString().slice(0, 7), // Current month
             generated_at: new Date().toISOString(),
-            generated_by: user.id,
+            generated_by: generatedBy,
             status: 'completed',
             summary: {
                 total_items: reconciliationData.length,
@@ -85,27 +95,22 @@ Deno.serve(async (req) => {
         });
 
         // Create audit log
-        await base44.entities.AuditLog.create({
-            tenant_id: user.data?.tenant_id || 'default',
+        await client.entities.AuditLog.create({
+            tenant_id: tenantId,
             entity_type: 'ComplianceReport',
             entity_id: report.id,
-            action: 'inventory_reconciliation_generated',
-            user_id: user.id,
-            details: {
-                report_type: 'inventory_reconciliation',
-                items_reviewed: reconciliationData.length,
-                discrepancies_found: reconciliationData.filter(i => i.has_discrepancy).length
-            },
-            timestamp: new Date().toISOString()
+            event_type: 'bulk_export',
+            user_id: generatedBy,
+            notes: `inventory_reconciliation_generated — ${reconciliationData.length} items reviewed, ${reconciliationData.filter(i => i.has_discrepancy).length} discrepancies found`
         });
 
         // Send notification to admin users if discrepancies found
         const itemsWithIssues = reconciliationData.filter(i => i.has_discrepancy);
         if (itemsWithIssues.length > 0) {
-            const adminUsers = await base44.entities.User.filter({ role: 'admin' });
+            const adminUsers = await client.entities.User.filter({ role: 'admin' });
             for (const admin of adminUsers) {
-                await base44.entities.Notification.create({
-                    tenant_id: user.data?.tenant_id || 'default',
+                await client.entities.Notification.create({
+                    tenant_id: tenantId,
                     user_id: admin.id,
                     title: '⚠️ Inventory Reconciliation Discrepancies Found',
                     message: `${itemsWithIssues.length} items show stock discrepancies. Total financial impact: UGX ${Math.abs(reconciliationData.reduce((sum, i) => sum + i.financial_impact_ugx, 0)).toLocaleString()}`,
