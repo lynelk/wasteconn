@@ -29,17 +29,23 @@ Deno.serve(async (req) => {
       const customer = customers.find(c => c.id === pickup.customer_id);
       if (!customer || customer.status !== 'active') continue;
 
-      // Check notification preferences (default: in-app enabled)
+      // Channel prioritization: send on ONE channel per customer to avoid duplicate credit usage.
+      // Priority: WhatsApp (if implemented) → Email → In-App (always free)
       const sendInApp = customer.notification_inapp_enabled !== false;
-      const sendEmail = customer.notification_email_enabled === true;
-      const sendWhatsApp = customer.notification_whatsapp_enabled === true;
+      const sendEmail = customer.notification_email_enabled === true && customer.email;
+      const sendWhatsApp = customer.notification_whatsapp_enabled === true && customer.phone;
 
       if (!sendInApp && !sendEmail && !sendWhatsApp) continue;
 
       const message = `Reminder: Your waste pickup is scheduled for ${tomorrow.toLocaleDateString('en-UG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Please ensure your bins are accessible.`;
 
-      // Send in-app notification
-      if (sendInApp) {
+      // Select a single channel based on priority
+      let channel = null;
+      if (sendWhatsApp) channel = 'whatsapp';
+      else if (sendEmail) channel = 'email';
+      else if (sendInApp) channel = 'in_app';
+
+      if (channel === 'in_app') {
         try {
           await sdk.entities.Notification.create({
             tenant_id: customer.tenant_id || 'default',
@@ -55,10 +61,7 @@ Deno.serve(async (req) => {
         } catch (err) {
           errors.push({ customer: customer.id, type: 'in_app', error: err.message });
         }
-      }
-
-      // Send email notification
-      if (sendEmail && customer.email) {
+      } else if (channel === 'email') {
         try {
           await base44.integrations.Core.SendEmail({
             to: customer.email,
@@ -69,21 +72,13 @@ Deno.serve(async (req) => {
         } catch (err) {
           errors.push({ customer: customer.id, type: 'email', error: err.message });
         }
-      }
-
-      // Send WhatsApp notification via Slack
-      if (sendWhatsApp && customer.phone) {
-        try {
-          // Note: This requires Slack-WhatsApp integration or Twilio
-          // For now, we'll log it as pending implementation
-          errors.push({ 
-            customer: customer.id, 
-            type: 'whatsapp', 
-            error: 'WhatsApp integration pending - requires Twilio or Slack-WhatsApp setup' 
-          });
-        } catch (err) {
-          errors.push({ customer: customer.id, type: 'whatsapp', error: err.message });
-        }
+      } else if (channel === 'whatsapp') {
+        // WhatsApp pending external provider integration
+        errors.push({
+          customer: customer.id,
+          type: 'whatsapp',
+          error: 'WhatsApp integration pending - requires Twilio or Slack-WhatsApp setup'
+        });
       }
     }
 

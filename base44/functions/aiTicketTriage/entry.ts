@@ -12,22 +12,19 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const { ticket_id } = body;
 
-  // Check SLA breaches on open tickets
-  const openTickets = await base44.asServiceRole.entities.Ticket.filter({});
+  // Check SLA breaches — only fetch tickets that are open AND not yet breached
+  // This avoids loading resolved/closed tickets and already-breached ones every 15 min
   const now = new Date();
+  const openTickets = await base44.asServiceRole.entities.Ticket.filter({
+    status: { $nin: ['resolved', 'closed'] },
+    sla_breached: { $ne: true },
+  });
   let breachCount = 0;
 
   for (const ticket of openTickets) {
-    if (['resolved', 'closed'].includes(ticket.status)) continue;
-
-    const updates = {};
-    if (ticket.sla_due_at && new Date(ticket.sla_due_at) < now && !ticket.sla_breached) {
-      updates.sla_breached = true;
+    if (ticket.sla_due_at && new Date(ticket.sla_due_at) < now) {
+      await base44.asServiceRole.entities.Ticket.update(ticket.id, { sla_breached: true });
       breachCount++;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await base44.asServiceRole.entities.Ticket.update(ticket.id, updates);
     }
   }
 
