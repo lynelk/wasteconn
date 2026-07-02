@@ -170,6 +170,11 @@ Deno.serve(async (req) => {
         const routes = await base44.asServiceRole.entities.Route.filter({ vehicle_id: vehicle.id });
         const activeRoute = routes.find(r => r.status === 'in_progress');
 
+        // Skip telemetry ingestion for parked vehicles with no active route — saves credits
+        if (pos.s === 0 && !activeRoute) {
+          continue;
+        }
+
         let deviationFlag = false;
         let deviationMeters = 0;
         if (activeRoute?.path_geojson) {

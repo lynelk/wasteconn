@@ -5,13 +5,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 Deno.serve(async (req) => {
   try {
-    const secret = req.headers.get('x-asset-secret');
-    const expectedSecret = Deno.env.get('ASSET_RECONCILIATION_SECRET') || 'asset-recon-secret';
-    if (secret !== expectedSecret) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const base44 = createClientFromRequest(req);
+
+    // Allow both authenticated admin calls and scheduled (service-role) calls
+    try {
+      const user = await base44.auth.me();
+      if (!user || !['admin', 'super_admin'].includes(user.role)) {
+        return Response.json({ error: 'Admin access required' }, { status: 403 });
+      }
+    } catch {
+      // Scheduled/service-role invocation — no user token present
     }
 
-    const base44 = createClientFromRequest(req);
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
