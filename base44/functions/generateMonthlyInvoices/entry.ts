@@ -8,8 +8,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+    const user = await base44.auth.me().catch(() => null);
+    if (user && !['admin', 'super_admin'].includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -22,38 +22,47 @@ Deno.serve(async (req) => {
     const lastDay = new Date(year, month, 0).getDate();
     const periodTo = `${year}-${String(month).padStart(2,'0')}-${lastDay}`;
 
-    // Fetch all active subscriptions
-    const subscriptions = await base44.asServiceRole.entities.Subscription.filter({ status: 'active' });
+    // Fetch all active subscriptions and plans in parallel (avoid N+1 per subscription)
+    const [subscriptions, allPlans] = await Promise.all([
+      base44.asServiceRole.entities.Subscription.filter({ status: 'active' }),
+      base44.asServiceRole.entities.ServicePlan.filter({}),
+    ]);
+    const planMap = new Map(allPlans.map(p => [p.id, p]));
+
+    // Batch-fetch existing invoices and completed pickups for the period to avoid N+1 queries
+    const [existingInvoices, periodPickupsAll] = await Promise.all([
+      base44.asServiceRole.entities.Invoice.filter({ issue_date: periodFrom }),
+      base44.asServiceRole.entities.PickupRequest.filter({ status: 'completed' }),
+    ]);
+    const invoicedCustomerIds = new Set(existingInvoices.map(inv => inv.customer_id));
+    const pickupsByCustomer = new Map();
+    for (const p of periodPickupsAll) {
+      if (p.scheduled_date >= periodFrom && p.scheduled_date <= periodTo) {
+        if (!pickupsByCustomer.has(p.customer_id)) pickupsByCustomer.set(p.customer_id, []);
+        pickupsByCustomer.get(p.customer_id).push(p);
+      }
+    }
 
     let count = 0;
     const errors = [];
 
     for (const sub of subscriptions) {
       try {
-        // Get service plan
-        const plans = await base44.asServiceRole.entities.ServicePlan.filter({ id: sub.plan_id });
-        const plan = plans?.[0];
+        // Look up plan from cached map
+        const plan = planMap.get(sub.plan_id);
         if (!plan) continue;
 
-        // Check if invoice already exists for this period
-        const existing = await base44.asServiceRole.entities.Invoice.filter({
-          customer_id: sub.customer_id,
-          issue_date: periodFrom,
-        });
-        if (existing?.length > 0) continue;
+        // Check if invoice already exists for this period (from cached set)
+        if (invoicedCustomerIds.has(sub.customer_id)) continue;
 
         // Calculate amount
         let baseAmount = plan.price_ugx || 0;
         const items = [{ description: `${plan.plan_name} - ${periodFrom} to ${periodTo}`, quantity: 1, unit_price_ugx: baseAmount, total_ugx: baseAmount }];
 
         if (plan.billing_model === 'fixed_plus_overage_kg' && plan.overage_threshold_kg && plan.overage_rate_ugx_per_kg) {
-          // Sum actual kg collected for this customer in the period
-          const pickups = await base44.asServiceRole.entities.PickupRequest.filter({
-            customer_id: sub.customer_id,
-            status: 'completed',
-          });
-          const periodPickups = pickups.filter(p => p.scheduled_date >= periodFrom && p.scheduled_date <= periodTo);
-          const totalKg = periodPickups.reduce((s, p) => s + (p.actual_weight_kg || 0), 0);
+          // Sum actual kg collected for this customer in the period (from cached map)
+          const customerPickups = pickupsByCustomer.get(sub.customer_id) || [];
+          const totalKg = customerPickups.reduce((s, p) => s + (p.actual_weight_kg || 0), 0);
           const overageKg = Math.max(0, totalKg - plan.overage_threshold_kg);
           if (overageKg > 0) {
             const overageAmount = Math.round(overageKg * plan.overage_rate_ugx_per_kg);

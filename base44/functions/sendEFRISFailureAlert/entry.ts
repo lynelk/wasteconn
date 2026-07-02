@@ -3,23 +3,24 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        
-        // Get the EFRIS log that triggered this
-        const { efris_log_id, event } = await req.json();
-        
+
+        // Get the EFRIS log that triggered this (support both direct call and entity automation payload)
+        const body = await req.json();
+        const efris_log_id = body.efris_log_id || body.event?.entity_id || body.data?.id;
+
         if (!efris_log_id) {
             return Response.json({ error: 'efris_log_id is required' }, { status: 400 });
         }
 
         // Fetch the EFRIS log
-        const efrisLog = await base44.entities.EFRISInvoiceLog.get(efris_log_id);
+        const efrisLog = await base44.asServiceRole.entities.EFRISInvoiceLog.get(efris_log_id);
         
         if (!efrisLog || efrisLog.status !== 'failed') {
             return Response.json({ message: 'No failed EFRIS log found' });
         }
 
         // Get all admin users
-        const adminUsers = await base44.entities.User.filter({ role: 'admin' });
+        const adminUsers = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
         
         // Send Slack alert using Slack Bot connector
         const slackMessage = {
@@ -89,22 +90,25 @@ Deno.serve(async (req) => {
             ]
         };
 
-        // Send to Slack #finance-alerts channel
-        await fetch('https://slack.com/api/chat.postMessage', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SLACK_BOT_TOKEN')}`
-            },
-            body: JSON.stringify({
-                ...slackMessage,
-                channel: 'finance-alerts'
-            })
-        });
+        // Send to Slack #finance-alerts channel via slackbot connector
+        const slackConn = await base44.asServiceRole.connectors.getConnection('slackbot');
+        if (slackConn?.access_token) {
+            await fetch('https://slack.com/api/chat.postMessage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${slackConn.access_token}`
+                },
+                body: JSON.stringify({
+                    ...slackMessage,
+                    channel: 'finance-alerts'
+                })
+            });
+        }
 
         // Create high-priority notification for all admins
         for (const admin of adminUsers) {
-            await base44.entities.Notification.create({
+            await base44.asServiceRole.entities.Notification.create({
                 tenant_id: efrisLog.tenant_id,
                 user_id: admin.id,
                 title: '🚨 EFRIS Invoice Failed',
@@ -121,7 +125,7 @@ Deno.serve(async (req) => {
         }
 
         // Create audit log entry
-        await base44.entities.AuditLog.create({
+        await base44.asServiceRole.entities.AuditLog.create({
             tenant_id: efrisLog.tenant_id,
             entity_type: 'EFRISInvoiceLog',
             entity_id: efrisLog.id,

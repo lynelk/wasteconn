@@ -25,13 +25,23 @@ async function sendSms(phone: string, message: string) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+    const user = await base44.auth.me().catch(() => null);
+    if (user && !['admin', 'super_admin'].includes(user.role)) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const today = new Date().toISOString().slice(0, 10);
     const invoices = await base44.asServiceRole.entities.Invoice.filter({ status: 'issued' });
+
+    // Batch-fetch all related data upfront to avoid N+1 queries per invoice
+    const [allSubs, allPlans, allCustomers] = await Promise.all([
+      base44.asServiceRole.entities.Subscription.filter({ status: 'active' }),
+      base44.asServiceRole.entities.ServicePlan.filter({}),
+      base44.asServiceRole.entities.Customer.filter({}),
+    ]);
+    const subMap = new Map(allSubs.map(s => [s.id, s]));
+    const planMap = new Map(allPlans.map(p => [p.id, p]));
+    const customerMap = new Map(allCustomers.map(c => [c.id, c]));
 
     let sent = 0;
     let smsSent = 0;
@@ -41,23 +51,20 @@ Deno.serve(async (req) => {
 
       const daysUntilDue = Math.ceil((new Date(invoice.due_date) - new Date(today)) / 86400000);
 
-      // Get subscription to find plan reminder settings
+      // Look up subscription and plan from cached maps
       let reminderDays = [7, 3, 0]; // defaults
       if (invoice.subscription_id) {
-        const subs = await base44.asServiceRole.entities.Subscription.filter({ id: invoice.subscription_id });
-        const sub = subs?.[0];
+        const sub = subMap.get(invoice.subscription_id);
         if (sub?.plan_id) {
-          const plans = await base44.asServiceRole.entities.ServicePlan.filter({ id: sub.plan_id });
-          const plan = plans?.[0];
+          const plan = planMap.get(sub.plan_id);
           if (plan?.email_reminder_days?.length > 0) reminderDays = plan.email_reminder_days;
         }
       }
 
       if (!reminderDays.includes(daysUntilDue)) continue;
 
-      // Get customer info
-      const customers = await base44.asServiceRole.entities.Customer.filter({ id: invoice.customer_id });
-      const customer = customers?.[0];
+      // Look up customer from cached map
+      const customer = customerMap.get(invoice.customer_id);
       if (!customer) continue;
 
       const dueLine = daysUntilDue === 0

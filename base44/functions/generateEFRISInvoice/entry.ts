@@ -3,30 +3,27 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
-        
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const user = await base44.auth.me().catch(() => null);
 
-        if (user.role !== 'admin') {
+        if (user && user.role !== 'admin') {
             return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
-        const { payment_id } = await req.json();
+        const body = await req.json();
+        const payment_id = body.payment_id || body.event?.entity_id || body.data?.id;
         
         if (!payment_id) {
             return Response.json({ error: 'payment_id is required' }, { status: 400 });
         }
 
         // Fetch payment and related data
-        const payment = await base44.entities.Payment.get(payment_id);
+        const payment = await base44.asServiceRole.entities.Payment.get(payment_id);
         if (!payment) {
             return Response.json({ error: 'Payment not found' }, { status: 404 });
         }
 
         // Check if EFRIS invoice already exists
-        const existingEFRIS = await base44.entities.EFRISInvoiceLog.filter({ payment_id });
+        const existingEFRIS = await base44.asServiceRole.entities.EFRISInvoiceLog.filter({ payment_id });
         if (existingEFRIS && existingEFRIS.length > 0) {
             return Response.json({ 
                 message: 'EFRIS invoice already exists for this payment',
@@ -35,7 +32,7 @@ Deno.serve(async (req) => {
         }
 
         // Fetch customer data
-        const customer = await base44.entities.Customer.get(payment.customer_id);
+        const customer = await base44.asServiceRole.entities.Customer.get(payment.customer_id);
         if (!customer) {
             return Response.json({ error: 'Customer not found' }, { status: 404 });
         }
@@ -45,9 +42,9 @@ Deno.serve(async (req) => {
         let subscription = null;
         
         if (payment.subscription_id) {
-            subscription = await base44.entities.Subscription.get(payment.subscription_id);
+            subscription = await base44.asServiceRole.entities.Subscription.get(payment.subscription_id);
             if (subscription) {
-                const plan = await base44.entities.ServicePlan.get(subscription.plan_id);
+                const plan = await base44.asServiceRole.entities.ServicePlan.get(subscription.plan_id);
                 if (plan) {
                     invoiceItems = [{
                         description: `Subscription: ${plan.plan_name}`,
@@ -158,12 +155,12 @@ Deno.serve(async (req) => {
             efrisLogData.invoice_number = invoiceResult.data?.invoiceNumber || invoiceNumber;
             efrisLogData.ura_response_code = invoiceResult.returnStateInfo.responseCode;
 
-            const efrisLog = await base44.entities.EFRISInvoiceLog.create(efrisLogData);
+            const efrisLog = await base44.asServiceRole.entities.EFRISInvoiceLog.create(efrisLogData);
 
             // Create notification for success
-            await base44.entities.Notification.create({
+            await base44.asServiceRole.entities.Notification.create({
                 tenant_id: payment.tenant_id,
-                user_id: user.id,
+                user_id: user?.id,
                 title: 'EFRIS Invoice Generated Successfully',
                 message: `EFRIS invoice ${efrisLog.invoice_number} has been successfully generated for payment of UGX ${grossAmount.toLocaleString()}.`,
                 type: 'success',
@@ -182,12 +179,12 @@ Deno.serve(async (req) => {
             efrisLogData.invoice_number = invoiceNumber;
             efrisLogData.ura_response_code = invoiceResult.returnStateInfo?.responseCode || 'ERROR';
             
-            const efrisLog = await base44.entities.EFRISInvoiceLog.create(efrisLogData);
+            const efrisLog = await base44.asServiceRole.entities.EFRISInvoiceLog.create(efrisLogData);
 
             // Create notification for failure
-            await base44.entities.Notification.create({
+            await base44.asServiceRole.entities.Notification.create({
                 tenant_id: payment.tenant_id,
-                user_id: user.id,
+                user_id: user?.id,
                 title: 'EFRIS Invoice Generation Failed',
                 message: `Failed to generate EFRIS invoice for payment of UGX ${grossAmount.toLocaleString()}. Reason: ${invoiceResult.returnStateInfo?.responseMsg || 'Unknown error'}`,
                 type: 'error',
@@ -208,10 +205,10 @@ Deno.serve(async (req) => {
         try {
             const base44 = createClientFromRequest(req);
             const { payment_id } = await req.json();
-            const payment = await base44.entities.Payment.get(payment_id);
+            const payment = await base44.asServiceRole.entities.Payment.get(payment_id);
             
             if (payment) {
-                await base44.entities.EFRISInvoiceLog.create({
+                await base44.asServiceRole.entities.EFRISInvoiceLog.create({
                     tenant_id: payment.tenant_id,
                     payment_id: payment_id,
                     customer_id: payment.customer_id,
@@ -223,10 +220,9 @@ Deno.serve(async (req) => {
                     ura_response_code: 'SYSTEM_ERROR'
                 });
 
-                const user = await base44.auth.me();
-                await base44.entities.Notification.create({
+                await base44.asServiceRole.entities.Notification.create({
                     tenant_id: payment.tenant_id,
-                    user_id: user?.id,
+                    user_id: null,
                     title: 'EFRIS System Error',
                     message: `System error while generating EFRIS invoice: ${error.message}`,
                     type: 'error',

@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     // For automation, use service role
-    const user = await base44.auth.me();
+    const user = await base44.auth.me().catch(() => null);
     const isAutomation = !user;
     const sdk = isAutomation ? base44.asServiceRole : base44;
 

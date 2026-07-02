@@ -145,6 +145,16 @@ Deno.serve(async (req) => {
 
     const existingVehicles = await base44.asServiceRole.entities.Vehicle.list();
 
+    // Batch-fetch all in-progress routes once to avoid N+1 queries per vehicle
+    const allInProgressRoutes = await base44.asServiceRole.entities.Route.filter({ status: 'in_progress' });
+    const routesByVehicle = new Map();
+    for (const r of allInProgressRoutes) {
+      if (r.vehicle_id) {
+        if (!routesByVehicle.has(r.vehicle_id)) routesByVehicle.set(r.vehicle_id, []);
+        routesByVehicle.get(r.vehicle_id).push(r);
+      }
+    }
+
     for (const unit of units) {
       let vehicle = existingVehicles.find(v =>
         v.registration_number === unit.nm ||
@@ -167,7 +177,7 @@ Deno.serve(async (req) => {
         const pos = unit.pos;
         const idleSeconds = pos.s === 0 && pos.t ? Math.min((Date.now() / 1000 - pos.t), 7200) : 0;
 
-        const routes = await base44.asServiceRole.entities.Route.filter({ vehicle_id: vehicle.id });
+        const routes = routesByVehicle.get(vehicle.id) || [];
         const activeRoute = routes.find(r => r.status === 'in_progress');
 
         // Skip telemetry ingestion for parked vehicles with no active route — saves credits
