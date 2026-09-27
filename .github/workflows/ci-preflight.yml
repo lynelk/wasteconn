@@ -1,0 +1,40 @@
+name: CI Preflight
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Validate portfolio CI policy
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('.github/product-ci-policy.json').read_text())
+          assert data['schemaVersion']==1
+          assert data['policyVersion']=='1.0'
+          assert data['product']=='Wasteconn'
+          assert data['cancelSupersededPullRequestRuns'] is True
+          assert data['releaseEvidenceSeparateFromSoftwareChecks'] is True
+          print('Wasteconn CI policy preflight passed')
+          PY
+      - name: Fail on committed private-key material
+        run: |
+          if git grep -n -E 'BEGIN (RSA |EC |OPENSSH |)?PRIVATE KEY' -- '*.md' 'docs/**' 'Docs/**' 2>/dev/null; then
+            echo 'Private-key material must never be committed, including in documentation.' >&2
+            exit 1
+          fi
