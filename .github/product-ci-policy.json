@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "1.0",
+  "canonicalPolicy": "lynelk/Cito:.github/CI_GOVERNANCE.md",
+  "product": "Wasteconn",
+  "repositoryClass": "ACTIVE_PRODUCT",
+  "preflightTargetMinutes": 3,
+  "cancelSupersededPullRequestRuns": true,
+  "docsOnlyHeavyCiSkip": true,
+  "securityChecksRemainApplicableToDocs": true,
+  "releaseEvidenceSeparateFromSoftwareChecks": true,
+  "heavyCiClasses": ["FRONTEND", "BACKEND", "DATA_SCHEMA", "API_CONTRACT", "SECURITY", "RELEASE", "CROSS_CUTTING"],
+  "docsOnlyIgnorePatterns": ["**/*.md", "docs/**", "Docs/**"],
+  "notes": "Standalone build is folded into lint/typecheck/test verification. E2E remains separate and expensive; manual load testing remains manual-only."
+}
